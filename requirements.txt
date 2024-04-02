@@ -1,0 +1,8 @@
+django
+python-dateutil
+matplotlib
+numpy
+pandas
+gspread
+oauth2client
+pytest
