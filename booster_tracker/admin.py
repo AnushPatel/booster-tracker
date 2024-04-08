@@ -24,6 +24,10 @@ class SupportInLine(admin.TabularInline):
     model = SupportOnLaunch
     extra = 0
 
+class DragonInLine(admin.TabularInline):
+    model = DragonOnLaunch
+    extra = 0
+
 class RocketFilter(admin.SimpleListFilter):
     title = 'Rocket'
     parameter_name = 'rocket'
@@ -224,7 +228,7 @@ class FairingLocationMissingFilter(admin.SimpleListFilter):
             return queryset
 
 class LaunchAdmin(admin.ModelAdmin):
-    inlines = [StageRecoveryInLine, FairingRecoveryInLine, TugInLine, SupportInLine]
+    inlines = [StageRecoveryInLine, FairingRecoveryInLine, TugInLine, SupportInLine, DragonInLine]
 
     def custom_time_display(self, obj):
         return obj.time.strftime("%B %d, %Y %H:%M")
@@ -294,3 +298,4 @@ admin.site.register(Boat, BoatAdmin)
 admin.site.register(Orbit)
 admin.site.register(LandingZone)
 admin.site.register(Pad)
+admin.site.register(Dragon)

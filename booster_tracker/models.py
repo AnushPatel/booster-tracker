@@ -6,6 +6,7 @@ RECOVERY_METHODS = [("EXPENDED", "expended"), ("OCEAN_SURFACE", "ocean"), ("DRON
 LAUNCH_OUTCOMES = [("SUCCESS", "success"), ("FAILURE", "failure"), ("PARTIAL FAILURE", "partial failure")]
 BOAT_TYPES = [("TUG", "tug"), ("FAIRING_RECOVERY", "fairing recovery"), ("SUPPORT", "support")]
 STAGE_TYPES = [("BOOSTER", "booster"), ("SECOND_STAGE", "second stage")]
+DRAGON_TYPES = [("CARGO", "cargo"), ("CREW", "crew")]
 
 class Rocket(models.Model):
     name = models.CharField(max_length=100)
@@ -18,6 +19,15 @@ class Stage(models.Model):
     rocket = models.ForeignKey(Rocket, on_delete=models.CASCADE)
     version = models.CharField(max_length=20)
     type = models.CharField(max_length=20, choices=STAGE_TYPES)
+
+    def __str__(self):
+        return self.name
+
+class Dragon(models.Model):
+    name = models.CharField(max_length=20)
+    nickname = models.CharField(max_length=20)
+    version = models.CharField(max_length=20)
+    type = models.CharField(max_length=20, choices=DRAGON_TYPES)
 
     def __str__(self):
         return self.name
@@ -69,7 +79,7 @@ class LandingZone(models.Model):
 class StageAndRecovery(models.Model):
     launch = models.ForeignKey(Launch, on_delete=models.CASCADE)
     stage = models.ForeignKey(Stage, on_delete=models.CASCADE)
-    landing_zone = models.ForeignKey(LandingZone, on_delete=models.CASCADE, null=True)
+    landing_zone = models.ForeignKey(LandingZone, on_delete=models.CASCADE, null=True, blank=True)
     method = models.CharField(max_length=200, choices=RECOVERY_METHODS)
     method_success = models.BooleanField(null=True)
     recovery_success = models.BooleanField()
@@ -79,6 +89,10 @@ class StageAndRecovery(models.Model):
     class Meta:
         verbose_name_plural = "Stages and Recoveries"
 
+    def __str__(self):
+        if self.stage:
+            return f"{self.stage.name} recovery"
+    
 class FairingRecovery(models.Model):
     launch = models.ForeignKey(Launch, on_delete=models.CASCADE)
     boat = models.ForeignKey(Boat, on_delete=models.CASCADE, limit_choices_to={"type": "FAIRING_RECOVERY"})
@@ -91,12 +105,20 @@ class FairingRecovery(models.Model):
     class Meta:
         verbose_name_plural = "Fairing Recoveries"
 
+    def __str__(self):
+        if self.boat:
+            return f"Fairing recovery with {self.boat.name}"
+
 class TugOnLaunch(models.Model):
     launch = models.ForeignKey(Launch, on_delete=models.CASCADE)
     boat = models.ForeignKey(Boat, on_delete=models.CASCADE, limit_choices_to={"type": "TUG"})
 
     class Meta:
         verbose_name_plural = "Tugs on Launch"
+
+    def __str__(self):
+        if self.boat:
+            return self.boat.name
         
 class SupportOnLaunch(models.Model):
     launch = models.ForeignKey(Launch, on_delete=models.CASCADE)
@@ -104,3 +126,19 @@ class SupportOnLaunch(models.Model):
 
     class Meta:
         verbose_name_plural = "Support ships on launch"
+    
+    def __str__(self):
+        if self.boat:
+            return self.boat.name
+    
+class DragonOnLaunch(models.Model):
+    launch = models.ForeignKey(Launch, on_delete=models.CASCADE)
+    dragon = models.ForeignKey(Dragon, on_delete=models.CASCADE)
+    splashdown_time = models.DateTimeField("Splashdown Time", null=True)
+
+    class Meta:
+        verbose_name_plural = "Dragon on launch"
+    
+    def __str__(self):
+        if self.dragon:
+            return f"{self.dragon.name} on launch"

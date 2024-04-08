@@ -1,0 +1,9 @@
+{% if launches %}
+    <ul>
+    {% for launch in launches %}
+        <li><a href="/launches/{{ launch.name }}/">{{ launch.name }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No launches are available.</p>
+{% endif %}
