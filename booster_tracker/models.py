@@ -60,7 +60,7 @@ class Launch(models.Model):
     orbit = models.ForeignKey(Orbit, on_delete=models.CASCADE)
     mass = models.CharField(max_length=200)
     customer = models.CharField(max_length=200)
-    launch_outcome = models.CharField(max_length=200, choices=LAUNCH_OUTCOMES)
+    launch_outcome = models.CharField(max_length=200, choices=LAUNCH_OUTCOMES, blank=True, null=True)
 
     class Meta:
         verbose_name_plural = "Launches"

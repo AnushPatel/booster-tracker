@@ -154,7 +154,7 @@ class MethodSuccessFilter(admin.SimpleListFilter):
         return [(str(value), "Success" if value else "Failure") for value in method_success_values]
 
     def queryset(self, request, queryset):
-        if self.value() is not None:
+        if self.value() is not None and not self.value() == "None":
             # Filter based on selected method success
             return queryset.filter(stageandrecovery__method_success=self.value())
         else:

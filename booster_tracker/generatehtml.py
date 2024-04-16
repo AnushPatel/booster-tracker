@@ -1,7 +1,13 @@
 import pytz
 from .models import *
 from datetime import datetime
+from enum import StrEnum
 
+class TurnaroundObjects(StrEnum):
+    BOOSTER = "booster"
+    SECOND_STAGE = "second stage"
+    LANDING_ZONE = "landing zone"
+    PAD = "pad"
 
 def format_time(time_obj):
     formatted_date = time_obj.strftime("%B %d, %Y")
@@ -11,6 +17,30 @@ def format_time(time_obj):
     formatted_str = f"{formatted_date} - {formatted_time} {timezone_abbr}"
 
     return formatted_str
+
+def convert_seconds(x):
+    d = int(x/86400)
+    x -= (d*86400)
+    h = int(x/3600)
+    x -= (h*3600)
+    m = int(x/60)
+    x -= (m*60)
+    s = round(x)
+    
+    time_str = ""
+    if d:
+        time_str += f"{d} day{'s' if d != 1 else ''}, "
+    if h:
+        time_str += f"{h} hour{'s' if h != 1 else ''}, "
+    if m:
+        time_str += f"{m} minute{'s' if m != 1 else ''}, "
+    if s:
+        time_str += f"and {s} second{'s' if s != 1 else ''}"
+
+    if time_str[-2:] == ", ":
+        time_str = time_str[:-2]
+    
+    return time_str
 
 def make_ordinal(n: int):
     if n is None:
@@ -36,6 +66,32 @@ def get_stage_flights_and_turnaround(stage: Stage, launch: Launch) -> tuple:
             return(flights, turnaround)
     else:
         return (flights, "N/A")
+
+def get_quickest_turnaround(launch_list: list[Launch], launch: Launch) -> tuple:
+    quickest_turnaround: int = None
+    new_quickest: bool = False
+    old_quickest: int = 0
+    launches: int = 0
+
+    for index, launch1 in enumerate(launch_list):
+        if launch1.time <= launch.time and index > 0:
+            turnaround = (launch1.time - launch_list[index-1].time).total_seconds()
+            if quickest_turnaround is None or turnaround < quickest_turnaround:
+                old_quickest = quickest_turnaround
+                if not index == len(launch_list)-1:
+                    launches = index
+                quickest_turnaround = turnaround
+                if index == len(launch_list)-1:
+                    new_quickest = True
+
+    if quickest_turnaround is not None and old_quickest is not None and launches > 0:
+        return quickest_turnaround, new_quickest, f". Previous record: {convert_seconds(old_quickest)} between {launch_list[launches-1].name} and {launch_list[launches].name}", f"{convert_seconds(quickest_turnaround)} between {launch_list[launches-1].name} and {launch_list[launches].name}"
+    elif quickest_turnaround is not None and old_quickest is not None and old_quickest > 0:
+        return quickest_turnaround, new_quickest, f". Previous record: {convert_seconds(old_quickest)} between {launch_list[launches-1].name} and {launch_list[launches].name}", f"{convert_seconds(quickest_turnaround)} between {launch_list[launches-1].name} and {launch_list[launches].name}"
+    elif quickest_turnaround is not None:
+        return quickest_turnaround, new_quickest, "", ""
+    else:
+        return None, False, "", ""
 
 def create_launch_table(launch: Launch) -> str:
     time_zone = None
@@ -77,7 +133,6 @@ def create_launch_table(launch: Launch) -> str:
         time_zone = "Etc/GMT+12"
 
     time_zone = pytz.timezone(time_zone)
-
     liftoff_time_local = launch.time.astimezone(time_zone)
 
     def success(value: bool) -> str:
@@ -120,7 +175,7 @@ def create_launch_table(launch: Launch) -> str:
 
     launch_landings: list = launch_landings.rstrip("; ")
 
-    concatinated_list = lambda boats: ', '.join(map(str, boats[:-1])) + (' and ' if len(boats) > 1 else '') + str(boats[-1]) if boats else 'N/A'
+    concatinated_list = lambda items: ', '.join(items[:-1]) + (' and ' if len(items) > 1 else '') + str(items[-1]) if items else 'N/A'
     
     def make_list(objects: Boat) -> list:
         names: set[str] = set()
@@ -140,7 +195,8 @@ def create_launch_table(launch: Launch) -> str:
         "Where will the first stage land?": [f"{launch_landings}"],
         "Will they be attempting to recover the fairings?": [],
         "How's the weather looking?": ["The weather is currently XX% go for launch"],
-        "This will be the": []
+        "This will be the": [],
+        "Where to watch": ["Official coverage"]
     }
 
     if droneship_needed == True:
@@ -265,6 +321,68 @@ def create_launch_table(launch: Launch) -> str:
         for _ in Launch.objects.filter(pad=launch.pad, time__lte=launch.time):
             count += 1
         return make_ordinal(count)
+        
+    def quickest_turnaround(object: TurnaroundObjects) -> tuple:
+        turnarounds: dict = {}
+        new_launch_turnaround = None
+        new_record: bool = False
+
+        if object == TurnaroundObjects.BOOSTER:
+            for stage1 in Stage.objects.filter(type="BOOSTER"):
+                turnaround = get_quickest_turnaround(Launch.objects.filter(stageandrecovery__stage=stage1, time__lt=launch.time).order_by("time"), launch=launch)
+                turnarounds[stage1.name] = [turnaround[0], turnaround[2], turnaround[3]]
+            
+            turnarounds = dict(sorted(turnarounds.items(), key=lambda x: (x[1][0] is None, x[1][0])))
+            turnaround_list = [value[0] for _, value in turnarounds.items() if value[0] is not None]
+            launches_list = [value[2] for _, value in turnarounds.items() if value[2] is not None]
+            boosters = list(turnarounds)
+
+            for booster in Stage.objects.filter(stageandrecovery__launch=launch, type="BOOSTER"):
+                launch_turnaround = get_quickest_turnaround(Launch.objects.filter(time__lte=launch.time, stageandrecovery__stage=booster).order_by("time"), launch)
+                if launch_turnaround[1] == True and launch_turnaround[0] is not None and launch_turnaround[0] < turnaround_list[0]:
+                    new_record = True
+                    new_launch_turnaround = launch_turnaround[0]
+
+            if not len(turnaround_list) == 0:
+                return new_record, new_launch_turnaround, f". Previous record: {boosters[0]} at {launches_list[0]}"
+            
+        elif object == TurnaroundObjects.PAD:
+            for pad in Pad.objects.all():
+                turnaround = get_quickest_turnaround(Launch.objects.filter(pad=pad, time__lt=launch.time).order_by("time"), launch)
+                turnarounds[pad.nickname] = [turnaround[0], turnaround[2], turnaround[3]]
+
+            turnarounds = dict(sorted(turnarounds.items(), key=lambda x: (x[1][0] is None, x[1][0])))
+            turnaround_list = [value[0] for _, value in turnarounds.items() if value[0] is not None]
+            launches_list = [value[2] for _, value in turnarounds.items() if value[2] is not None]
+            pads = list(turnarounds)
+
+            launch_turnaround = get_quickest_turnaround(Launch.objects.filter(time__lte=launch.time, pad=launch.pad).order_by("time"), launch)
+            if launch_turnaround[1] == True and launch_turnaround[0] is not None and launch_turnaround[0] < turnaround_list[0]:
+                new_record = True
+                new_launch_turnaround = launch_turnaround[0]
+
+            if not len(turnaround_list) == 0:
+                return new_record, new_launch_turnaround, f". Previous record: {pads[0]} at {launches_list[0]}"
+            
+        elif object == TurnaroundObjects.LANDING_ZONE:
+            for zone in LandingZone.objects.all():
+                turnaround = get_quickest_turnaround(Launch.objects.filter(stageandrecovery__landing_zone=zone, time__lt=launch.time).order_by("time"), launch=launch)
+                turnarounds[zone.nickname] = [turnaround[0], turnaround[2], turnaround[3]]
+            
+            turnarounds = dict(sorted(turnarounds.items(), key=lambda x: (x[1][0] is None, x[1][0])))
+            turnaround_list = [value[0] for _, value in turnarounds.items() if value[0] is not None]
+            launches_list = [value[2] for _, value in turnarounds.items() if value[2] is not None]
+            zones = list(turnarounds)
+
+            for zone in LandingZone.objects.filter(stageandrecovery__launch=launch):
+                launch_turnaround = get_quickest_turnaround(Launch.objects.filter(time__lte=launch.time, stageandrecovery__landing_zone=zone).order_by("time"), launch)
+                if launch_turnaround[1] == True and launch_turnaround[0] is not None and launch_turnaround[0] < turnaround_list[0]:
+                    new_record = True
+                    new_launch_turnaround = launch_turnaround[0]
+
+            if not len(turnaround_list) == 0:
+                return new_record, new_launch_turnaround, f". Previous record: {zones[0]} at {launches_list[0]}"
+
 
 
     booster_reuse = get_rocket_flights_reused_vehicle()
@@ -283,6 +401,34 @@ def create_launch_table(launch: Launch) -> str:
     stats.append(f"– {get_year_launch_num()} SpaceX launch of {launch.time.year}")
     stats.append(f"– {get_launches_from_pad()} SpaceX launch from {launch.pad.name}")
 
+    for stage in StageAndRecovery.objects.filter(launch=launch):
+        stage_turnaround = get_quickest_turnaround(launch_list=Launch.objects.filter(stageandrecovery__stage=stage.stage, time__lte=launch.time).order_by("time"), launch=launch)
+        quickest_turnaround_ever = quickest_turnaround(TurnaroundObjects.BOOSTER)
+        if stage_turnaround[1] == True:
+            stats.append(f"– Quickest turnaround of {stage.stage.name} to date at {convert_seconds(stage_turnaround[0])}" + stage_turnaround[2])
+        if quickest_turnaround_ever is not None and quickest_turnaround_ever[0] == True:
+            stats.append(f"– Qickest turnaround of a booster to date at {convert_seconds(quickest_turnaround_ever[1])}" + quickest_turnaround_ever[2])
+
+    for landing_zone in StageAndRecovery.objects.filter(launch=launch):
+        zone_turnaround = get_quickest_turnaround(launch_list=Launch.objects.filter(stageandrecovery__landing_zone=landing_zone.landing_zone, time__lte=launch.time).order_by("time"), launch=launch)
+        quickest_turnaround_ever = quickest_turnaround(TurnaroundObjects.LANDING_ZONE)
+        if zone_turnaround[1] == True and landing_zone.landing_zone is not None:
+            stats.append(f"– Quickest turnaronud time of {landing_zone.landing_zone.nickname} to date at {convert_seconds(zone_turnaround[0])}" + zone_turnaround[2])
+        if quickest_turnaround_ever is not None and quickest_turnaround_ever[0] == True:
+            stats.append(f"– Qickest turnaround of a landing zone to date at {convert_seconds(quickest_turnaround_ever[1])}" + quickest_turnaround_ever[2])
+
+    company_turnaround = get_quickest_turnaround(Launch.objects.filter(time__lte=launch.time).order_by("time"), launch)
+    if company_turnaround[1] == True:
+        stats.append(f"– Shortest time between any two SpaceX launches at {convert_seconds(company_turnaround[0])}" + company_turnaround[2])
+
+    pad_turnaround = get_quickest_turnaround(Launch.objects.filter(pad=launch.pad, time__lte=launch.time).order_by("time"), launch)
+    quickest_turnaround_ever = quickest_turnaround(TurnaroundObjects.PAD)
+    if pad_turnaround[1] == True:
+        stats.append(f"– Quickest turnaround of {launch.pad.nickname} at {convert_seconds(pad_turnaround[0])}" + pad_turnaround[2])
+    if quickest_turnaround_ever[0] == True:
+            stats.append(f"– Qickest turnaround of a SpaceX pad to date at {convert_seconds(quickest_turnaround_ever[1])}" + quickest_turnaround_ever[2])
+
+
 
     data["This will be the"] = stats
 
@@ -298,15 +444,16 @@ def create_launch_table(launch: Launch) -> str:
         "Where did the first stage land?",
         "Did they attempt to recover the fairings?",
         "How's the weather looking?",
-        "This was the"
+        "This was the",
+        "Where to watch"
     ]
+
 
     if launch.time < datetime.now(pytz.utc):
         ordered_data = {new_key: data.get(old_key, None) for old_key, new_key in zip(data.keys(), post_launch_data)}
         ordered_data.pop("How's the weather looking?", None)
 
         data = ordered_data
-
 
     # Generate HTML table
     table_html = "<table>"
