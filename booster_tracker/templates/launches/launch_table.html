@@ -1,0 +1,15 @@
+<table>
+    {% for key, values in data.items %}
+      <tr>
+        <th class="has-text-align-left" data-align="left">
+          <h6><strong>{{ key | safe }}</strong></h6>
+        </th>
+        <td>
+          {% for value in values %}
+            <em>{{ value }}</em><br>
+          {% endfor %}
+        </td>
+      </tr>
+    {% endfor %}
+    </table>
+    

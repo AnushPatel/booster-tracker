@@ -2,11 +2,12 @@ from django.http import HttpResponse
 from django.template import loader
 from django.http import Http404
 from django.shortcuts import render, get_object_or_404
+from .statistics import *
 
 import pytz
 
 from .models import *
-from .generatehtml import *
+from .statistics import *
 
 def index(request):
     launches = Launch.objects.order_by("-time")
@@ -21,4 +22,5 @@ def home(request):
 
 def launch_details(request, launch_name):
     launch = get_object_or_404(Launch, name=launch_name)
-    return HttpResponse(create_launch_table(launch))
+    context = {'data': create_launch_table(launch=launch)}
+    return render(request, 'launches/launch_table.html', context)
