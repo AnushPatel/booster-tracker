@@ -1,0 +1,40 @@
+<!-- base_generic.html -->
+
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %} {% endblock %}</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
+    <style>
+    </style>
+    <!-- Add more common CSS files as needed -->
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="container">
+    <nav>
+        <a href="{% url 'launches:home' %}">
+            <img src="{% static 'booster-tracker.webp' %}" alt="Logo" class="logo">
+        </a>
+        <ul>
+            <li><a href="#">Boosters</a></li>
+            <li><a href="#">Dragons</a></li>
+            <li><a href="#">Starship</a></li>
+            <li><a href="{% url 'launches:launches' %}" class="{% if request.path == '/launches/' %}active{% endif %}">Launches</a></li>
+            <!-- Add more navigation links as needed -->
+        </ul>
+    </nav>
+    {% block content %}
+    {% endblock %}
+
+    <footer>
+        <!-- Footer content goes here -->
+    </footer>
+
+</div>
+</body>
+</html>

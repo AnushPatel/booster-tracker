@@ -151,7 +151,7 @@ class MethodSuccessFilter(admin.SimpleListFilter):
         # Get distinct method success values
         method_success_values = StageAndRecovery.objects.values_list('method_success', flat=True).distinct()
         # Convert boolean values to human-readable strings
-        return [(str(value), "Success" if value else "Failure") for value in method_success_values]
+        return [(str(value), "Success" if value=="SUCCESS" else "Precluded" if value=="PRECLUDED" else "Failure") for value in method_success_values]
 
     def queryset(self, request, queryset):
         if self.value() is not None and not self.value() == "None":

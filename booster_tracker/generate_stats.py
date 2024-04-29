@@ -2,7 +2,7 @@ import pytz
 from .models import *
 from datetime import datetime
 from enum import StrEnum
-from django.db.models import Q
+from django.db.models import Q, Count, Max
 
 #First several functions will be defined that are commonly used. 
 #As the name implies, this formats the time to be in the following format: March 25, 2024 04:38 UTC
@@ -53,6 +53,42 @@ def make_ordinal(n: int):
 #Takes in a list of items and returns them in concatinated form [Bob, Doug, GO Beyond] -> Bob, Doug, and GO Beyond
 concatinated_list = lambda items: ', '.join(items[:-1]) + (' and ' if len(items) > 1 else '') + str(items[-1]) if items else 'N/A'
 
+def get_most_flown_boosters():
+    booster_and_launch_count = Stage.objects.filter(stageandrecovery__launch__time__lte=datetime.now(pytz.utc), type="BOOSTER", rocket__name__icontains="Falcon").annotate(launch_count=Count('stageandrecovery__launch', distinct=True))
+    max_launch_count = booster_and_launch_count.aggregate(Max('launch_count'))['launch_count__max']
+    most_flown_boosters = list(booster_and_launch_count.filter(launch_count=max_launch_count).values_list("name", flat=True))
+
+    return(most_flown_boosters, max_launch_count)
+
+def get_boosters_and_recovery(launch: Launch):
+    boosters = []
+    recoveries = []
+    for stage_and_recovery in StageAndRecovery.objects.filter(launch=launch):
+        if stage_and_recovery.stage:
+            boosters.append(f"{stage_and_recovery.stage}-{get_stage_flights_and_turnaround(stage=stage_and_recovery.stage, time=launch.time)[0]}")
+        if stage_and_recovery.landing_zone:
+            recoveries.append(f"{stage_and_recovery.landing_zone.nickname}")
+        else:
+            recoveries.append("Expended")
+    return concatinated_list(boosters), concatinated_list(recoveries)
+
+def get_launch_image(launch: Launch):
+    if launch:
+        if launch.rocket.name == "Falcon Heavy":
+            return "/static/images/Falcon_Heavy_launches_photo.jpg"
+        elif launch.rocket.name == "Falcon 1":
+            return "/static/images/Falcon_1_launches_photo.jpg"
+        elif launch.rocket.name == "Starship" and launch.pad.nickname == "OLP-A":
+            return "/static/images/Starship_OLPA_launches_photo.jpg"
+        elif launch.rocket.name == "Falcon 9":
+            if launch.pad.nickname == "SLC-40":
+                return "/static/images/Falcon_SLC40_launches_photo.jpg"
+            elif launch.pad.nickname == "SLC-4E":
+                return "/static/images/Falcon_SLC4E_launches_photo.jpg"
+            elif launch.pad.nickname == "LC-39A":
+                return "/static/images/Falcon_LC39A_launches_photo.jpg"
+    return "/static/images/rocket_launch_image.jpg"
+
 #This item creates a list without any repeats
 def make_list(objects: Boat) -> list:
     names: set[str] = set()
@@ -62,7 +98,7 @@ def make_list(objects: Boat) -> list:
 
 #Helps convert boolean to human readable text in stats
 def success(value: bool) -> str:
-    if value == True:
+    if value == True or value is None:
         return "successfully completed"
     return "failed to complete"
 
@@ -114,24 +150,18 @@ def get_rocket_flights_reused_vehicle(launch: Launch) -> tuple:
         booster_flight_proven = True
         count += 1
 
-    return (make_ordinal(count), booster_flight_proven)
+    return (count, booster_flight_proven)
 
-#This function looks at TOTAL number of booster reflights; so increments by two if two boosters on Falcon Heavy are flight proven.
+#This function looks at TOTAL number of booster reflights; so increments by two if two boosters on Falcon Heavy are flight proven. The new stages seen is useful for when looking for reflights in a year; look at new boosters flown that year and subtracted.
 def get_total_reflights(launch: Launch, start: datetime) -> str:
-    count = 0
     count_list: list[str] = []
-    stages_seen: set = set()
-    end = launch.time
+    stages_seen = list(Stage.objects.filter(type="BOOSTER", stageandrecovery__launch__time__lt=start).filter(rocket__name__icontains="Falcon").values_list("name", flat=True))
+    new_stages_seen = list(Stage.objects.filter(type="BOOSTER", stageandrecovery__launch__time__lt=launch.time, stageandrecovery__launch__time__gte=start).filter(rocket__name__icontains="Falcon").filter(~Q(name__in=stages_seen)).distinct().values_list("name", flat=True).all())
+    num_booster_reflights = StageAndRecovery.objects.filter(launch__time__lt=launch.time, launch__time__gt=start).filter(launch__rocket__name__icontains="Falcon").count() - Stage.objects.filter(type="BOOSTER", stageandrecovery__launch__time__lt=launch.time, stageandrecovery__launch__time__gte=start).filter(rocket__name__icontains="Falcon").filter(~Q(name__in=stages_seen)).distinct().values_list("name", flat=True).all().count()
 
-    for stage_and_recovery in StageAndRecovery.objects.filter(launch__time__lt=launch.time, stage__type="BOOSTER").order_by("launch__time").all():
-        if stage_and_recovery.stage in stages_seen:
-            if stage_and_recovery.launch.time > start and stage_and_recovery.launch.time < end:
-                count += 1
-        stages_seen.add(stage_and_recovery.stage)
-
-    for stage_and_recovery in StageAndRecovery.objects.filter(launch=launch, stage__in=stages_seen):
-        count += 1
-        count_list.append(make_ordinal(count))
+    for _ in StageAndRecovery.objects.filter(launch=launch).filter(Q(stage__name__in=stages_seen)| Q(stage__name__in=new_stages_seen)):
+        num_booster_reflights += 1
+        count_list.append(make_ordinal(num_booster_reflights))
     return concatinated_list(count_list)
 
 #Counts number of booster landings
@@ -139,7 +169,7 @@ def get_num_booster_landings(launch: Launch):
     count: int = 0
     count_list: list[str] = []
 
-    count += StageAndRecovery.objects.filter(launch__time__lt=launch.time, stage__type="BOOSTER").filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD")).filter(method_success=True).count()
+    count += StageAndRecovery.objects.filter(launch__time__lt=launch.time, stage__type="BOOSTER").filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD")).filter(method_success="SUCCESS").count()
 
     for _ in StageAndRecovery.objects.filter(launch=launch, stage__type="BOOSTER").filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD")).filter(Q(method_success=True) | Q(launch__time__gte=datetime.now(pytz.utc))):
         count += 1
@@ -194,7 +224,7 @@ def calculate_turnarounds(object: TurnaroundObjects, launch: Launch):
     turnarounds = sorted(turnarounds, key=lambda x: (x[1] is None, x[1] if x[1] is not None else float('inf')))
 
         
-    if turnarounds[0][2] == launch.name:
+    if turnarounds and turnarounds[0][2] == launch.name:
         new_record = True
 
     if not len(turnarounds) == 0:
@@ -207,13 +237,13 @@ def get_consec_landings(launch: Launch):
     count_list: list[str] = []
 
     for landing in StageAndRecovery.objects.filter(launch__time__lt=launch.time, stage__type="BOOSTER").filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD")).order_by("-launch__time").all():
-        if landing.method_success:
+        if landing.method_success=="SUCCESS":
             count += 1
         else:
             break
 
     for landing in StageAndRecovery.objects.filter(launch=launch, stage__type="BOOSTER").filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD")):
-        if landing.method_success or launch.time > datetime.now(pytz.utc):
+        if landing.method_success=="SUCCESS" or launch.time > datetime.now(pytz.utc):
             count += 1
             count_list.append(make_ordinal(count))
     if len(count_list) == 1:
@@ -228,7 +258,7 @@ def create_launch_table(launch: Launch) -> str:
     launch_location = ""
     launch_landings = "The first stage will be expended"
     droneship_needed: bool = False
-
+    print("start", datetime.now())
     #Data contains table titles
     data = {
         "Lift Off Time": [],
@@ -347,7 +377,7 @@ def create_launch_table(launch: Launch) -> str:
 
     stats.append(f"– {make_ordinal(Launch.objects.filter(rocket=launch.rocket, time__lte=launch.time).count())} {launch.rocket.name} mission")
     if booster_reuse[1]:
-        stats.append(f"– {booster_reuse[0]} {launch.rocket} flight with a flight-proven booster")
+        stats.append(f"– {make_ordinal(booster_reuse[0])} {launch.rocket} flight with a flight-proven booster")
         stats.append(f"– {get_total_reflights(launch=launch, start=datetime(2000, 1, 1, tzinfo=pytz.utc))} reflight of a booster")
         stats.append(f"– {get_total_reflights(launch=launch, start=datetime(launch.time.year, 1, 1, tzinfo=pytz.utc))} reflight of a booster in {launch.time.year}")
 
@@ -361,56 +391,60 @@ def create_launch_table(launch: Launch) -> str:
     #This section adds quickest turnaround stats. As the names imply, booster, zones, company, and pad.
 
     booster_turnarounds = calculate_turnarounds(object=TurnaroundObjects.BOOSTER, launch=launch)
-    if booster_turnarounds[0]:
-        booster_string = f"– Qickest turnaround of a booster to date at {convert_seconds(booster_turnarounds[1][0][1])}"
-        if len(booster_turnarounds[1]) > 1:
-            booster_string += f". Previous record: {booster_turnarounds[1][1][0]} at {convert_seconds(booster_turnarounds[1][1][1])} between {booster_turnarounds[1][1][3]} and {booster_turnarounds[1][1][2]}"
-        stats.append(booster_string)
-    else:
-        for recovery in StageAndRecovery.objects.filter(launch=launch):
-            specific_booster_turnarounds = [row for row in booster_turnarounds[1] if f"{recovery.stage.name}" == row[0]]
-            if len(specific_booster_turnarounds) > 0 and specific_booster_turnarounds[0][2] == launch.name:
-                booster_string = f"– Quickest turnaround of {recovery.stage.name} to date at {convert_seconds(specific_booster_turnarounds[0][1])}"
-                if len(specific_booster_turnarounds) > 1:
-                    booster_string += f". Previous record: {convert_seconds(specific_booster_turnarounds[1][1])} between {specific_booster_turnarounds[1][3]} and {specific_booster_turnarounds[1][2]}"
-                stats.append(booster_string)
+    if booster_turnarounds:
+        if booster_turnarounds[0]:
+            booster_string = f"– Qickest turnaround of a booster to date at {convert_seconds(booster_turnarounds[1][0][1])}"
+            if len(booster_turnarounds[1]) > 1:
+                booster_string += f". Previous record: {booster_turnarounds[1][1][0]} at {convert_seconds(booster_turnarounds[1][1][1])} between {booster_turnarounds[1][1][3]} and {booster_turnarounds[1][1][2]}"
+            stats.append(booster_string)
+        else:
+            for recovery in StageAndRecovery.objects.filter(launch=launch):
+                specific_booster_turnarounds = [row for row in booster_turnarounds[1] if f"{recovery.stage.name}" == row[0]]
+                if len(specific_booster_turnarounds) > 0 and specific_booster_turnarounds[0][2] == launch.name:
+                    booster_string = f"– Quickest turnaround of {recovery.stage.name} to date at {convert_seconds(specific_booster_turnarounds[0][1])}"
+                    if len(specific_booster_turnarounds) > 1:
+                        booster_string += f". Previous record: {convert_seconds(specific_booster_turnarounds[1][1])} between {specific_booster_turnarounds[1][3]} and {specific_booster_turnarounds[1][2]}"
+                    stats.append(booster_string)
 
     landing_zone_turnarounds = calculate_turnarounds(TurnaroundObjects.LANDING_ZONE, launch)
-    if landing_zone_turnarounds[0]:
-        zone_string = f"– Quickest turnaround time of a landing zone to date at {convert_seconds(landing_zone_turnarounds[1][0][1])}"
-        if len(landing_zone_turnarounds) > 1:
-            zone_string += f". Previous record: {landing_zone_turnarounds[1][1][0]} at {convert_seconds(landing_zone_turnarounds[1][1][1])} between {landing_zone_turnarounds[1][1][3]} and {landing_zone_turnarounds[1][1][2]}"
-        stats.append(zone_string)
-    else:
-        for recovery in StageAndRecovery.objects.filter(launch=launch):
-            if recovery.landing_zone:
-                specific_zone_turnarounds = [row for row in landing_zone_turnarounds[1] if f"{recovery.landing_zone.nickname}" == row[0]]
-                if len(specific_zone_turnarounds) > 0 and specific_zone_turnarounds[0][2] == launch.name:
-                    zone_string = f"– Qickest turnaround of {recovery.landing_zone.nickname} to date at {specific_zone_turnarounds[0][1]}"
-                    if len(specific_zone_turnarounds) > 1:
-                        zone_string += f". Previous record: {convert_seconds(specific_zone_turnarounds[1][1])} between {specific_zone_turnarounds[1][3]} and {specific_zone_turnarounds[1][2]}"
-                    stats.append(zone_string)
+    if landing_zone_turnarounds:
+        if landing_zone_turnarounds[0]:
+            zone_string = f"– Quickest turnaround time of a landing zone to date at {convert_seconds(landing_zone_turnarounds[1][0][1])}"
+            if len(landing_zone_turnarounds[1]) > 1:
+                zone_string += f". Previous record: {landing_zone_turnarounds[1][1][0]} at {convert_seconds(landing_zone_turnarounds[1][1][1])} between {landing_zone_turnarounds[1][1][3]} and {landing_zone_turnarounds[1][1][2]}"
+            stats.append(zone_string)
+        else:
+            for recovery in StageAndRecovery.objects.filter(launch=launch):
+                if recovery.landing_zone:
+                    specific_zone_turnarounds = [row for row in landing_zone_turnarounds[1] if f"{recovery.landing_zone.nickname}" == row[0]]
+                    if len(specific_zone_turnarounds) > 0 and specific_zone_turnarounds[0][2] == launch.name:
+                        zone_string = f"– Qickest turnaround of {recovery.landing_zone.nickname} to date at {convert_seconds(specific_zone_turnarounds[0][1])}"
+                        if len(specific_zone_turnarounds) > 1:
+                            zone_string += f". Previous record: {convert_seconds(specific_zone_turnarounds[1][1])} between {specific_zone_turnarounds[1][3]} and {specific_zone_turnarounds[1][2]}"
+                        stats.append(zone_string)
 
     company_turnaround = calculate_turnarounds(object=TurnaroundObjects.ALL, launch=launch)
-    if company_turnaround[0]:
-        company_string = f"– Shortest time between any two SpaceX launches at {convert_seconds(company_turnaround[1][0][1])}"
-        if len(company_turnaround[1]) > 1:
-            company_string += f". Previous record: {convert_seconds(company_turnaround[1][1][1])} between {company_turnaround[1][1][3]} and {company_turnaround[1][1][2]}"
-        stats.append(company_string)
+    if company_turnaround:
+        if company_turnaround[0]:
+            company_string = f"– Shortest time between any two SpaceX launches at {convert_seconds(company_turnaround[1][0][1])}"
+            if len(company_turnaround[1]) > 1:
+                company_string += f". Previous record: {convert_seconds(company_turnaround[1][1][1])} between {company_turnaround[1][1][3]} and {company_turnaround[1][1][2]}"
+            stats.append(company_string)
 
     pad_turnarounds = calculate_turnarounds(object=TurnaroundObjects.PAD, launch=launch)
-    if pad_turnarounds[0]:
-        pad_string = f"– Qickest turnaround of a SpaceX pad to date at {convert_seconds(pad_turnarounds[1][0][1])}"
-        if len(pad_turnarounds) > 1:
-            pad_string += f". Previous record: {pad_turnarounds[1][1][0]} at {convert_seconds(pad_turnarounds[1][1][1])} between {pad_turnarounds[1][1][3]} and {pad_turnarounds[1][1][2]}"
-        stats.append(pad_string)
-    else:
-        specific_pad_turnarounds = [row for row in pad_turnarounds[1] if f"{launch.pad.nickname}" == row[0]]
-        if len(specific_pad_turnarounds) > 0 and specific_pad_turnarounds[0][2] == launch.name:
-                pad_string = (f"– Qickest turnaround of {launch.pad.nickname} to date at {convert_seconds(specific_pad_turnarounds[0][1])}")
-                if len(specific_pad_turnarounds) > 1:
-                    pad_string += f". Previous record: {convert_seconds(specific_pad_turnarounds[1][1])} between {specific_pad_turnarounds[1][3]} and {specific_pad_turnarounds[1][2]}"
-                stats.append(pad_string)
+    if pad_turnarounds:
+        if pad_turnarounds[0]:
+            pad_string = f"– Qickest turnaround of a SpaceX pad to date at {convert_seconds(pad_turnarounds[1][0][1])}"
+            if len(pad_turnarounds[1]) > 1:
+                pad_string += f". Previous record: {pad_turnarounds[1][1][0]} at {convert_seconds(pad_turnarounds[1][1][1])} between {pad_turnarounds[1][1][3]} and {pad_turnarounds[1][1][2]}"
+            stats.append(pad_string)
+        else:
+            specific_pad_turnarounds = [row for row in pad_turnarounds[1] if f"{launch.pad.nickname}" == row[0]]
+            if len(specific_pad_turnarounds) > 0 and specific_pad_turnarounds[0][2] == launch.name:
+                    pad_string = (f"– Qickest turnaround of {launch.pad.nickname} to date at {convert_seconds(specific_pad_turnarounds[0][1])}")
+                    if len(specific_pad_turnarounds) > 1:
+                        pad_string += f". Previous record: {convert_seconds(specific_pad_turnarounds[1][1])} between {specific_pad_turnarounds[1][3]} and {specific_pad_turnarounds[1][2]}"
+                    stats.append(pad_string)
     data["This will be the"] = stats
 
     #Change title of headings if launch is in the past
@@ -436,7 +470,7 @@ def create_launch_table(launch: Launch) -> str:
 
         data = ordered_data
 
-    '''table_html = "<table>"
+    table_html = "<table>"
     for key, values in data.items():
         table_html += "<tr><th class=\"has-text-align-left\" data-align=\"left\"><h6><strong>{}</strong></h6></th>".format(key)
         table_html += "<td>"
@@ -445,6 +479,6 @@ def create_launch_table(launch: Launch) -> str:
         table_html += "</td></tr>"
     table_html += "</table>"
 
-    print(table_html)'''
-
+    #print(table_html)
+    print("end", datetime.now())
     return data

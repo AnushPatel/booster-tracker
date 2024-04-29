@@ -1,0 +1,384 @@
+{% extends "base_generic.html" %}
+{% load static %}
+{% block title %}
+    Booster Tracker
+{% endblock %}
+
+{% block extra_css %}
+    <style>
+
+        .info-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            z-index: 2;
+            color: inherit;
+            text-align: left;
+            padding: 20px;
+            width: 50%; /* Take up the first half */
+        }
+
+        .rocket-wrapper {
+            position: relative;
+            overflow: hidden;
+            border-radius: 0px;
+        }
+
+        .rocket-container {
+            position: relative;
+            width: 100%; /* Adjust width */
+            max-width: 1200px; /* Limit maximum width */
+            max-height: 360px;
+            padding-top: 360px; /* Adjust height */
+            margin: 0 auto;
+            border-radius: 0px;
+            overflow: hidden; /* Ensure content doesn't overflow */
+        }
+
+        .blue-background, .yellow-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 60%; /* Two-thirds of the container */
+            height: 100%;
+        }
+
+        .blue-background {
+            background-color: rgba(63, 99, 135, 1); /* Solid blue */
+            color: lightgray !important;
+        }
+
+        .yellow-background {
+            background-color: rgba(248, 211, 102, 1); /* Yellow background */
+            color: rgba(63, 99, 135, 1) !important;
+        }
+
+        .image-background {
+            position: absolute;
+            top: 0;
+            left: 60%;
+            width: 40%; 
+            height: 100%;
+            background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 26%, transparent 50%), url('/static/images/rocket_launch_image.jpg');
+            background-size: cover;
+            display: block; /* Show image by default */
+        }
+
+        .previous-launches {
+            background-image: linear-gradient(95deg, rgba(248, 211, 102, 1) 13%, transparent 50%), url('/static/images/rocket_launch_image.jpg');
+        }
+
+        .blue-text {
+            color: lightgray;
+        }
+
+        .yellow-text {
+            color: rgba(63, 99, 135, 1); /* Set text color to blue */
+        }
+
+        .info-wrapper h1 {
+            margin-top: 5px;
+            margin-right: 5px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 1200px;
+            height: auto;
+            max-height: 800px;
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding-top: 20%;
+            padding-bottom: 20%;
+        }
+
+        .title {
+            margin-top: 0%;
+            font-size: 5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .stats {
+            margin-top: 0%;
+            display: flex;
+            justify-content: space-around;
+            width: 80%;
+        }
+
+        .stat {
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat h2 {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 0;
+        }
+
+        .stat p {
+            font-size: 1.3em;
+            word-wrap: break-word;
+        }
+
+        @media (max-width: 850px) { /* Adjust as needed */
+            .rocket-container {
+                max-height: none; /* Remove maximum height */
+                padding-top: 0; /* Remove padding top */
+            }
+            .image-background {
+                display: none; /* Hide image on smaller screens */
+            }
+            .info-wrapper {
+                position: relative;
+                top: auto;
+                left: auto;
+                transform: none;
+                width: auto; /* Take up full width */
+                text-align: left; /* Center align text */
+            }
+            .blue-background, .yellow-background {
+                width: 100%; /* Full width on smaller screens */
+            }
+            .stats {
+                display: inline;
+            }
+        }
+    </style>
+{% endblock %}
+
+
+{% block content %}
+    <div class="rocket-container">
+        <div class="blue-background"></div>
+        <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ next_launch_photo }}');"></div>
+        <div class="info-wrapper blue-text">
+            <h3>UPCOMING MISSION:</h3>
+            <h1 style="text-align: left">{{ next_launch.name }}</h1>
+            <p> <b>Rocket: </b> {{ next_launch.rocket.name }}</p>
+            <p> <b>Scheduled: </b> {{ next_launch.time|date:"F j, Y H:i" }} UTC</p>
+            <p> <b>Launch Site: </b>{{ next_launch.pad.name }}</p>
+            <p> <b>Booster{% if "and" in next_launch_boosters %}s{% endif %}: </b>{{ next_launch_boosters }}</p>
+            <p> <b>Landing Location{% if "and" in next_launch_recoveries %}s{% endif %}: </b>{{ next_launch_recoveries }}</p>
+            <p> <b>Tug{% if "and" in next_launch_tugs %}s{% endif %}: </b>{{ next_launch_tugs }}</p>
+            <p> <b>Fairing Recovery: </b>{{ next_launch_fairing_recovery }}</p>
+        </div>
+    </div>
+
+    <div class="rocket-container">
+        <div class="yellow-background"></div>
+        <div class="image-background previous-launches" style="background-image: linear-gradient(95deg, rgba(248, 211, 102, 1) 7.87%, transparent 32.13%), url('{{ last_launch_photo }}');"></div>
+        <div class="info-wrapper yellow-text">
+            <h3>PREVIOUS MISSION:</h3>
+            <h1 style="text-align: left">{{ last_launch.name }}</h1>
+            <p> <b>Rocket: </b> {{ last_launch.rocket.name }}</p>
+            <p> <b>Liftoff Time: </b>{{ last_launch.time|date:"F j, Y H:i" }} UTC</p>
+            <p> <b>Launch Site: </b>{{ last_launch.pad.name }}</p>
+            <p> <b>Booster{% if "and" in last_launch_boosters %}s{% endif %}: </b>{{ last_launch_boosters }}</p>
+            <p> <b>Landing Location{% if "and" in last_launch_recoveries %}s{% endif %}: </b>{{ last_launch_recoveries }}</p>
+            <p> <b>Tug{% if "and" in last_launch_tugs %}s{% endif %}: </b>{{ last_launch_tugs }}</p>
+            <p> <b>Fairing Recovery: </b>{{ last_launch_fairing_recovery }}</p>
+        </div>
+    </div>
+
+    <h1 style="font-size: 3em;">Falcon Stats</h1>
+    <p><b>Missions: </b> {{ launches_per_vehicle.0.1|add:launches_per_vehicle.1.1|add:launches_per_vehicle.3.1 }}</p>
+    <p><b>Successful Missions: </b> {{ launches_per_vehicle.0.2|add:launches_per_vehicle.1.2|add:launches_per_vehicle.3.2 }}</p>
+    <p><b>Landing Attempts: </b> {{ num_landings.0 }}</p>
+    <p><b>Landings: </b>{{ num_landings.1 }}</p>
+    <p><b>Booster Reuses: </b>{{ num_booster_reflights }}</p>
+    <p><b>Booster With Most Flights: </b>{{ most_flown_boosters }}</p>
+    <p><b>Quickest Booster Turnaround: </b>{{ quickest_booster_turnaround }}</p>
+    <p><b>Shortest Time Between Launches: </b>{{ shortest_time_between_launches }}</p>
+
+    <div class="card" style="background-image: url('/static/images/falcon_9_2.jpg');">
+        <h1 class="title">Falcon 9</h1>
+        <div class="stats">
+          <div class="stat">
+            <h2>{{ launches_per_vehicle.0.1 }}</h2>
+            <p>Missions</p>
+          </div>
+          <div class="stat">
+            <h2>{{ launches_per_vehicle.0.2 }}</h2>
+            <p>Successes</p>
+          </div>
+          <div class="stat">
+            <h2>{{ falcon_9_reflights }}</h2>
+            <p>Reflights</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" style="background-image: url('/static/images/falcon_heavy.jpg');">
+        <h1 class="title">Falcon Heavy</h1>
+        <div class="stats">
+          <div class="stat">
+            <h2>{{ launches_per_vehicle.1.1 }}</h2>
+            <p>Missions</p>
+          </div>
+          <div class="stat">
+            <h2>{{ launches_per_vehicle.1.2 }}</h2>
+            <p>Successes</p>
+          </div>
+          <div class="stat">
+            <h2>{{ falcon_heavy_reflights }}</h2>
+            <p>Flightproven Launches</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="background-image: url('/static/images/Falcon_1_launches_photo.jpg');">
+        <h1 class="title">Falcon 1</h1>
+        <div class="stats" style="width: 50%;">
+          <div class="stat">
+            <h2>5</h2>
+            <p>Missions</p>
+          </div>
+          <div class="stat">
+            <h2>2</h2>
+            <p>Successes</p>
+          </div>
+        </div>
+      </div>
+
+      <h1 style="font-size: 3em;">Launch pads</h1>
+
+      <div class="rocket-container" style="border: 1px solid white;">
+        <div style="background-color: #333;"></div>
+        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
+        <div class="info-wrapper blue-text">
+            <h1 style="text-align: left">SPACE LAUNCH COMPLEX 40</h1>
+            <p> <b>Nickname: </b>SLC-40</p>
+            <p> <b>Location: </b>Cape Canaveral Space Force Station, Florida</p>
+            <p> <b>Launches: </b>{{ pad_stats.1.1|add:"-1" }} (excluding AMOS-6)</p>
+            <p> <b>Fastest Turnaround: </b>{{ pad_stats.1.2 }}</p>
+        </div>
+    </div>
+
+    <div class="rocket-container" style="border: 1px solid white;">
+        <div style="background-color: #333;"></div>
+        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
+        <div class="info-wrapper blue-text">
+            <h1 style="text-align: left">LAUNCH COMPLEX 39A</h1>
+            <p> <b>Nickname: </b>LC-39A</p>
+            <p> <b>Location: </b>Kennedy Space Center, Florida</p>
+            <p> <b>Launches: </b>{{ pad_stats.3.1 }}</p>
+            <p> <b>Fastest Turnaround: </b>{{ pad_stats.3.2 }}</p>
+        </div>
+    </div>
+
+    <div class="rocket-container" style="border: 1px solid white;">
+        <div style="background-color: #333;"></div>
+        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
+        <div class="info-wrapper blue-text">
+            <h1 style="text-align: left">SPACE LAUNCH COMPLEX 4 EAST</h1>
+            <p> <b>Nickname: </b>SLC-4E</p>
+            <p> <b>Location: </b>Vandenberg Space Force Base, California</p>
+            <p> <b>Launches: </b>{{ pad_stats.2.1 }}</p>
+            <p> <b>Fastest Turnaround: </b>{{ pad_stats.2.2 }}</p>
+        </div>
+    </div>
+
+    <div class="rocket-container" style="border: 1px solid white;">
+        <div style="background-color: #333;"></div>
+        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
+        <div class="info-wrapper blue-text">
+            <h1 style="text-align: left">OMELEK ISLAND</h1>
+            <p> <b>Location: </b>Kwajalein Atoll, Republic of the Marshall Islands</p>
+            <p> <b>Launches: </b>{{ pad_stats.0.1 }}</p>
+            <p> <b>Fastest Turnaround: </b>{{ pad_stats.0.2 }}</p>
+        </div>
+    </div>
+    
+    <h1 style="font-size: 3em;">Recovery Zones</h1>
+      
+    <div class="rocket-container" style="border: 1px solid white;">
+        <div style="background-color: #333;"></div>
+        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
+        <div class="info-wrapper blue-text">
+            <h1 style="text-align: left">JUST READ THE INSTRUCTIONS</h1>
+            <p> <b>Nickname: </b>JRtI</p>
+            <p> <b>Boat IDs: </b>MARCMAC 300 / MARMAC 303</p>
+            <p> <b>Successful Landings: </b>{{ zone_stats.0.1 }}</p>
+            <p> <b>Fastest Turnaround: </b>{{ zone_stats.0.2 }}</p>
+        </div>
+    </div>
+
+    <div class="rocket-container" style="border: 1px solid white;">
+        <div style="background-color: #333;"></div>
+        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
+        <div class="info-wrapper blue-text">
+            <h1 style="text-align: left">OF COURSE I STILL LOVE YOU</h1>
+            <p> <b>Nickname: </b>OCISLY</p>
+            <p> <b>Boat IDs: </b>MARMAC 304</p>
+            <p> <b>Successful Landings: </b>{{ zone_stats.1.1 }}</p>
+            <p> <b>Fastest Turnaround: </b>{{ zone_stats.1.2 }}</p>
+        </div>
+    </div>
+
+    <div class="rocket-container" style="border: 1px solid white;">
+        <div style="background-color: #333;"></div>
+        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
+        <div class="info-wrapper blue-text">
+            <h1 style="text-align: left">A SHORTFALL OF GRAVITAS</h1>
+            <p> <b>Nickname: </b>ASOG</p>
+            <p> <b>Boat IDs: </b>MARMAC 302</p>
+            <p> <b>Successful Landings: </b>{{ zone_stats.5.1 }}</p>
+            <p> <b>Fastest Turnaround: </b>{{ zone_stats.5.2 }}</p>
+        </div>
+    </div>
+
+    <div class="rocket-container" style="border: 1px solid white;">
+        <div style="background-color: #333;"></div>
+        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
+        <div class="info-wrapper blue-text">
+            <h1 style="text-align: left">LANDING ZONE 1</h1>
+            <p> <b>Nickname: </b>LZ-1</p>
+            <p> <b>Successful Landings: </b>{{ zone_stats.2.1 }}</p>
+            <p> <b>Fastest Turnaround: </b>{{ zone_stats.2.2 }}</p>
+        </div>
+    </div>
+
+    <div class="rocket-container" style="border: 1px solid white;">
+        <div style="background-color: #333;"></div>
+        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
+        <div class="info-wrapper blue-text">
+            <h1 style="text-align: left">LANDING ZONE 2</h1>
+            <p> <b>Nickname: </b>LZ-2</p>
+            <p> <b>Successful Landings: </b>{{ zone_stats.3.1 }}</p>
+            <p> <b>Fastest Turnaround: </b>{{ zone_stats.3.2 }}</p>
+        </div>
+    </div>
+
+    <div class="rocket-container" style="border: 1px solid white;">
+        <div style="background-color: #333;"></div>
+        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
+        <div class="info-wrapper blue-text">
+            <h1 style="text-align: left">LANDING ZONE 4</h1>
+            <p> <b>Nickname: </b>LZ-4</p>
+            <p> <b>Successful Landings: </b>{{ zone_stats.4.1 }}</p>
+            <p> <b>Fastest Turnaround: </b>{{ zone_stats.4.2 }}</p>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            var card = document.getElementById('myCard');
+            var cardWidth = card.offsetWidth;
+            var cardHeight = cardWidth * 2 / 3;
+            card.style.height = cardHeight + 'px';
+            }
+    </script>
+    
+    
+    
+    
+{% endblock %}

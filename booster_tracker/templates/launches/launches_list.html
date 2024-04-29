@@ -1,0 +1,23 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<div class="launch-container">
+    <div class="launch-cards">
+        {% if launches %}
+            {% for launch in launches %}
+                <div class="launch-card">
+                    <div class="launch-info">
+                        <h2><a href="{% url 'launches:launch' launch.name %}">{{ launch.name }}</a></h2>
+                        <p><strong>Time:</strong> {{ launch.time|date:"F j, Y H:i" }} UTC</p>
+                        <p><strong>Rocket:</strong> {{ launch.rocket }}</p>
+                        <p><strong>Launch Provider:</strong> {{ launch.provider }}</p>
+                        <p><strong>Launch Pad:</strong> {{ launch.pad }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No launches are available.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

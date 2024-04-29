@@ -4,6 +4,7 @@ from django.db import models
 
 RECOVERY_METHODS = [("EXPENDED", "expended"), ("OCEAN_SURFACE", "ocean"), ("DRONE_SHIP", "ASDS"), ("GROUND_PAD", "landing zone")]
 LAUNCH_OUTCOMES = [("SUCCESS", "success"), ("FAILURE", "failure"), ("PARTIAL FAILURE", "partial failure")]
+LANDING_METHOD_OUTCOMES = [("SUCCESS", "success"), ("FAILURE", "failure"), ("PRECLUDED", "precluded")]
 BOAT_TYPES = [("TUG", "tug"), ("FAIRING_RECOVERY", "fairing recovery"), ("SUPPORT", "support")]
 STAGE_TYPES = [("BOOSTER", "booster"), ("SECOND_STAGE", "second stage")]
 DRAGON_TYPES = [("CARGO", "cargo"), ("CREW", "crew")]
@@ -78,24 +79,22 @@ class LandingZone(models.Model):
 
 class StageAndRecovery(models.Model):
     launch = models.ForeignKey(Launch, on_delete=models.CASCADE)
-    stage = models.ForeignKey(Stage, on_delete=models.CASCADE)
+    stage = models.ForeignKey(Stage, on_delete=models.CASCADE, null=True, blank=True)
     landing_zone = models.ForeignKey(LandingZone, on_delete=models.CASCADE, null=True, blank=True)
     method = models.CharField(max_length=200, choices=RECOVERY_METHODS)
-    method_success = models.BooleanField(null=True)
+    method_success = models.CharField(max_length=200, choices=LANDING_METHOD_OUTCOMES, null=True, blank=True)
     recovery_success = models.BooleanField()
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
 
-    class Meta:
-        verbose_name_plural = "Stages and Recoveries"
-
     def __str__(self):
-        if self.stage:
+        if self.stage and self.stage.name:
             return f"{self.stage.name} recovery"
+        return("Unknown recovery")
     
 class FairingRecovery(models.Model):
     launch = models.ForeignKey(Launch, on_delete=models.CASCADE)
-    boat = models.ForeignKey(Boat, on_delete=models.CASCADE, limit_choices_to={"type": "FAIRING_RECOVERY"})
+    boat = models.ForeignKey(Boat, on_delete=models.CASCADE, limit_choices_to={"type": "FAIRING_RECOVERY"}, null=True, blank=True)
     catch = models.BooleanField()
     recovery = models.CharField(max_length=200)
     latitude = models.FloatField(blank=True, null=True)
@@ -108,6 +107,7 @@ class FairingRecovery(models.Model):
     def __str__(self):
         if self.boat:
             return f"Fairing recovery with {self.boat.name}"
+        return "Unknown fairing recovery"
 
 class TugOnLaunch(models.Model):
     launch = models.ForeignKey(Launch, on_delete=models.CASCADE)

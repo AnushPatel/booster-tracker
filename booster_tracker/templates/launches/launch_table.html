@@ -1,4 +1,7 @@
-<table>
+{% extends "base_generic.html" %}
+
+{% block content %}
+  <table>
     {% for key, values in data.items %}
       <tr>
         <th class="has-text-align-left" data-align="left">
@@ -11,5 +14,5 @@
         </td>
       </tr>
     {% endfor %}
-    </table>
-    
+  </table>
+{% endblock %}
