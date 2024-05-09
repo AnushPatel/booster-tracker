@@ -1,8 +1,11 @@
 from typing import Any
 from django.contrib import admin
 from django.contrib.admin import SimpleListFilter
-from django.db.models import Q
+from django.db import models
 from functools import reduce
+from django.forms.models import BaseInlineFormSet
+from datetime import datetime
+import pytz
 
 from django.db.models.query import QuerySet
 from .models import *
@@ -11,6 +14,17 @@ from .models import *
 class StageRecoveryInLine(admin.TabularInline):
     model = StageAndRecovery
     extra = 0
+    
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "stage":
+            try:
+                launch_instance = self.parent_model.objects.get(pk=request.resolver_match.kwargs['object_id'])
+            except (AttributeError, KeyError, self.parent_model.DoesNotExist):
+                launch_instance = None
+                
+            if not launch_instance or launch_instance.time > datetime.now(pytz.UTC):
+                kwargs["queryset"] = Stage.objects.filter(status="ACTIVE")
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 class FairingRecoveryInLine(admin.TabularInline):
     model = FairingRecovery
@@ -25,7 +39,11 @@ class SupportInLine(admin.TabularInline):
     extra = 0
 
 class DragonInLine(admin.TabularInline):
-    model = DragonOnLaunch
+    model = SpacecraftOnLaunch
+    extra = 0
+
+class PadInLine(admin.TabularInline):
+    model = PadUsed
     extra = 0
 
 class RocketFilter(admin.SimpleListFilter):
@@ -267,10 +285,27 @@ class StageTypeFilter(admin.SimpleListFilter):
         else:
             return queryset
 
+class StageStatusFilter(admin.SimpleListFilter):
+    title = 'Status'
+    parameter_name = 'status'
+
+    def lookups(self, request, model_admin):
+        statuses = set([stage.status for stage in Stage.objects.all()])
+        return [(status, status) for status in statuses]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(status=self.value())
+        else:
+            return queryset
+
 class StageAdmin(admin.ModelAdmin):
-    list_display = ["name", "rocket", "version", "type"]
-    list_filter = [RocketFilter, VersionFilter, StageTypeFilter]
+    list_display = ["name", "rocket", "version", "type", "status"]
+    list_filter = [RocketFilter, VersionFilter, StageTypeFilter, StageStatusFilter]
     search_fields = ["name"]
+
+class RocketAdmin(admin.ModelAdmin):
+    inlines = [PadInLine]
 
 class BoatTypeFilter(admin.SimpleListFilter):
     title = 'Type'
@@ -292,10 +327,11 @@ class BoatAdmin(admin.ModelAdmin):
     search_fields = ["name"]
 
 admin.site.register(Launch, LaunchAdmin)
-admin.site.register(Rocket)
+admin.site.register(Rocket, RocketAdmin)
 admin.site.register(Stage, StageAdmin)
 admin.site.register(Boat, BoatAdmin)
 admin.site.register(Orbit)
 admin.site.register(LandingZone)
 admin.site.register(Pad)
-admin.site.register(Dragon)
+admin.site.register(Spacecraft)
+admin.site.register(Operator)

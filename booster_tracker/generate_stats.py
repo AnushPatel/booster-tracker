@@ -97,9 +97,11 @@ def make_list(objects: Boat) -> list:
     return list(names)
 
 #Helps convert boolean to human readable text in stats
-def success(value: bool) -> str:
-    if value == True or value is None:
+def success(value: str) -> str:
+    if value == "SUCCESS" or value is None:
         return "successfully completed"
+    elif value == "PRECLUDED":
+        return "was precluded from completing"
     return "failed to complete"
 
 #This section we create StrEnums to limit options in functions
@@ -171,7 +173,7 @@ def get_num_booster_landings(launch: Launch):
 
     count += StageAndRecovery.objects.filter(launch__time__lt=launch.time, stage__type="BOOSTER").filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD")).filter(method_success="SUCCESS").count()
 
-    for _ in StageAndRecovery.objects.filter(launch=launch, stage__type="BOOSTER").filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD")).filter(Q(method_success=True) | Q(launch__time__gte=datetime.now(pytz.utc))):
+    for _ in StageAndRecovery.objects.filter(launch=launch, stage__type="BOOSTER").filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD")).filter(Q(method_success="SUCCESS") | Q(launch__time__gte=datetime.now(pytz.utc))):
         count += 1
         count_list.append(make_ordinal(count))
     if not len(count_list) == 0:
@@ -258,7 +260,6 @@ def create_launch_table(launch: Launch) -> str:
     launch_location = ""
     launch_landings = "The first stage will be expended"
     droneship_needed: bool = False
-    print("start", datetime.now())
     #Data contains table titles
     data = {
         "Lift Off Time": [],
@@ -451,7 +452,7 @@ def create_launch_table(launch: Launch) -> str:
     post_launch_data = [
         "Lift Off Time",
         "Mission Name",
-        "Launch Provider <br /> (What rocket copmany launched it?)",
+        "Launch Provider <br /> (What rocket company launched it?)",
         "Customer <br /> (Who paid for this?)",
         "Rocket",
         "Launch Location",
@@ -479,6 +480,5 @@ def create_launch_table(launch: Launch) -> str:
         table_html += "</td></tr>"
     table_html += "</table>"
 
-    #print(table_html)
-    print("end", datetime.now())
+    print(table_html)
     return data

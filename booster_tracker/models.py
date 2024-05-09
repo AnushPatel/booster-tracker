@@ -2,15 +2,23 @@ from django.db import models
 
 # Create your models here.
 
-RECOVERY_METHODS = [("EXPENDED", "expended"), ("OCEAN_SURFACE", "ocean"), ("DRONE_SHIP", "ASDS"), ("GROUND_PAD", "landing zone")]
+RECOVERY_METHODS = [("EXPENDED", "expended"), ("OCEAN_SURFACE", "ocean"), ("DRONE_SHIP", "ASDS"), ("GROUND_PAD", "landing zone"), ("PARACHUTE", "parachute")]
 LAUNCH_OUTCOMES = [("SUCCESS", "success"), ("FAILURE", "failure"), ("PARTIAL FAILURE", "partial failure")]
 LANDING_METHOD_OUTCOMES = [("SUCCESS", "success"), ("FAILURE", "failure"), ("PRECLUDED", "precluded")]
 BOAT_TYPES = [("TUG", "tug"), ("FAIRING_RECOVERY", "fairing recovery"), ("SUPPORT", "support")]
 STAGE_TYPES = [("BOOSTER", "booster"), ("SECOND_STAGE", "second stage")]
-DRAGON_TYPES = [("CARGO", "cargo"), ("CREW", "crew")]
+SPACECRAFT_TYPES = [("CARGO", "cargo"), ("CREW", "crew")]
+STAGE_LIFE_OPTIONS = [("ACTIVE", "active"), ("RETIRED", "retired"), ("EXPENDED", "expended"), ("LOST", "lost")]
+
+class Operator(models.Model):
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
 
 class Rocket(models.Model):
     name = models.CharField(max_length=100)
+    provider = models.ForeignKey(Operator, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -20,15 +28,18 @@ class Stage(models.Model):
     rocket = models.ForeignKey(Rocket, on_delete=models.CASCADE)
     version = models.CharField(max_length=20)
     type = models.CharField(max_length=20, choices=STAGE_TYPES)
+    status = models.CharField(max_length=20, choices=STAGE_LIFE_OPTIONS, default="ACTIVE")
+    photo = models.ImageField(upload_to='stage_photos/', null=True, blank=True)
 
     def __str__(self):
         return self.name
 
-class Dragon(models.Model):
+class Spacecraft(models.Model):
     name = models.CharField(max_length=20)
-    nickname = models.CharField(max_length=20)
-    version = models.CharField(max_length=20)
-    type = models.CharField(max_length=20, choices=DRAGON_TYPES)
+    nickname = models.CharField(max_length=20, blank=True, null=True)
+    version = models.CharField(max_length=20, blank=True, null=True)
+    type = models.CharField(max_length=20, choices=SPACECRAFT_TYPES)
+    operator = models.ForeignKey(Operator, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
@@ -57,7 +68,7 @@ class Launch(models.Model):
     time = models.DateTimeField("Launch Time")
     pad = models.ForeignKey(Pad, on_delete=models.CASCADE)
     rocket = models.ForeignKey(Rocket, on_delete=models.CASCADE)
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True)
     orbit = models.ForeignKey(Orbit, on_delete=models.CASCADE)
     mass = models.CharField(max_length=200)
     customer = models.CharField(max_length=200)
@@ -131,14 +142,26 @@ class SupportOnLaunch(models.Model):
         if self.boat:
             return self.boat.name
     
-class DragonOnLaunch(models.Model):
+class SpacecraftOnLaunch(models.Model):
     launch = models.ForeignKey(Launch, on_delete=models.CASCADE)
-    dragon = models.ForeignKey(Dragon, on_delete=models.CASCADE)
+    spacecraft = models.ForeignKey(Spacecraft, on_delete=models.CASCADE)
     splashdown_time = models.DateTimeField("Splashdown Time", null=True)
 
     class Meta:
         verbose_name_plural = "Dragon on launch"
     
     def __str__(self):
-        if self.dragon:
-            return f"{self.dragon.name} on launch"
+        if self.spacecraft:
+            return f"{self.spacecraft.name} on launch"
+        
+class PadUsed(models.Model):
+    rocket = models.ForeignKey(Rocket, on_delete=models.CASCADE)
+    pad = models.ForeignKey(Pad, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='rocket_pad_photos/', blank=True, null=True)
+
+    class Meta:
+        verbose_name_plural = "Pads used"
+    
+    def __str__(self):
+        if self.pad:
+            return f"{self.pad.name}"
