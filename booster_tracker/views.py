@@ -42,13 +42,15 @@ def home(request):
     next_launch_recoveries = get_boosters_and_recovery(launch=next_launch)[1]
     next_launch_tugs = concatinated_list(list(Boat.objects.filter(type="TUG", tugonlaunch__launch=next_launch).all().values_list("name", flat=True)))
     next_launch_fairing_recovery = concatinated_list(list(set(Boat.objects.filter(type="FAIRING_RECOVERY", fairingrecovery__launch=next_launch).all().values_list("name", flat=True))))
-    next_launch_photo = get_launch_image(launch=next_launch)
+    next_launch_photo = 'rocket_pad_photos/rocket_launch_image.jpg'
+    if next_launch:
+        next_launch_photo = PadUsed.objects.get(pad=next_launch.pad, rocket=next_launch.rocket).image.url
 
     last_launch_boosters = get_boosters_and_recovery(launch=last_launch)[0]
     last_launch_recoveries = get_boosters_and_recovery(launch=last_launch)[1]
     last_launch_tugs = concatinated_list(list(Boat.objects.filter(type="TUG", tugonlaunch__launch=last_launch).all().values_list("name", flat=True)))
     last_launch_fairing_recovery = concatinated_list(list(set(Boat.objects.filter(type="FAIRING_RECOVERY", fairingrecovery__launch=last_launch).all().values_list("name", flat=True))))
-    last_launch_photo = get_launch_image(launch=last_launch)
+    last_launch_photo = PadUsed.objects.get(pad=last_launch.pad, rocket=last_launch.rocket).image.url
     for rocket in Rocket.objects.all():
         num_launches_per_rocket_and_successes.append([rocket.name, Launch.objects.filter(rocket=rocket, time__lte=datetime.now(pytz.utc)).count(), Launch.objects.filter(rocket=rocket, launch_outcome="SUCCESS", time__lte=datetime.now(pytz.utc)).count()])
     
@@ -62,12 +64,14 @@ def home(request):
     falcon_heavy_reflights = get_rocket_flights_reused_vehicle(launch=Launch.objects.filter(time__lte=datetime.now(pytz.utc), rocket__name="Falcon Heavy").first())[0]
 
     pad_stats = []
+    pads = Pad.objects.all()
     for pad in Pad.objects.all():
         turnarounds = calculate_turnarounds(object=TurnaroundObjects.PAD, launch=Launch.objects.filter(time__lte=datetime.now(pytz.utc), pad=pad).first())
         specific_pad_turnarounds = [row for row in turnarounds[1] if f"{pad.nickname}" == row[0]]
         pad_stats.append([pad.name, Launch.objects.filter(pad=pad, time__lte=datetime.now(pytz.utc)).count(), convert_seconds(specific_pad_turnarounds[0][1])])
     
     recovery_zone_stats = []
+    recovery_zones = LandingZone.objects.all()
     for zone in LandingZone.objects.all():
         stage_and_recovery = StageAndRecovery.objects.filter(landing_zone=zone, launch__time__lte=datetime.now(pytz.utc)).last()
         if stage_and_recovery:
@@ -100,7 +104,9 @@ def home(request):
         'falcon_heavy_reflights': falcon_heavy_reflights,
         'falcon_9_reflights': falcon_9_reflights,
         'pad_stats': pad_stats,
+        'pads': pads,
         'zone_stats': recovery_zone_stats,
+        'recovery_zones': recovery_zones,
         'shortest_time_between_launches': shortest_time_between_launches
     }
     return render(request, 'launches/home.html', context=context)

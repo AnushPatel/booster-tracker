@@ -9,6 +9,7 @@ BOAT_TYPES = [("TUG", "tug"), ("FAIRING_RECOVERY", "fairing recovery"), ("SUPPOR
 STAGE_TYPES = [("BOOSTER", "booster"), ("SECOND_STAGE", "second stage")]
 SPACECRAFT_TYPES = [("CARGO", "cargo"), ("CREW", "crew")]
 STAGE_LIFE_OPTIONS = [("ACTIVE", "active"), ("RETIRED", "retired"), ("EXPENDED", "expended"), ("LOST", "lost")]
+LIFE_OPTIONS = [("ACTIVE", "active"), ("RETIRED", "retired")]
 
 class Operator(models.Model):
     name = models.CharField(max_length=100)
@@ -59,7 +60,10 @@ class Orbit(models.Model):
     
 class Pad(models.Model):
     name = models.CharField(max_length=200)
-    nickname = models.CharField(max_length=10)
+    nickname = models.CharField(max_length=25)
+    location = models.CharField(max_length=100, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=LIFE_OPTIONS, default="ACTIVE")
+    image = models.ImageField(upload_to='pad_photos/', default='default.png')
 
     def __str__(self):
         return self.nickname
@@ -84,6 +88,9 @@ class Launch(models.Model):
 class LandingZone(models.Model):
     name = models.CharField(max_length=100)
     nickname = models.CharField(max_length=20)
+    serial_number = models.CharField(max_length=10, blank=True, null=True)
+    status = models.CharField(max_length=20, choices=LIFE_OPTIONS, default="ACTIVE")
+    image = models.ImageField(upload_to='landing_zone_photos/', default='pad_photos/default.png')
 
     def __str__(self):
         return self.name
@@ -157,7 +164,7 @@ class SpacecraftOnLaunch(models.Model):
 class PadUsed(models.Model):
     rocket = models.ForeignKey(Rocket, on_delete=models.CASCADE)
     pad = models.ForeignKey(Pad, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='rocket_pad_photos/', blank=True, null=True)
+    image = models.ImageField(upload_to='rocket_pad_photos/', default='rocket_pad_photos/rocket_launch_image.jpg')
 
     class Meta:
         verbose_name_plural = "Pads used"

@@ -1,5 +1,6 @@
 {% extends "base_generic.html" %}
 {% load static %}
+{% load index %}
 {% block title %}
     Booster Tracker
 {% endblock %}
@@ -60,13 +61,8 @@
             left: 60%;
             width: 40%; 
             height: 100%;
-            background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 26%, transparent 50%), url('/static/images/rocket_launch_image.jpg');
             background-size: cover;
             display: block; /* Show image by default */
-        }
-
-        .previous-launches {
-            background-image: linear-gradient(95deg, rgba(248, 211, 102, 1) 13%, transparent 50%), url('/static/images/rocket_launch_image.jpg');
         }
 
         .blue-text {
@@ -159,7 +155,8 @@
 {% block content %}
     <div class="rocket-container">
         <div class="blue-background"></div>
-        <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ next_launch_photo }}');"></div>
+        <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ next_launch_photo }}');">
+        </div>
         <div class="info-wrapper blue-text">
             <h3>UPCOMING MISSION:</h3>
             <h1 style="text-align: left">{{ next_launch.name }}</h1>
@@ -175,7 +172,7 @@
 
     <div class="rocket-container">
         <div class="yellow-background"></div>
-        <div class="image-background previous-launches" style="background-image: linear-gradient(95deg, rgba(248, 211, 102, 1) 7.87%, transparent 32.13%), url('{{ last_launch_photo }}');"></div>
+        <div class="image-background" style="background-image: linear-gradient(95deg, rgba(248, 211, 102, 1) 7.87%, transparent 32.13%), url('{{ last_launch_photo }}');"></div>
         <div class="info-wrapper yellow-text">
             <h3>PREVIOUS MISSION:</h3>
             <h1 style="text-align: left">{{ last_launch.name }}</h1>
@@ -251,134 +248,46 @@
 
       <h1 style="font-size: 3em;">Launch pads</h1>
 
-      <div class="rocket-container" style="border: 1px solid white;">
-        <div style="background-color: #333;"></div>
-        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
-        <div class="info-wrapper blue-text">
-            <h1 style="text-align: left">SPACE LAUNCH COMPLEX 40</h1>
-            <p> <b>Nickname: </b>SLC-40</p>
-            <p> <b>Location: </b>Cape Canaveral Space Force Station, Florida</p>
-            <p> <b>Launches: </b>{{ pad_stats.1.1|add:"-1" }} (excluding AMOS-6)</p>
-            <p> <b>Fastest Turnaround: </b>{{ pad_stats.1.2 }}</p>
+    {% if pads %}
+        {% for pad in pads %}
+        <div class="rocket-container" style="border: 1px solid white;">
+            <div style="background-color: #333;"></div>
+            <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ pad.image.url }}');"></div>
+            <div class="info-wrapper blue-text">
+                <h1 style="text-align: left">{{ pad.name|upper }}</h1>
+                <p> <b>Nickname: </b>{{ pad.nickname }}</p>
+                <p> <b>Location: </b>{{ pad.location }}</p>
+                <p> <b>Launches: </b>{{ pad_stats|index:forloop.counter0|index:1 }}</p>
+                <p> <b>Fastest Turnaround: </b>{{ pad_stats|index:forloop.counter0|index:2 }}</p>
+                <p> <b>Status: </b>{{ pad.status|lower|title }}</p>
+            </div>
         </div>
-    </div>
-
-    <div class="rocket-container" style="border: 1px solid white;">
-        <div style="background-color: #333;"></div>
-        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
-        <div class="info-wrapper blue-text">
-            <h1 style="text-align: left">LAUNCH COMPLEX 39A</h1>
-            <p> <b>Nickname: </b>LC-39A</p>
-            <p> <b>Location: </b>Kennedy Space Center, Florida</p>
-            <p> <b>Launches: </b>{{ pad_stats.3.1 }}</p>
-            <p> <b>Fastest Turnaround: </b>{{ pad_stats.3.2 }}</p>
-        </div>
-    </div>
-
-    <div class="rocket-container" style="border: 1px solid white;">
-        <div style="background-color: #333;"></div>
-        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
-        <div class="info-wrapper blue-text">
-            <h1 style="text-align: left">SPACE LAUNCH COMPLEX 4 EAST</h1>
-            <p> <b>Nickname: </b>SLC-4E</p>
-            <p> <b>Location: </b>Vandenberg Space Force Base, California</p>
-            <p> <b>Launches: </b>{{ pad_stats.2.1 }}</p>
-            <p> <b>Fastest Turnaround: </b>{{ pad_stats.2.2 }}</p>
-        </div>
-    </div>
-
-    <div class="rocket-container" style="border: 1px solid white;">
-        <div style="background-color: #333;"></div>
-        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
-        <div class="info-wrapper blue-text">
-            <h1 style="text-align: left">OMELEK ISLAND</h1>
-            <p> <b>Location: </b>Kwajalein Atoll, Republic of the Marshall Islands</p>
-            <p> <b>Launches: </b>{{ pad_stats.0.1 }}</p>
-            <p> <b>Fastest Turnaround: </b>{{ pad_stats.0.2 }}</p>
-        </div>
-    </div>
+        {% endfor %}
+    {% else %}
+        <p>No pads are available.</p>
+    {% endif %}
     
     <h1 style="font-size: 3em;">Recovery Zones</h1>
+
+    {% if recovery_zones %}
+        {% for zone in recovery_zones %}
+        <div class="rocket-container" style="border: 1px solid white;">
+            <div style="background-color: #333;"></div>
+            <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ zone.image.url }}');"></div>
+            <div class="info-wrapper blue-text">
+                <h1 style="text-align: left">{{ zone.name|upper }}</h1>
+                <p> <b>Nickname: </b>{{ zone.nickname }}</p>
+                {% if zone.serial_number %}
+                    <p> <b>Boat ID: </b>{{ zone.serial_number }}</p>
+                {% endif %}
+                <p> <b>Successful Landings: </b>{{ zone_stats|index:forloop.counter0|index:1 }}</p>
+                <p> <b>Fastest Turnaround: </b>{{ zone_stats|index:forloop.counter0|index:2 }}</p>
+                <p> <b>Status: </b>{{ zone.status|lower|title }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p>No landing zones are available.</p>
+    {% endif %}
       
-    <div class="rocket-container" style="border: 1px solid white;">
-        <div style="background-color: #333;"></div>
-        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
-        <div class="info-wrapper blue-text">
-            <h1 style="text-align: left">JUST READ THE INSTRUCTIONS</h1>
-            <p> <b>Nickname: </b>JRtI</p>
-            <p> <b>Boat IDs: </b>MARCMAC 300 / MARMAC 303</p>
-            <p> <b>Successful Landings: </b>{{ zone_stats.0.1 }}</p>
-            <p> <b>Fastest Turnaround: </b>{{ zone_stats.0.2 }}</p>
-        </div>
-    </div>
-
-    <div class="rocket-container" style="border: 1px solid white;">
-        <div style="background-color: #333;"></div>
-        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
-        <div class="info-wrapper blue-text">
-            <h1 style="text-align: left">OF COURSE I STILL LOVE YOU</h1>
-            <p> <b>Nickname: </b>OCISLY</p>
-            <p> <b>Boat IDs: </b>MARMAC 304</p>
-            <p> <b>Successful Landings: </b>{{ zone_stats.1.1 }}</p>
-            <p> <b>Fastest Turnaround: </b>{{ zone_stats.1.2 }}</p>
-        </div>
-    </div>
-
-    <div class="rocket-container" style="border: 1px solid white;">
-        <div style="background-color: #333;"></div>
-        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
-        <div class="info-wrapper blue-text">
-            <h1 style="text-align: left">A SHORTFALL OF GRAVITAS</h1>
-            <p> <b>Nickname: </b>ASOG</p>
-            <p> <b>Boat IDs: </b>MARMAC 302</p>
-            <p> <b>Successful Landings: </b>{{ zone_stats.5.1 }}</p>
-            <p> <b>Fastest Turnaround: </b>{{ zone_stats.5.2 }}</p>
-        </div>
-    </div>
-
-    <div class="rocket-container" style="border: 1px solid white;">
-        <div style="background-color: #333;"></div>
-        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
-        <div class="info-wrapper blue-text">
-            <h1 style="text-align: left">LANDING ZONE 1</h1>
-            <p> <b>Nickname: </b>LZ-1</p>
-            <p> <b>Successful Landings: </b>{{ zone_stats.2.1 }}</p>
-            <p> <b>Fastest Turnaround: </b>{{ zone_stats.2.2 }}</p>
-        </div>
-    </div>
-
-    <div class="rocket-container" style="border: 1px solid white;">
-        <div style="background-color: #333;"></div>
-        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
-        <div class="info-wrapper blue-text">
-            <h1 style="text-align: left">LANDING ZONE 2</h1>
-            <p> <b>Nickname: </b>LZ-2</p>
-            <p> <b>Successful Landings: </b>{{ zone_stats.3.1 }}</p>
-            <p> <b>Fastest Turnaround: </b>{{ zone_stats.3.2 }}</p>
-        </div>
-    </div>
-
-    <div class="rocket-container" style="border: 1px solid white;">
-        <div style="background-color: #333;"></div>
-        <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ next_launch_photo }}');"></div>
-        <div class="info-wrapper blue-text">
-            <h1 style="text-align: left">LANDING ZONE 4</h1>
-            <p> <b>Nickname: </b>LZ-4</p>
-            <p> <b>Successful Landings: </b>{{ zone_stats.4.1 }}</p>
-            <p> <b>Fastest Turnaround: </b>{{ zone_stats.4.2 }}</p>
-        </div>
-    </div>
-
-    <script>
-        window.onload = function() {
-            var card = document.getElementById('myCard');
-            var cardWidth = card.offsetWidth;
-            var cardHeight = cardWidth * 2 / 3;
-            card.style.height = cardHeight + 'px';
-            }
-    </script>
-    
-    
-    
-    
 {% endblock %}

@@ -72,23 +72,6 @@ def get_boosters_and_recovery(launch: Launch):
             recoveries.append("Expended")
     return concatinated_list(boosters), concatinated_list(recoveries)
 
-def get_launch_image(launch: Launch):
-    if launch:
-        if launch.rocket.name == "Falcon Heavy":
-            return "/static/images/Falcon_Heavy_launches_photo.jpg"
-        elif launch.rocket.name == "Falcon 1":
-            return "/static/images/Falcon_1_launches_photo.jpg"
-        elif launch.rocket.name == "Starship" and launch.pad.nickname == "OLP-A":
-            return "/static/images/Starship_OLPA_launches_photo.jpg"
-        elif launch.rocket.name == "Falcon 9":
-            if launch.pad.nickname == "SLC-40":
-                return "/static/images/Falcon_SLC40_launches_photo.jpg"
-            elif launch.pad.nickname == "SLC-4E":
-                return "/static/images/Falcon_SLC4E_launches_photo.jpg"
-            elif launch.pad.nickname == "LC-39A":
-                return "/static/images/Falcon_LC39A_launches_photo.jpg"
-    return "/static/images/rocket_launch_image.jpg"
-
 #This item creates a list without any repeats
 def make_list(objects: Boat) -> list:
     names: set[str] = set()
