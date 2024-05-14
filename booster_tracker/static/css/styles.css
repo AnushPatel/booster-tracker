@@ -3,12 +3,77 @@
 body {
   font-family: Arial, sans-serif;
   margin: 0 auto;
-  padding: 0;
+  padding: 10px;
   background-color: #333;
-  max-width: 100%; /* Set max-width to 100% */
+  max-width: 1200px; /* Set max-width to 100% */
   box-sizing: border-box; /* Include padding in the total width */
   color: lightgray;
 }
+
+
+h1 {
+  text-align: center;
+  margin-top: 30px;
+}
+
+.stats-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.stat {
+  margin: 0 20px;
+  text-align: center;
+}
+
+.stat h2 {
+  margin-top: 0;
+  font-size: 24px;
+}
+
+.graph-container {
+  margin-top: 50px;
+  text-align: center;
+}
+
+/* Launch styling */
+
+.launch-container {
+  display: flex;
+  justify-content: center; /* Center horizontally */
+}
+
+.launch-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  max-width: 800px; /* Adjust the maximum width of the container */
+}
+
+.launch-card {
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  width: calc(50% - 10px); /* Two cards per row with some spacing */
+  padding: 20px;
+}
+
+.launch-info {
+  font-size: 16px;
+}
+
+.launch-info h2 {
+  font-size: 20px;
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+
+/* ///////////..utility classes../////////// */
 
 .container {
   max-width: 1200px; /* Set the maximum width of the container */
@@ -17,33 +82,69 @@ body {
   box-sizing: border-box; /* Include padding in the total width */
 }
 
-/* Add styling for the logo */
-.logo {
-    height: 4.5em; /* Adjusted height */
-    margin-right: 1em; /* Fixed margin */
-    vertical-align: middle; /* Align the logo vertically middle */
+.btn {
+  display: inline-block;
+  padding: 0.5em 1.5em;
+  text-decoration: none;
+  border-radius: 50px;
+  cursor: pointer;
+  outline: none;
+  margin-top: 1em;
+  text-transform: uppercase;
+  font-weight: small;
 }
 
-nav {
+.btn-primary {
+  color: #fff;
+  background: #16a083;
+}
+
+.btn-primary:hover {
+  background: #117964;
+  transition: background 0.3s ease-in-out;
+}
+
+/* ............/navbar/............ *
+
+/* desktop mode............/// */
+
+.navbar input[type="checkbox"],
+.navbar .hamburger-lines {
+  display: none;
+}
+
+.navbar {
   background-color: #333;
   color: #fff;
   padding: 0.4em; /* Fixed padding */
+  max-width: 1200px; /* Set the maximum width of the container */
+  margin: 0 auto; /* Center the container */
+  padding: 0 20px; /* Add padding to the container */
+  box-sizing: border-box; /* Include padding in the total width */
+
 }
 
-nav ul {
+
+.navbar-container {
+  display: inline-block; /* Change to inline-block */
+  margin: 0; /* Remove default margin */
+  padding: 3px; /* Remove default padding */
+}
+
+.menu-items {
   display: inline-block; /* Change to inline-block */
   margin: 0; /* Remove default margin */
   padding: 0; /* Remove default padding */
 }
 
-nav ul li {
+.menu-items li {
   list-style: none; /* Remove default list styles */
   margin-right: 1em; /* Fixed margin between navigation links */
   display: inline-block; /* Display the list items inline-block */
   vertical-align: middle; /* Align the list items vertically middle */
 }
 
-nav ul li a {
+.menu-items a {
   color: #fff;
   text-decoration: none;
   padding: 0.5em .5em; /* Fixed padding */
@@ -51,74 +152,149 @@ nav ul li a {
   font-size: 1.2em; /* Relative font size */
 }
 
-nav ul li:hover a {
+.menu-items a:hover {
   background-color: #ddd;
   color: black;
 }
 
-/* Add a color to the active/current link */
-nav ul li a.active {
+.menu-items a.active {
   background-color: #333;
   color: rgba(248, 211, 102, 1);
 }
 
-h1 {
-    text-align: center;
-    margin-top: 30px;
-}
-  
-.stats-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 20px;
-}
-  
-.stat {
-    margin: 0 20px;
-    text-align: center;
-}
-  
-.stat h2 {
-    margin-top: 0;
-    font-size: 24px;
-}
-  
-.graph-container {
-    margin-top: 50px;
-    text-align: center;
+
+.logo {
+  height: 4.5em; /* Adjusted height */
+  margin-right: 1em; /* Fixed margin */
+  vertical-align: middle; /* Align the logo vertically middle */
 }
 
-  /* Add more common styling as needed */
-  
-.launch-container {
-    display: flex;
-    justify-content: center; /* Center horizontally */
+.mobile-menu {
+  display: none !important;
 }
 
-.launch-cards {
+
+#footer h2 {
+  text-align: center;
+  font-size: 1.8rem;
+  padding: 2.6rem;
+  font-weight: 500;
+  color: #fff;
+  background: rgb(65, 65, 65);
+}
+
+/* ......../ media query /.......... */
+
+@media (max-width: 850px) {
+  .navbar {
+    opacity: 0.95;
+  }
+
+  .navbar-container input[type="checkbox"],
+  .navbar-container .hamburger-lines {
+    display: block;
+    color: #fff;
+    z-index: 10;
+  }
+
+  .navbar-container {
+    display: block;
+    position: relative;
+    height: 78px;
+  }
+
+  .navbar-container input[type="checkbox"] {
+    position: absolute;
+    display: block;
+    height: 32px;
+    width: 30px;
+    top: 20px;
+    left: 20px;
+    z-index: 15;
+    opacity: 0;
+  }
+
+  .navbar-container .hamburger-lines {
+    display: block;
+    height: 23px;
+    width: 35px;
+    position: absolute;
+    top: 17px;
+    left: 20px;
+    z-index: 10;
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     justify-content: space-between;
-    max-width: 800px; /* Adjust the maximum width of the container */
-}
+  }
 
-.launch-card {
-    background-color: #f5f5f5;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-    width: calc(50% - 10px); /* Two cards per row with some spacing */
-    padding: 20px;
-}
+  .navbar-container .hamburger-lines .line {
+    display: block;
+    height: 4px;
+    width: 100%;
+    border-radius: 10px;
+    background: #fff;
+  }
 
-.launch-info {
-    font-size: 16px;
-}
+  .navbar-container .hamburger-lines .line1 {
+    transform-origin: 0% 0%;
+    transition: transform 0.3s ease-in-out;
+  }
 
-.launch-info h2 {
-    font-size: 20px;
-    margin-top: 0;
-    margin-bottom: 10px;
+  .navbar-container .hamburger-lines .line2 {
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .navbar-container .hamburger-lines .line3 {
+    transform-origin: 0% 100%;
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .navbar .menu-items {
+    margin-top: -13px;
+    padding-top: 50px;
+    background: #333;
+    height: 100vh;
+    max-width: 300px;
+    transform: translate(-150%);
+    display: flex;
+    flex-direction: column;
+    margin-left: -40px;
+    padding-left: 50px;
+    transition: transform 0.4s ease-in-out;
+    z-index: 999;
+  }
+
+  .navbar .menu-items li {
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+    font-weight: 500;
+  }
+
+  .logo {
+    display: block;
+    margin: 0 auto; /* Center the logo horizontally */
+    height: 4.5em; /* Adjusted height */
+    margin-bottom: 1em; /* Add margin at the bottom for spacing */
+  }
+
+  .mobile-menu {
+    display: inline !important;
+  }
+
+  .navbar-container input[type="checkbox"]:checked ~ .menu-items {
+    transform: translateX(0);
+  }
+
+  .navbar-container input[type="checkbox"]:checked ~ .hamburger-lines .line1 {
+    transform: rotate(35deg);
+  }
+
+  .navbar-container input[type="checkbox"]:checked ~ .hamburger-lines .line2 {
+    transform: scaleY(0);
+  }
+
+  .navbar-container input[type="checkbox"]:checked ~ .hamburger-lines .line3 {
+    transform: rotate(-35deg);
+  }
+
 }

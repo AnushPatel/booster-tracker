@@ -13,7 +13,6 @@
             top: 50%;
             left: 0;
             transform: translateY(-50%);
-            z-index: 2;
             color: inherit;
             text-align: left;
             padding: 20px;
@@ -35,6 +34,7 @@
             margin: 0 auto;
             border-radius: 0px;
             overflow: hidden; /* Ensure content doesn't overflow */
+            z-index: -2;
         }
 
         .blue-background, .yellow-background {
@@ -103,8 +103,9 @@
         .stats {
             margin-top: 0%;
             display: flex;
-            justify-content: space-around;
+            justify-content: space-between;
             width: 80%;
+            align-items: flex-end;
         }
 
         .stat {
@@ -112,6 +113,7 @@
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: column;
+            width: 250px;
         }
 
         .stat h2 {
@@ -129,6 +131,7 @@
             .rocket-container {
                 max-height: none; /* Remove maximum height */
                 padding-top: 0; /* Remove padding top */
+                width: auto;
             }
             .image-background {
                 display: none; /* Hide image on smaller screens */
@@ -146,6 +149,9 @@
             }
             .stats {
                 display: inline;
+            }
+            .stat {
+                width: 100%;
             }
         }
     </style>
@@ -227,7 +233,7 @@
           </div>
           <div class="stat">
             <h2>{{ falcon_heavy_reflights }}</h2>
-            <p>Flightproven Launches</p>
+            <p>Flight-proven Launches</p>
           </div>
         </div>
       </div>
