@@ -54,7 +54,10 @@ def home(request):
     for rocket in Rocket.objects.all():
         num_launches_per_rocket_and_successes.append([rocket.name, Launch.objects.filter(rocket=rocket, time__lte=datetime.now(pytz.utc)).count(), Launch.objects.filter(rocket=rocket, launch_outcome="SUCCESS", time__lte=datetime.now(pytz.utc)).count()])
     
-    num_booster_reflights = StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc)).filter(launch__rocket__name__icontains="Falcon").count() - Stage.objects.filter(type="BOOSTER", stageandrecovery__launch__time__lte=datetime.now(pytz.utc)).filter(rocket__name__icontains="Falcon").distinct().count()
+    #this section gets total number of reflights; it takes the number of booster uses and subtracts the number of boosters that have flown
+    num_booster_uses = StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc)).filter(launch__rocket__name__icontains="Falcon").count()
+    num_stages_used = Stage.objects.filter(type="BOOSTER", stageandrecovery__launch__time__lte=datetime.now(pytz.utc)).filter(rocket__name__icontains="Falcon").distinct().count()
+    num_booster_reflights = num_booster_uses - num_stages_used
     most_flown_boosters = get_most_flown_boosters()
     most_flown_boosters_string = f"{concatinated_list(most_flown_boosters[0])}; {most_flown_boosters[1]} flights"
     quickest_booster_turnaround = calculate_turnarounds(object=TurnaroundObjects.BOOSTER, launch=last_launch)

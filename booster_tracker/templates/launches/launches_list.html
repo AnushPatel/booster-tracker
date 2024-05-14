@@ -1,4 +1,9 @@
 {% extends "base_generic.html" %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" type="text/css" href="{% static 'css/launches_list.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="launch-container">
