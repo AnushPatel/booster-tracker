@@ -1,6 +1,6 @@
 from django.http import HttpResponse
 from django.template import loader
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import render, get_object_or_404
 from .generate_stats import *
 
@@ -8,29 +8,17 @@ import pytz
 
 from .models import *
 
+from django.shortcuts import render
+from .models import Launch
+
 def launches_list(request):
     launches = Launch.objects.all().order_by("-time")
-
-    # Filter launches based on request.GET parameters
-    rocket_name = request.GET.get('rocket')
-    orbit_name = request.GET.get('orbit')
-    launch_pad_name = request.GET.get('launch_pad')
-    outcome = request.GET.get('outcome')
-
-    if rocket_name:
-        launches = launches.filter(rocket__name=rocket_name)
-    if orbit_name:
-        launches = launches.filter(orbit__name=orbit_name)
-    if launch_pad_name:
-        launches = launches.filter(pad__name=launch_pad_name)
-    if outcome:
-        launches = launches.filter(launch_outcome=outcome)
-
     context = {
-        'launches': launches,
-        # Pass other context variables as needed
+        'launches': launches
     }
+
     return render(request, 'launches/launches_list.html', context)
+
 
 def home(request):
     num_launches_per_rocket_and_successes: list = []

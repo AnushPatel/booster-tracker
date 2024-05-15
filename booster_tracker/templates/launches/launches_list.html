@@ -2,27 +2,31 @@
 {% load static %}
 
 {% block extra_css %}
-    <link rel="stylesheet" type="text/css" href="{% static 'css/launches_list.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/home.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="launch-container">
-    <div class="launch-cards">
-        {% if launches %}
-            {% for launch in launches %}
-                <div class="launch-card">
-                    <div class="launch-info">
-                        <h2><a href="{% url 'launches:launch' launch.name %}">{{ launch.name }}</a></h2>
-                        <p><strong>Time:</strong> {{ launch.time|date:"F j, Y H:i" }} UTC</p>
-                        <p><strong>Rocket:</strong> {{ launch.rocket }}</p>
-                        <p><strong>Launch Provider:</strong> {{ launch.provider }}</p>
-                        <p><strong>Launch Pad:</strong> {{ launch.pad }}</p>
-                    </div>
-                </div>
-            {% endfor %}
-        {% else %}
-            <p>No launches are available.</p>
-        {% endif %}
-    </div>
-</div>
+{% if launches %}
+    {% for launch in launches %}
+    <a href="{% url 'launches:launch' launch.name %}" style="text-decoration: none !important; padding: 5px;">
+        <div class="rocket-container">
+            <div class="blue-background"></div>
+            <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ launch.image }}');">
+            </div>
+            <div class="info-wrapper blue-text">
+                <h1 style="text-align: left">{{ launch.name }}</h1>
+                <p> <b>Rocket: </b> {{ launch.rocket.name }}</p>
+                <p> <b>Scheduled: </b> {{ launch.time|date:"F j, Y H:i" }} UTC</p>
+                <p> <b>Launch Site: </b>{{ launch.pad.name }}</p>
+                <p> <b>Booster{% if "and" in launch_boosters %}s{% endif %}: </b>{{ launch_boosters }}</p>
+                <p> <b>Landing Location{% if "and" in launch_recoveries %}s{% endif %}: </b>{{ launch_recoveries }}</p>
+                <p> <b>Tug{% if "and" in launch_tugs %}s{% endif %}: </b>{{ launch_tugs }}</p>
+                <p> <b>Fairing Recovery: </b>{{ launch_fairing_recovery }}</p>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+{% else %}
+<p>No launches are available.</p>
+{% endif %}
 {% endblock %}

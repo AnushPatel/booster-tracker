@@ -84,6 +84,10 @@ class Launch(models.Model):
 
     def __str__(self):
         return self.name
+    
+    @property
+    def image(self):
+        return PadUsed.objects.get(pad=self.pad, rocket=self.rocket).image.url
 
 class LandingZone(models.Model):
     name = models.CharField(max_length=100)
