@@ -25,19 +25,25 @@ def convert_seconds(x):
     x -= (m*60)
     s = round(x)
     
-    time_str = ""
+    time_units = []
     if d:
-        time_str += f"{d} day{'s' if d != 1 else ''}, "
+        time_units.append(f"{d} day{'s' if d != 1 else ''}")
     if h:
-        time_str += f"{h} hour{'s' if h != 1 else ''}, "
+        time_units.append(f"{h} hour{'s' if h != 1 else ''}")
     if m:
-        time_str += f"{m} minute{'s' if m != 1 else ''}, "
+        time_units.append(f"{m} minute{'s' if m != 1 else ''}")
     if s:
-        time_str += f"and {s} second{'s' if s != 1 else ''}"
+        time_units.append(f"{s} second{'s' if s != 1 else ''}")
 
-    if time_str[-2:] == ", ":
-        time_str = time_str[:-2]
-    
+    if len(time_units) > 2:
+        time_str = ', '.join(time_units[:-1]) + ', and ' + time_units[-1]
+    elif len(time_units) == 2:
+        time_str = time_units[0] + ' and ' + time_units[1]
+    elif len(time_units) == 1:
+        time_str = time_units[0]
+    else:
+        time_str = "0 seconds"
+
     return time_str
 
 #Makes an ordinal; 1 -> 1st
@@ -51,7 +57,7 @@ def make_ordinal(n: int):
     return str(n) + suffix
 
 #Takes in a list of items and returns them in concatinated form [Bob, Doug, GO Beyond] -> Bob, Doug, and GO Beyond
-concatinated_list = lambda items: ', '.join(items[:-1]) + (' and ' if len(items) > 1 else '') + str(items[-1]) if items else 'N/A'
+concatenated_list = lambda items: items[0] if len(items) == 1 else ', '.join(items[:-1]) + (', and ' if len(items) > 2 else ' and ') + str(items[-1]) if items else 'N/A'
 
 def get_most_flown_boosters():
     booster_and_launch_count = Stage.objects.filter(stageandrecovery__launch__time__lte=datetime.now(pytz.utc), type="BOOSTER", rocket__name__icontains="Falcon").annotate(launch_count=Count('stageandrecovery__launch', distinct=True))
@@ -70,13 +76,13 @@ def get_boosters_and_recovery(launch: Launch):
             recoveries.append(f"{stage_and_recovery.landing_zone.nickname}")
         else:
             recoveries.append("Expended")
-    return concatinated_list(boosters), concatinated_list(recoveries)
+    return concatenated_list(boosters), concatenated_list(recoveries)
 
 #This item creates a list without any repeats
-def make_list(objects: Boat) -> list:
+def remove_duplicates(objects: list[Boat]) -> list:
     names: set[str] = set()
     for item in objects:
-        names.add(item.boat.name)
+        names.add(item.name)
     return list(names)
 
 #Helps convert boolean to human readable text in stats
@@ -105,7 +111,6 @@ def turnaround_time(launches: list[Launch]) -> int:
 #This function gets number of time a stage and flown, and what the most recent turnaround is
 def get_stage_flights_and_turnaround(stage: Stage, time: datetime) -> tuple:
     flights = 0
-    turnaround = "N/A"
 
     turnaround = turnaround_time(Launch.objects.filter(stageandrecovery__stage=stage, time__lte=time).order_by('time'))
     if turnaround:
@@ -147,7 +152,7 @@ def get_total_reflights(launch: Launch, start: datetime) -> str:
     for _ in StageAndRecovery.objects.filter(launch=launch).filter(Q(stage__name__in=stages_seen)| Q(stage__name__in=new_stages_seen)):
         num_booster_reflights += 1
         count_list.append(make_ordinal(num_booster_reflights))
-    return concatinated_list(count_list)
+    return concatenated_list(count_list)
 
 #Counts number of booster landings
 def get_num_booster_landings(launch: Launch):   
@@ -160,7 +165,7 @@ def get_num_booster_landings(launch: Launch):
         count += 1
         count_list.append(make_ordinal(count))
     if not len(count_list) == 0:
-        return concatinated_list(count_list)
+        return concatenated_list(count_list)
     return None
 
 #Gets number of launches in a year and from a pad
@@ -216,25 +221,27 @@ def calculate_turnarounds(object: TurnaroundObjects, launch: Launch):
         return new_record, turnarounds
     return None
 
-#This function gets the number of landings in a row; there may be some bad logic here if, say, a Falcon Heavy side booster fails to land but the center core lands successfully. If this ever happens, look here!
+#This function gets the number of landings in a row; there may be some bad logic here if, say, a Falcon Heavy side booster fails to land but the center core lands successfully. If this ever happens, add in order of landings to get correct value.
 def get_consec_landings(launch: Launch):
     count: int = 0
     count_list: list[str] = []
 
-    for landing in StageAndRecovery.objects.filter(launch__time__lt=launch.time, stage__type="BOOSTER").filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD")).order_by("-launch__time").all():
+    for landing in StageAndRecovery.objects.filter(launch__time__lt=launch.time, stage__type="BOOSTER").filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD")).order_by("-launch__time", "-id").all():
         if landing.method_success=="SUCCESS":
             count += 1
         else:
             break
 
     for landing in StageAndRecovery.objects.filter(launch=launch, stage__type="BOOSTER").filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD")):
-        if landing.method_success=="SUCCESS" or launch.time > datetime.now(pytz.utc):
+        if landing.method_success == "FAILURE":
+            count = 0
+        if landing.method_success == "SUCCESS" or launch.time > datetime.now(pytz.utc):
             count += 1
             count_list.append(make_ordinal(count))
     if len(count_list) == 1:
-        return concatinated_list(count_list), ""
+        return concatenated_list(count_list), "" #Return either an empty string or the "s" to make grammatically correct if plural; this is somewhat messy, but gets the job done
     if len(count_list) > 1:
-        return concatinated_list(count_list), "s"
+        return concatenated_list(count_list), "s"
 
 #This section uses the functions above to create the EDA-style launch table for each launch!
 def create_launch_table(launch: Launch) -> str:
@@ -344,12 +351,12 @@ def create_launch_table(launch: Launch) -> str:
 
     if droneship_needed:
         data["Where will the first stage land?"].append("")
-        data["Where will the first stage land?"].append(f"Tug: {concatinated_list(make_list(TugOnLaunch.objects.filter(launch=launch)))}; Support: {concatinated_list(make_list(SupportOnLaunch.objects.filter(launch=launch)))}")
+        data["Where will the first stage land?"].append(f"Tug: {concatenated_list(remove_duplicates(TugOnLaunch.objects.filter(launch=launch)))}; Support: {concatenated_list(remove_duplicates(SupportOnLaunch.objects.filter(launch=launch)))}")
     
     if not len(FairingRecovery.objects.filter(launch=launch)) == 0 and launch.time > datetime.now(pytz.utc):
-        data["Will they be attempting to recover the fairings?"].append(f"The fairing halves will be recovered from the water by {concatinated_list(make_list(FairingRecovery.objects.filter(launch=launch)))}")
+        data["Will they be attempting to recover the fairings?"].append(f"The fairing halves will be recovered from the water by {concatenated_list(remove_duplicates(FairingRecovery.objects.filter(launch=launch)))}")
     elif not len(FairingRecovery.objects.filter(launch=launch)) == 0 and launch.time < datetime.now(pytz.utc):
-        data["Will they be attempting to recover the fairings?"].append(f"The fairing halves were recovered by {concatinated_list(make_list(FairingRecovery.objects.filter(launch=launch)))}")
+        data["Will they be attempting to recover the fairings?"].append(f"The fairing halves were recovered by {concatenated_list(remove_duplicates(FairingRecovery.objects.filter(launch=launch)))}")
     else:
         data["Will they be attempting to recover the fairings?"].append("There are no fairings on this flight")
 

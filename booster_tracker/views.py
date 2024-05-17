@@ -28,16 +28,16 @@ def home(request):
     
     next_launch_boosters = get_boosters_and_recovery(launch=next_launch)[0].replace("N/A", "Unknown")
     next_launch_recoveries = get_boosters_and_recovery(launch=next_launch)[1]
-    next_launch_tugs = concatinated_list(list(Boat.objects.filter(type="TUG", tugonlaunch__launch=next_launch).all().values_list("name", flat=True)))
-    next_launch_fairing_recovery = concatinated_list(list(set(Boat.objects.filter(type="FAIRING_RECOVERY", fairingrecovery__launch=next_launch).all().values_list("name", flat=True))))
+    next_launch_tugs = concatenated_list(list(Boat.objects.filter(type="TUG", tugonlaunch__launch=next_launch).all().values_list("name", flat=True)))
+    next_launch_fairing_recovery = concatenated_list(list(set(Boat.objects.filter(type="FAIRING_RECOVERY", fairingrecovery__launch=next_launch).all().values_list("name", flat=True))))
     next_launch_photo = 'rocket_pad_photos/rocket_launch_image.jpg'
     if next_launch:
         next_launch_photo = PadUsed.objects.get(pad=next_launch.pad, rocket=next_launch.rocket).image.url
 
     last_launch_boosters = get_boosters_and_recovery(launch=last_launch)[0]
     last_launch_recoveries = get_boosters_and_recovery(launch=last_launch)[1]
-    last_launch_tugs = concatinated_list(list(Boat.objects.filter(type="TUG", tugonlaunch__launch=last_launch).all().values_list("name", flat=True)))
-    last_launch_fairing_recovery = concatinated_list(list(set(Boat.objects.filter(type="FAIRING_RECOVERY", fairingrecovery__launch=last_launch).all().values_list("name", flat=True))))
+    last_launch_tugs = concatenated_list(list(Boat.objects.filter(type="TUG", tugonlaunch__launch=last_launch).all().values_list("name", flat=True)))
+    last_launch_fairing_recovery = concatenated_list(list(set(Boat.objects.filter(type="FAIRING_RECOVERY", fairingrecovery__launch=last_launch).all().values_list("name", flat=True))))
     last_launch_photo = PadUsed.objects.get(pad=last_launch.pad, rocket=last_launch.rocket).image.url
     for rocket in Rocket.objects.all():
         num_launches_per_rocket_and_successes.append([rocket.name, Launch.objects.filter(rocket=rocket, time__lte=datetime.now(pytz.utc)).count(), Launch.objects.filter(rocket=rocket, launch_outcome="SUCCESS", time__lte=datetime.now(pytz.utc)).count()])
@@ -47,7 +47,7 @@ def home(request):
     num_stages_used = Stage.objects.filter(type="BOOSTER", stageandrecovery__launch__time__lte=datetime.now(pytz.utc)).filter(rocket__name__icontains="Falcon").distinct().count()
     num_booster_reflights = num_booster_uses - num_stages_used
     most_flown_boosters = get_most_flown_boosters()
-    most_flown_boosters_string = f"{concatinated_list(most_flown_boosters[0])}; {most_flown_boosters[1]} flights"
+    most_flown_boosters_string = f"{concatenated_list(most_flown_boosters[0])}; {most_flown_boosters[1]} flights"
     quickest_booster_turnaround = calculate_turnarounds(object=TurnaroundObjects.BOOSTER, launch=last_launch)
     quickest_booster_turnaround_string = f"{quickest_booster_turnaround[1][0][0]} at {convert_seconds(quickest_booster_turnaround[1][0][1])}"
 
