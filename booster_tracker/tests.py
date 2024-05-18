@@ -78,6 +78,12 @@ class StatsTestCases(TestCase):
             launch_outcome = "SUCCESS"
         )
 
+        self.falcon_9_launch_1_functions = LaunchStats(launch=Launch.objects.get(name="Falcon 9 Launch 1"))
+        self.falcon_9_launch_2_functions = LaunchStats(launch=Launch.objects.get(name="Falcon 9 Launch 2"))
+        self.falcon_9_launch_3_functions = LaunchStats(launch=Launch.objects.get(name="Falcon 9 Launch 3"))
+        self.falcon_heavy_launch_1_functions = LaunchStats(launch=Launch.objects.get(name="Falcon Heavy Launch 1"))
+        self.falcon_9_launch_4_functions = LaunchStats(launch=Launch.objects.get(name="Falcon 9 Launch 4"))
+
         StageAndRecovery.objects.create(
             launch = Launch.objects.get(name="Falcon 9 Launch 1"),
             stage = Stage.objects.get(name="B1062"),
@@ -195,8 +201,8 @@ class StatsTestCases(TestCase):
         self.assertEqual(get_most_flown_boosters(), (["B1080"], 4))
 
     def test_get_boosters_and_recovery(self):
-        self.assertEqual(get_boosters_and_recovery(Launch.objects.get(name="Falcon 9 Launch 1")), ("B1062-1", "LZ-1"))
-        self.assertEqual(get_boosters_and_recovery(Launch.objects.get(name="Falcon 9 Launch 2")), ("B1062-2", "LZ-1"))
+        self.assertEqual(self.falcon_9_launch_1_functions.get_boosters_and_recovery(), ("B1062-1", "LZ-1"))
+        self.assertEqual(self.falcon_9_launch_2_functions.get_boosters_and_recovery(), ("B1062-2", "LZ-1"))
         self.assertEqual(get_boosters_and_recovery(Launch.objects.get(name="Falcon Heavy Launch 1")), ("B1080-2, B1062-3, and B1084-1", "LZ-1, LZ-2, and JRtI"))
         self.assertEqual(get_boosters_and_recovery(Launch.objects.get(name="Falcon 9 Launch 4")), ("B1080-3", "Expended"))
 
@@ -375,12 +381,60 @@ class StatsTestCases(TestCase):
         self.assertEqual(get_num_booster_landings(launch=Launch.objects.get(name="Falcon 9 Temp Launch 1")), "7th")
 
     def test_calculate_turnarounds(self):
-        #Here I only test for TurnaroundObjects.ALL (all launches) since the rest is purely logic.
+        #Start by testing the ALL case
         self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.ALL, launch=Launch.objects.get(name="Falcon 9 Launch 1")), None)
         self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.ALL, launch=Launch.objects.get(name="Falcon 9 Launch 2")), (True, [['', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.ALL, launch=Launch.objects.get(name="Falcon 9 Launch 3")), (True, [['', 2505600.0, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['', 2678400.0, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.ALL, launch=Launch.objects.get(name="Falcon Heavy Launch 1")), (False, [['', 2505600.0, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['', 2678400.0, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['', 2678400.0, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.ALL, launch=Launch.objects.get(name="Falcon 9 Launch 4")), (False, [['', 2505600.0, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['', 2592000.0, 'Falcon 9 Launch 4', 'Falcon Heavy Launch 1'], ['', 2678400.0, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['', 2678400.0, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.ALL, launch=Launch.objects.get(name="Falcon 9 Launch 3")), (True, [['', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.ALL, launch=Launch.objects.get(name="Falcon Heavy Launch 1")), (False, [['', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.ALL, launch=Launch.objects.get(name="Falcon 9 Launch 4")), (False, [['', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['', 2592000, 'Falcon 9 Launch 4', 'Falcon Heavy Launch 1'], ['', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
+
+        #Testing of BOOSTER case
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.BOOSTER, launch=Launch.objects.get(name="Falcon 9 Launch 1")), None)
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.BOOSTER, launch=Launch.objects.get(name="Falcon 9 Launch 2")), (True, [['B1062', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.BOOSTER, launch=Launch.objects.get(name="Falcon 9 Launch 3")), (False, [['B1062', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.BOOSTER, launch=Launch.objects.get(name="Falcon Heavy Launch 1")), (False, [['B1062', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['B1080', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3'], ['B1062', 5184000, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 2']]))
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.BOOSTER, launch=Launch.objects.get(name="Falcon 9 Launch 4")), (True, [['B1080', 2592000, 'Falcon 9 Launch 4', 'Falcon Heavy Launch 1'], ['B1062', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['B1080', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3'], ['B1062', 5184000, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 2']]))
+
+        #Testing of PAD case
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.PAD, launch=Launch.objects.get(name="Falcon 9 Launch 1")), None)
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.PAD, launch=Launch.objects.get(name="Falcon 9 Launch 2")), (True, [['SLC-40', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.PAD, launch=Launch.objects.get(name="Falcon 9 Launch 3")), (True, [['SLC-40', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['SLC-40', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.PAD, launch=Launch.objects.get(name="Falcon Heavy Launch 1")), (False, [['SLC-40', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['SLC-40', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['SLC-40', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.PAD, launch=Launch.objects.get(name="Falcon 9 Launch 4")), (False, [['SLC-40', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['SLC-40', 2592000, 'Falcon 9 Launch 4', 'Falcon Heavy Launch 1'], ['SLC-40', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['SLC-40', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
+
+        #Testing of LANDING_ZONE case
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE, launch=Launch.objects.get(name="Falcon 9 Launch 1")), None)
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE, launch=Launch.objects.get(name="Falcon 9 Launch 2")), (True, [['LZ-1', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE, launch=Launch.objects.get(name="Falcon 9 Launch 3")), (True, [['LZ-1', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['LZ-1', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE, launch=Launch.objects.get(name="Falcon Heavy Launch 1")), (False, [['LZ-1', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['LZ-1', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['LZ-1', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE, launch=Launch.objects.get(name="Falcon 9 Launch 4")), (False, [['LZ-1', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['LZ-1', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['LZ-1', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
+
+
+        #Make sure it responds correctly when another launch is added
+        Launch.objects.create(
+            time=datetime(2024, 4, 2, 0, 0, tzinfo=pytz.utc),
+            pad=Pad.objects.get(name="Space Launch Complex 40"),
+            rocket=Rocket.objects.get(name="Falcon 9"),
+            name="Falcon 9 Temp Launch 1",
+            orbit=Orbit.objects.get(name="low-Earth Orbit"),
+            mass="1000 kg",
+            customer="SpaceX",
+            launch_outcome = "SUCCESS"
+        )
+
+        StageAndRecovery.objects.create(
+            launch = Launch.objects.get(name="Falcon 9 Temp Launch 1"),
+            stage = Stage.objects.get(name="B1080"),
+            landing_zone = LandingZone.objects.get(name="Just Read the Instructions"),
+            method = "DRONE_SHIP",
+            method_success = "SUCCESS",
+            recovery_success = True
+        )
+
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.BOOSTER, launch=Launch.objects.get(name="Falcon 9 Temp Launch 1")), (True, [['B1080', 86400, 'Falcon 9 Temp Launch 1', 'Falcon Heavy Launch 1'], ['B1062', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['B1080', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3'], ['B1062', 5184000, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 2']]))
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.PAD, launch=Launch.objects.get(name="Falcon 9 Temp Launch 1")), (True, [['SLC-40', 86400, 'Falcon 9 Temp Launch 1', 'Falcon Heavy Launch 1'], ['SLC-40', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['SLC-40', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['SLC-40', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE, launch=Launch.objects.get(name="Falcon 9 Temp Launch 1")), (True, [['JRtI', 86400, 'Falcon 9 Temp Launch 1', 'Falcon Heavy Launch 1'], ['LZ-1', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['LZ-1', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['LZ-1', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
+        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.ALL, launch=Launch.objects.get(name="Falcon 9 Temp Launch 1")), (True, [['', 86400, 'Falcon 9 Temp Launch 1', 'Falcon Heavy Launch 1'], ['', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
 
     def test_get_consec_landings(self):
         self.assertEqual(get_consec_landings(launch=Launch.objects.get(name="Falcon 9 Launch 1")), ("1st", ""))
@@ -492,5 +546,5 @@ class StatsTestCases(TestCase):
             method = "GROUND_PAD",
             recovery_success = False
         )
-        print(datetime(today.year, today.month + 1, 1, 0, 0, tzinfo=pytz.utc))
+
         self.assertEqual(get_consec_landings(launch=Launch.objects.get(name="Falcon 9 Temp Launch 3")), ("3rd", ""))
