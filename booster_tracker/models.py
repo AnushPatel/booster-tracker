@@ -138,7 +138,7 @@ class Launch(models.Model):
 
         return count
     
-    #This function looks at TOTAL number of booster reflights; so increments by two if two boosters on Falcon Heavy are flight proven. The new stages seen is useful for when looking for reflights in a year; look at new boosters flown that year and subtracted.
+    #This function looks at TOTAL number of booster reflights; so increments by two if two boosters on Falcon Heavy are flight proven. The new stages seen is useful for when looking for reflights in a year; look at new boosters flown that year and subtract.
     def get_total_reflights(self, start: datetime) -> str:
         count_list: list[str] = []
         stages_seen = list(Stage.objects.filter(type="BOOSTER", stageandrecovery__launch__time__lt=start).filter(rocket__name__icontains="Falcon").values_list("name", flat=True))
@@ -253,56 +253,55 @@ class Launch(models.Model):
     
     #Configure the display of stages. For exmaple, formatting as B1067-20; 20.42 day turnaround
     def make_booster_display(self) -> str:
-        boosters_display = ""
-        for stage in Stage.objects.filter(stageandrecovery__launch=self):
-            boosters_display += stage.name + "-" + f"{self.get_stage_flights_and_turnaround(stage=stage)[0]}" + ", "
-        boosters_display = boosters_display.rstrip(" ").rstrip(",")
-
-        if Stage.objects.filter(stageandrecovery__launch=self).count():
-            boosters_display += "; "
+        stages_string = ""
+        turnaround_string = ""
 
         for stage in Stage.objects.filter(stageandrecovery__launch=self):
-            boosters_display += f"{self.get_stage_flights_and_turnaround(stage=stage)[1]}, "
+            stage_flights_and_turnaround = self.get_stage_flights_and_turnaround(stage=stage)
+            stages_string += stage.name + "-" + f"{stage_flights_and_turnaround[0]}" + ", "
 
-        boosters_display = boosters_display.rstrip(" ").rstrip(",").replace("None", "N/A")
-        if len(Stage.objects.filter(stageandrecovery__launch=self)):
-            boosters_display += "-day turnaround"
+            turnaround_string += f"{stage_flights_and_turnaround[1]:.2f}" if isinstance(stage_flights_and_turnaround[1], float) else "N/A"
+            turnaround_string += ", "
+
+        stages_string = stages_string.rstrip(" ").rstrip(",")
+        turnaround_string = turnaround_string.rstrip(" ").rstrip(",")
+        if Stage.objects.filter(stageandrecovery__launch=self).exists():
+            turnaround_string += "-day turnaround"
+            return " " + stages_string + "; " + turnaround_string
         else:
-            boosters_display = "Unknown booster"
-
-        return boosters_display
+            return "; Unknown booster"
     
     #Figure out where stages will land or where they landed; change tense based on portion of time. Accounts for soft ocean landings as well
     def make_landing_string(self):
-        launch_landings = "The first stage will be expended"
+        launch_landings = ""
+
         for item in StageAndRecovery.objects.filter(launch=self):
-            if self.time > datetime.now(pytz.utc):
-                if launch_landings == "The first stage will be expended":
+            if launch_landings == "The first stage will be expended":
                     launch_landings = ""
+            if self.time > datetime.now(pytz.utc):
                 if item.method == "EXPENDED":
                     launch_landings += f"{item.stage.name} will be expended; "
                 elif item.method == "OCEAN_SURFACE":
                     launch_landings += f"{item.stage.name} will attempt a soft landing on the ocean surface; "
-                elif item.method == "DRONE_SHIP":
-                    if item.landing_zone:
-                        launch_landings += f"{item.stage.name} will be recovered on {item.landing_zone.name} ({item.landing_zone.nickname}); "
                 else:
                     if item.landing_zone:
                         launch_landings += f"{item.stage.name} will be recovered on {item.landing_zone.name} ({item.landing_zone.nickname}); "
             else:
-                if launch_landings == "The first stage will be expended":
-                    launch_landings = ""
                 if item.method == "EXPENDED":
                     launch_landings += f"{item.stage.name} was expended; "
                 elif item.method == "OCEAN_SURFACE":
                     launch_landings += f"{item.stage.name} {success(item.method_success)} a soft landing on the ocean surface; "
-                elif item.method == "DRONE_SHIP":
-                    if item.landing_zone:
-                        launch_landings += f"{item.stage.name} {success(item.method_success)} a landing on {item.landing_zone.name} ({item.landing_zone.nickname}); "
                 else:
                     if item.landing_zone:
                         launch_landings += f"{item.stage.name} {success(item.method_success)} a landing on {item.landing_zone.name} ({item.landing_zone.nickname}); "
+
+        if launch_landings == "":
+            if self.time > datetime.now(pytz.utc):
+                launch_landings = "The first stage will be expended"
+            else:
+                launch_landings = "The first stage was expended"
         launch_landings: list = launch_landings.rstrip("; ")
+
         return launch_landings
     
     def make_stats(self) -> list:
@@ -316,7 +315,7 @@ class Launch(models.Model):
         if self.flight_proven_booster:
             stats.append(f"– {make_ordinal(booster_reuse)} {self.rocket} flight with a flight-proven booster")
             stats.append(f"– {self.get_total_reflights(start=datetime(2000, 1, 1, tzinfo=pytz.utc))} reflight of a booster")
-            stats.append(f"– {self.get_total_reflights(start=datetime(self.time.year, 1, 1, tzinfo=pytz.utc))} reflight of a booster in {self.time.year}")
+            stats.append(f"– {self.get_total_reflights(start=datetime(self.time.year - 1, 12, 31, 23, 59, 59, 999, tzinfo=pytz.utc))} reflight of a booster in {self.time.year}")
 
         if booster_landings:
             consec_landings = self.get_consec_landings()
@@ -327,7 +326,6 @@ class Launch(models.Model):
         stats.append(f"– {self.get_launches_from_pad()} SpaceX launch from {self.pad.name}")
 
         #This section adds quickest turnaround stats. As the names imply, booster, zones, company, and pad.
-
         booster_turnarounds = self.calculate_turnarounds(object=TurnaroundObjects.BOOSTER)
         if booster_turnarounds:
             if booster_turnarounds[0]:
@@ -433,7 +431,7 @@ class Launch(models.Model):
         data["Lift Off Time"] = [f"{format_time(self.time)}", f"{format_time(liftoff_time_local)}"]
         data["Mission Name"] = [self.name]
         data["Customer <br /> (Who's paying for this?)"] = [self.customer]
-        data["Rocket"] = [f"{self.rocket}; {boosters_display}"]
+        data["Rocket"] = [f"{self.rocket}{boosters_display}"]
         data["Launch Location"] = [f"{launch_location}"]
         data["Payload mass"] = [self.mass]
         data["Where are the satellites going?"] = [self.orbit.name]
@@ -477,7 +475,7 @@ class Launch(models.Model):
 
             data = ordered_data
 
-        table_html = "<table>"
+        """table_html = "<table>"
         for key, values in data.items():
             table_html += "<tr><th class=\"has-text-align-left\" data-align=\"left\"><h6><strong>{}</strong></h6></th>".format(key)
             table_html += "<td>"
@@ -486,7 +484,7 @@ class Launch(models.Model):
             table_html += "</td></tr>"
         table_html += "</table>"
 
-        print(table_html)
+        print(table_html)"""
         return data
 
 class LandingZone(models.Model):
