@@ -1,5 +1,5 @@
 from django.db import models
-from generate_stats import turnaround_time, make_ordinal, concatenated_list, TurnaroundObjects, success, convert_seconds, format_time, remove_duplicates
+from utils import turnaround_time, make_ordinal, concatenated_list, TurnaroundObjects, success, convert_seconds, format_time, remove_duplicates
 from datetime import datetime
 from django.db.models import Q, Count, Max
 import pytz

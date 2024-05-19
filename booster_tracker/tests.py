@@ -1,6 +1,6 @@
 from django.test import TestCase
 from booster_tracker.models import *
-from booster_tracker.generate_stats import *
+from booster_tracker.utils import *
 
 # Create your tests here.
 class StatsTestCases(TestCase):
@@ -78,12 +78,6 @@ class StatsTestCases(TestCase):
             launch_outcome = "SUCCESS"
         )
 
-        self.falcon_9_launch_1_functions = LaunchStats(launch=Launch.objects.get(name="Falcon 9 Launch 1"))
-        self.falcon_9_launch_2_functions = LaunchStats(launch=Launch.objects.get(name="Falcon 9 Launch 2"))
-        self.falcon_9_launch_3_functions = LaunchStats(launch=Launch.objects.get(name="Falcon 9 Launch 3"))
-        self.falcon_heavy_launch_1_functions = LaunchStats(launch=Launch.objects.get(name="Falcon Heavy Launch 1"))
-        self.falcon_9_launch_4_functions = LaunchStats(launch=Launch.objects.get(name="Falcon 9 Launch 4"))
-
         StageAndRecovery.objects.create(
             launch = Launch.objects.get(name="Falcon 9 Launch 1"),
             stage = Stage.objects.get(name="B1062"),
@@ -146,6 +140,7 @@ class StatsTestCases(TestCase):
             recovery_success = False
         )
 
+    #Start by testing all of the functions in the #utils.py folder
     def test_format_time(self):
         self.assertEqual(format_time(datetime(2024, 1, 1, 0, 0, tzinfo=pytz.utc)), "January 01, 2024 - 00:00 UTC")
         self.assertEqual(format_time(datetime(2024, 3, 14, 14, 32, tzinfo=pytz.utc)), "March 14, 2024 - 14:32 UTC")
@@ -200,25 +195,6 @@ class StatsTestCases(TestCase):
 
         self.assertEqual(get_most_flown_boosters(), (["B1080"], 4))
 
-    def test_get_boosters_and_recovery(self):
-        self.assertEqual(self.falcon_9_launch_1_functions.get_boosters_and_recovery(), ("B1062-1", "LZ-1"))
-        self.assertEqual(self.falcon_9_launch_2_functions.get_boosters_and_recovery(), ("B1062-2", "LZ-1"))
-        self.assertEqual(get_boosters_and_recovery(Launch.objects.get(name="Falcon Heavy Launch 1")), ("B1080-2, B1062-3, and B1084-1", "LZ-1, LZ-2, and JRtI"))
-        self.assertEqual(get_boosters_and_recovery(Launch.objects.get(name="Falcon 9 Launch 4")), ("B1080-3", "Expended"))
-
-        Launch.objects.create(
-            time=datetime(2024, 1, 1, 0, 0, tzinfo=pytz.utc),
-            pad=Pad.objects.get(name="Space Launch Complex 40"),
-            rocket=Rocket.objects.get(name="Falcon 9"),
-            name="Falcon 9 Temp Launch 1",
-            orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
-            customer="SpaceX",
-            launch_outcome = "SUCCESS"
-        )
-
-        self.assertEqual(get_boosters_and_recovery(Launch.objects.get(name="Falcon 9 Temp Launch 1")), ("N/A", "N/A"))
-
     def test_remove_duplicates(self):
         self.assertCountEqual(remove_duplicates([Boat.objects.get(name="Bob"), Boat.objects.get(name="Doug")]), ["Bob", "Doug"])
         self.assertEqual(remove_duplicates([Boat.objects.get(name="Bob"), Boat.objects.get(name="Bob")]), ["Bob"])
@@ -231,7 +207,7 @@ class StatsTestCases(TestCase):
             time=datetime(2024, 5, 2, 0, 0, tzinfo=pytz.utc),
             pad=Pad.objects.get(name="Space Launch Complex 40"),
             rocket=Rocket.objects.get(name="Falcon 9"),
-            name="Falcon 9 Temp Launch 1",
+            name="Falcon 9 Temp Launch 2",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
             mass="1000 kg",
             customer="SpaceX",
@@ -240,12 +216,77 @@ class StatsTestCases(TestCase):
 
         self.assertEqual(turnaround_time(Launch.objects.all().order_by("time")), 86400)
 
-    def test_get_stage_flights_and_turnaround(self):
-        time = datetime(2024, 1, 30, 0, 0, tzinfo=pytz.utc)
-        time1 = datetime(2024, 2, 2, 0, 0, tzinfo=pytz.utc)
+    #And now test functions in models.py
+    def test_droneship_needed(self):
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").droneship_needed, False)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").droneship_needed, False)
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").droneship_needed, True)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").droneship_needed, False)
 
-        self.assertEqual(get_stage_flights_and_turnaround(stage=Stage.objects.get(name="B1062"), time=time), (1, None))
-        self.assertEqual(get_stage_flights_and_turnaround(stage=Stage.objects.get(name="B1062"), time=time1), (2, 31.00))
+    def test_flight_proven_booster(self):
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").flight_proven_booster, False)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").flight_proven_booster, True)
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").flight_proven_booster, True)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").flight_proven_booster, True)
+
+        Stage.objects.create(name="B1000", rocket=Rocket.objects.get(name="Falcon 9"), version="v1.2 Block 5.4", type="BOOSTER", status="ACTIVE")
+        Stage.objects.create(name="B1001", rocket=Rocket.objects.get(name="Falcon 9"), version="v1.2 Block 5.5", type="BOOSTER", status="ACTIVE")
+        Stage.objects.create(name="B1002", rocket=Rocket.objects.get(name="Falcon Heavy"), version="v1.2 Block 5.5", type="BOOSTER", status="ACTIVE")
+
+        Launch.objects.create(
+            time=datetime(2024, 4, 1, tzinfo=pytz.utc),
+            pad=Pad.objects.get(name="Space Launch Complex 40"),
+            rocket=Rocket.objects.get(name="Falcon Heavy"),
+            name="Falcon Heavy Temp Launch 1",
+            orbit=Orbit.objects.get(name="low-Earth Orbit"),
+            mass="1000 kg",
+            customer="SpaceX",
+            launch_outcome = "SUCCESS"
+        )
+
+        StageAndRecovery.objects.create(
+            launch = Launch.objects.get(name="Falcon Heavy Temp Launch 1"),
+            stage = Stage.objects.get(name="B1000"),
+            landing_zone = LandingZone.objects.get(name="Landing Zone 1"),
+            method = "GROUND_PAD",
+            method_success = "SUCCESS",
+            recovery_success = True
+        )
+
+        StageAndRecovery.objects.create(
+            launch = Launch.objects.get(name="Falcon Heavy Temp Launch 1"),
+            stage = Stage.objects.get(name="B1001"),
+            landing_zone = LandingZone.objects.get(name="Landing Zone 2"),
+            method = "GROUND_PAD",
+            method_success = "SUCCESS",
+            recovery_success = True
+        )
+
+        StageAndRecovery.objects.create(
+            launch = Launch.objects.get(name="Falcon Heavy Temp Launch 1"),
+            stage = Stage.objects.get(name="B1002"),
+            landing_zone = LandingZone.objects.get(name="Just Read the Instructions"),
+            method = "DRONE_SHIP",
+            method_success = "SUCCESS",
+            recovery_success = True
+        )
+
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Temp Launch 1").flight_proven_booster, False)
+
+    def test_num_successful_landings(self):
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").num_successful_landings, 1)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").num_successful_landings, 1)
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").num_successful_landings, 3)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").num_successful_landings, 0)
+
+    def test_get_stage_flights_and_turnaround(self):
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").get_stage_flights_and_turnaround(stage=Stage.objects.get(stageandrecovery__launch=Launch.objects.get(name="Falcon 9 Launch 1"))), (1, None))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").get_stage_flights_and_turnaround(stage=Stage.objects.get(stageandrecovery__launch=Launch.objects.get(name="Falcon 9 Launch 2"))), (2, 31.00))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 3").get_stage_flights_and_turnaround(stage=Stage.objects.get(stageandrecovery__launch=Launch.objects.get(name="Falcon 9 Launch 3"))), (1, None))
+
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").get_stage_flights_and_turnaround(stage=Stage.objects.get(name="B1062")), (3, 60.00))
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").get_stage_flights_and_turnaround(stage=Stage.objects.get(name="B1080")), (2, 31.00))
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").get_stage_flights_and_turnaround(stage=Stage.objects.get(name="B1084")), (1, None))
 
     def test_get_rocket_flights_reused_vehicle(self):
 
@@ -329,34 +370,34 @@ class StatsTestCases(TestCase):
             recovery_success = True
         )
 
-        self.assertEqual(get_rocket_flights_reused_vehicle(launch=Launch.objects.get(name="Falcon 9 Launch 1")), (0, False))
-        self.assertEqual(get_rocket_flights_reused_vehicle(launch=Launch.objects.get(name="Falcon 9 Launch 2")), (1, True))
-        self.assertEqual(get_rocket_flights_reused_vehicle(launch=Launch.objects.get(name="Falcon 9 Launch 3")), (1, False))
-        self.assertEqual(get_rocket_flights_reused_vehicle(launch=Launch.objects.get(name="Falcon 9 Launch 4")), (2, True))
-        self.assertEqual(get_rocket_flights_reused_vehicle(launch=Launch.objects.get(name="Falcon 9 Temp Launch 1")), (2, False))
-        self.assertEqual(get_rocket_flights_reused_vehicle(launch=Launch.objects.get(name="Falcon 9 Temp Launch 2")), (3, True))
-        self.assertEqual(get_rocket_flights_reused_vehicle(launch=Launch.objects.get(name="Falcon Heavy Launch 1")), (1, True))
-        self.assertEqual(get_rocket_flights_reused_vehicle(launch=Launch.objects.get(name="Falcon Heavy Temp Launch 1")), (2, True))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").get_rocket_flights_reused_vehicle(), 0)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").get_rocket_flights_reused_vehicle(), 1)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 3").get_rocket_flights_reused_vehicle(), 1)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").get_rocket_flights_reused_vehicle(), 2)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 1").get_rocket_flights_reused_vehicle(), 2)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 2").get_rocket_flights_reused_vehicle(), 3)
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").get_rocket_flights_reused_vehicle(), 1)
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Temp Launch 1").get_rocket_flights_reused_vehicle(), 2)
 
     def test_get_total_reflights(self):
         past_time = datetime(2000, 1, 1, 0, 0, tzinfo=pytz.utc) #Just some random date that is before all launches
         later_time = datetime(2024, 2, 2, 0, 0, tzinfo=pytz.utc) #A time that is between launches to ensure offset works
-        self.assertEqual(get_total_reflights(launch=Launch.objects.get(name="Falcon 9 Launch 1"), start=past_time), "N/A")
-        self.assertEqual(get_total_reflights(launch=Launch.objects.get(name="Falcon 9 Launch 2"), start=past_time), "1st")
-        self.assertEqual(get_total_reflights(launch=Launch.objects.get(name="Falcon 9 Launch 3"), start=past_time), "N/A")
-        self.assertEqual(get_total_reflights(launch=Launch.objects.get(name="Falcon Heavy Launch 1"), start=past_time), "2nd and 3rd")
-        self.assertEqual(get_total_reflights(launch=Launch.objects.get(name="Falcon 9 Launch 4"), start=past_time), "4th")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").get_total_reflights(start=past_time), "N/A")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").get_total_reflights(start=past_time), "1st")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 3").get_total_reflights(start=past_time), "N/A")
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").get_total_reflights(start=past_time), "2nd and 3rd")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").get_total_reflights(start=past_time), "4th")
 
-        self.assertEqual(get_total_reflights(launch=Launch.objects.get(name="Falcon 9 Launch 3"), start=later_time), "N/A")
-        self.assertEqual(get_total_reflights(launch=Launch.objects.get(name="Falcon Heavy Launch 1"), start=later_time), "1st and 2nd")
-        self.assertEqual(get_total_reflights(launch=Launch.objects.get(name="Falcon 9 Launch 4"), start=later_time), "3rd")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 3").get_total_reflights(start=later_time), "N/A")
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").get_total_reflights(start=later_time), "1st and 2nd")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").get_total_reflights(start=later_time), "3rd")
 
     def test_get_num_booster_landings(self):
-        self.assertEqual(get_num_booster_landings(launch=Launch.objects.get(name="Falcon 9 Launch 1")), "1st")
-        self.assertEqual(get_num_booster_landings(launch=Launch.objects.get(name="Falcon 9 Launch 2")), "2nd")
-        self.assertEqual(get_num_booster_landings(launch=Launch.objects.get(name="Falcon 9 Launch 3")), "3rd")
-        self.assertEqual(get_num_booster_landings(launch=Launch.objects.get(name="Falcon Heavy Launch 1")), "4th, 5th, and 6th")
-        self.assertEqual(get_num_booster_landings(launch=Launch.objects.get(name="Falcon 9 Launch 4")), None)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").get_num_booster_landings(), "1st")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").get_num_booster_landings(), "2nd")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 3").get_num_booster_landings(), "3rd")
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").get_num_booster_landings(), "4th, 5th, and 6th")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").get_num_booster_landings(), None)
 
         Launch.objects.create(
             time=datetime(2024, 6, 1, 0, 0, tzinfo=pytz.utc),
@@ -378,37 +419,36 @@ class StatsTestCases(TestCase):
             recovery_success = True
         )
 
-        self.assertEqual(get_num_booster_landings(launch=Launch.objects.get(name="Falcon 9 Temp Launch 1")), "7th")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 1").get_num_booster_landings(), "7th")
 
     def test_calculate_turnarounds(self):
         #Start by testing the ALL case
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.ALL, launch=Launch.objects.get(name="Falcon 9 Launch 1")), None)
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.ALL, launch=Launch.objects.get(name="Falcon 9 Launch 2")), (True, [['', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.ALL, launch=Launch.objects.get(name="Falcon 9 Launch 3")), (True, [['', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.ALL, launch=Launch.objects.get(name="Falcon Heavy Launch 1")), (False, [['', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.ALL, launch=Launch.objects.get(name="Falcon 9 Launch 4")), (False, [['', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['', 2592000, 'Falcon 9 Launch 4', 'Falcon Heavy Launch 1'], ['', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").calculate_turnarounds(object=TurnaroundObjects.ALL), None)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").calculate_turnarounds(object=TurnaroundObjects.ALL), (True, [['', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 3").calculate_turnarounds(object=TurnaroundObjects.ALL), (True, [['', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").calculate_turnarounds(object=TurnaroundObjects.ALL), (False, [['', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").calculate_turnarounds(object=TurnaroundObjects.ALL), (False, [['', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['', 2592000, 'Falcon 9 Launch 4', 'Falcon Heavy Launch 1'], ['', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
 
         #Testing of BOOSTER case
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.BOOSTER, launch=Launch.objects.get(name="Falcon 9 Launch 1")), None)
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.BOOSTER, launch=Launch.objects.get(name="Falcon 9 Launch 2")), (True, [['B1062', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.BOOSTER, launch=Launch.objects.get(name="Falcon 9 Launch 3")), (False, [['B1062', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.BOOSTER, launch=Launch.objects.get(name="Falcon Heavy Launch 1")), (False, [['B1062', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['B1080', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3'], ['B1062', 5184000, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 2']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.BOOSTER, launch=Launch.objects.get(name="Falcon 9 Launch 4")), (True, [['B1080', 2592000, 'Falcon 9 Launch 4', 'Falcon Heavy Launch 1'], ['B1062', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['B1080', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3'], ['B1062', 5184000, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 2']]))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").calculate_turnarounds(object=TurnaroundObjects.BOOSTER), None)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").calculate_turnarounds(object=TurnaroundObjects.BOOSTER), (True, [['B1062', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 3").calculate_turnarounds(object=TurnaroundObjects.BOOSTER), (False, [['B1062', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").calculate_turnarounds(object=TurnaroundObjects.BOOSTER), (False, [['B1062', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['B1080', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3'], ['B1062', 5184000, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 2']]))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").calculate_turnarounds(object=TurnaroundObjects.BOOSTER), (True, [['B1080', 2592000, 'Falcon 9 Launch 4', 'Falcon Heavy Launch 1'], ['B1062', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['B1080', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3'], ['B1062', 5184000, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 2']]))
 
         #Testing of PAD case
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.PAD, launch=Launch.objects.get(name="Falcon 9 Launch 1")), None)
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.PAD, launch=Launch.objects.get(name="Falcon 9 Launch 2")), (True, [['SLC-40', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.PAD, launch=Launch.objects.get(name="Falcon 9 Launch 3")), (True, [['SLC-40', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['SLC-40', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.PAD, launch=Launch.objects.get(name="Falcon Heavy Launch 1")), (False, [['SLC-40', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['SLC-40', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['SLC-40', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.PAD, launch=Launch.objects.get(name="Falcon 9 Launch 4")), (False, [['SLC-40', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['SLC-40', 2592000, 'Falcon 9 Launch 4', 'Falcon Heavy Launch 1'], ['SLC-40', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['SLC-40', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").calculate_turnarounds(object=TurnaroundObjects.PAD), None)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").calculate_turnarounds(object=TurnaroundObjects.PAD), (True, [['SLC-40', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 3").calculate_turnarounds(object=TurnaroundObjects.PAD), (True, [['SLC-40', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['SLC-40', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").calculate_turnarounds(object=TurnaroundObjects.PAD), (False, [['SLC-40', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['SLC-40', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['SLC-40', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").calculate_turnarounds(object=TurnaroundObjects.PAD), (False, [['SLC-40', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['SLC-40', 2592000, 'Falcon 9 Launch 4', 'Falcon Heavy Launch 1'], ['SLC-40', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['SLC-40', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
 
         #Testing of LANDING_ZONE case
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE, launch=Launch.objects.get(name="Falcon 9 Launch 1")), None)
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE, launch=Launch.objects.get(name="Falcon 9 Launch 2")), (True, [['LZ-1', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE, launch=Launch.objects.get(name="Falcon 9 Launch 3")), (True, [['LZ-1', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['LZ-1', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE, launch=Launch.objects.get(name="Falcon Heavy Launch 1")), (False, [['LZ-1', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['LZ-1', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['LZ-1', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE, launch=Launch.objects.get(name="Falcon 9 Launch 4")), (False, [['LZ-1', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['LZ-1', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['LZ-1', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
-
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE), None)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE), (True, [['LZ-1', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 3").calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE), (True, [['LZ-1', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['LZ-1', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1']]))
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE), (False, [['LZ-1', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['LZ-1', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['LZ-1', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE), (False, [['LZ-1', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['LZ-1', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['LZ-1', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
 
         #Make sure it responds correctly when another launch is added
         Launch.objects.create(
@@ -431,17 +471,17 @@ class StatsTestCases(TestCase):
             recovery_success = True
         )
 
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.BOOSTER, launch=Launch.objects.get(name="Falcon 9 Temp Launch 1")), (True, [['B1080', 86400, 'Falcon 9 Temp Launch 1', 'Falcon Heavy Launch 1'], ['B1062', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['B1080', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3'], ['B1062', 5184000, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 2']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.PAD, launch=Launch.objects.get(name="Falcon 9 Temp Launch 1")), (True, [['SLC-40', 86400, 'Falcon 9 Temp Launch 1', 'Falcon Heavy Launch 1'], ['SLC-40', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['SLC-40', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['SLC-40', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE, launch=Launch.objects.get(name="Falcon 9 Temp Launch 1")), (True, [['JRtI', 86400, 'Falcon 9 Temp Launch 1', 'Falcon Heavy Launch 1'], ['LZ-1', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['LZ-1', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['LZ-1', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
-        self.assertEqual(calculate_turnarounds(object=TurnaroundObjects.ALL, launch=Launch.objects.get(name="Falcon 9 Temp Launch 1")), (True, [['', 86400, 'Falcon 9 Temp Launch 1', 'Falcon Heavy Launch 1'], ['', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 1").calculate_turnarounds(object=TurnaroundObjects.BOOSTER), (True, [['B1080', 86400, 'Falcon 9 Temp Launch 1', 'Falcon Heavy Launch 1'], ['B1062', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['B1080', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3'], ['B1062', 5184000, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 2']]))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 1").calculate_turnarounds(object=TurnaroundObjects.PAD), (True, [['SLC-40', 86400, 'Falcon 9 Temp Launch 1', 'Falcon Heavy Launch 1'], ['SLC-40', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['SLC-40', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['SLC-40', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 1").calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE), (True, [['JRtI', 86400, 'Falcon 9 Temp Launch 1', 'Falcon Heavy Launch 1'], ['LZ-1', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['LZ-1', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['LZ-1', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 1").calculate_turnarounds(object=TurnaroundObjects.ALL), (True, [['', 86400, 'Falcon 9 Temp Launch 1', 'Falcon Heavy Launch 1'], ['', 2505600, 'Falcon 9 Launch 3', 'Falcon 9 Launch 2'], ['', 2678400, 'Falcon 9 Launch 2', 'Falcon 9 Launch 1'], ['', 2678400, 'Falcon Heavy Launch 1', 'Falcon 9 Launch 3']]))
 
     def test_get_consec_landings(self):
-        self.assertEqual(get_consec_landings(launch=Launch.objects.get(name="Falcon 9 Launch 1")), ("1st", ""))
-        self.assertEqual(get_consec_landings(launch=Launch.objects.get(name="Falcon 9 Launch 2")), ("2nd", ""))
-        self.assertEqual(get_consec_landings(launch=Launch.objects.get(name="Falcon 9 Launch 3")), ("3rd", ""))
-        self.assertEqual(get_consec_landings(launch=Launch.objects.get(name="Falcon Heavy Launch 1")), ("4th, 5th, and 6th", "s"))
-        self.assertEqual(get_consec_landings(launch=Launch.objects.get(name="Falcon 9 Launch 4")), None)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").get_consec_landings(), "1st")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").get_consec_landings(), "2nd")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 3").get_consec_landings(), "3rd")
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").get_consec_landings(), "4th, 5th, and 6th")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").get_consec_landings(), "N/A")
 
         Launch.objects.create(
             time=datetime(2024, 5, 2, 0, 0, tzinfo=pytz.utc),
@@ -463,7 +503,7 @@ class StatsTestCases(TestCase):
             recovery_success = True
         )
 
-        self.assertEqual(get_consec_landings(launch=Launch.objects.get(name="Falcon 9 Temp Launch 1")), None)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 1").get_consec_landings(), "N/A")
 
         Launch.objects.create(
             time=datetime(2024, 5, 3, 0, 0, tzinfo=pytz.utc),
@@ -485,7 +525,7 @@ class StatsTestCases(TestCase):
             recovery_success = True
         )
 
-        self.assertEqual(get_consec_landings(launch=Launch.objects.get(name="Falcon 9 Temp Launch 2")), ("1st", ""))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 2").get_consec_landings(), "1st")
 
         Launch.objects.create(
             time=datetime(2024, 5, 4, 0, 0, tzinfo=pytz.utc),
@@ -525,7 +565,7 @@ class StatsTestCases(TestCase):
             recovery_success = True
         )
 
-        self.assertEqual(get_consec_landings(launch=Launch.objects.get(name="Falcon Heavy Temp Launch 1")), ("1st and 2nd", "s"))
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Temp Launch 1").get_consec_landings(), "1st and 2nd")
 
         today = datetime.now(pytz.utc)
         Launch.objects.create(
@@ -547,4 +587,42 @@ class StatsTestCases(TestCase):
             recovery_success = False
         )
 
-        self.assertEqual(get_consec_landings(launch=Launch.objects.get(name="Falcon 9 Temp Launch 3")), ("3rd", ""))
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 3").get_consec_landings(), "3rd")
+
+    def test_get_boosters(self):
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").get_boosters(), "B1062-1")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").get_boosters(), "B1062-2")
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").get_boosters(), "B1080-2, B1062-3, and B1084-1")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").get_boosters(), "B1080-3")
+
+        Launch.objects.create(
+            time=datetime(2024, 1, 1, 0, 0, tzinfo=pytz.utc),
+            pad=Pad.objects.get(name="Space Launch Complex 40"),
+            rocket=Rocket.objects.get(name="Falcon 9"),
+            name="Falcon 9 Temp Launch 1",
+            orbit=Orbit.objects.get(name="low-Earth Orbit"),
+            mass="1000 kg",
+            customer="SpaceX",
+            launch_outcome = "SUCCESS"
+        )
+
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 1").get_boosters(), "N/A")
+
+    def test_get_recoveries(self):
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").get_recoveries(), "LZ-1")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").get_recoveries(), "LZ-1")
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").get_recoveries(), "LZ-1, LZ-2, and JRtI")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").get_recoveries(), "Expended")
+
+        Launch.objects.create(
+            time=datetime(2024, 1, 1, 0, 0, tzinfo=pytz.utc),
+            pad=Pad.objects.get(name="Space Launch Complex 40"),
+            rocket=Rocket.objects.get(name="Falcon 9"),
+            name="Falcon 9 Temp Launch 1",
+            orbit=Orbit.objects.get(name="low-Earth Orbit"),
+            mass="1000 kg",
+            customer="SpaceX",
+            launch_outcome = "SUCCESS"
+        )
+
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 1").get_recoveries(), "N/A")

@@ -2,7 +2,7 @@ from django.http import HttpResponse
 from django.template import loader
 from django.http import Http404, JsonResponse
 from django.shortcuts import render, get_object_or_404
-from .generate_stats import *
+from .utils import *
 
 import pytz
 
