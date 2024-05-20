@@ -106,18 +106,18 @@
 
       <h1 style="font-size: 3em;">Launch pads</h1>
 
-    {% if pads %}
-        {% for pad in pads %}
+    {% if pad_stats %}
+        {% for pad in pad_stats %}
         <div class="rocket-container" style="border: 1px solid white;">
             <div style="background-color: #333;"></div>
-            <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ pad.image.url }}');"></div>
+            <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ pad.0.image.url }}');"></div>
             <div class="info-wrapper blue-text">
-                <h1 style="text-align: left">{{ pad.name|upper }}</h1>
-                <p> <b>Nickname: </b>{{ pad.nickname }}</p>
-                <p> <b>Location: </b>{{ pad.location }}</p>
+                <h1 style="text-align: left">{{ pad.0.name|upper }}</h1>
+                <p> <b>Nickname: </b>{{ pad.0.nickname }}</p>
+                <p> <b>Location: </b>{{ pad.0.location }}</p>
                 <p> <b>Launches: </b>{{ pad_stats|index:forloop.counter0|index:1 }}</p>
                 <p> <b>Fastest Turnaround: </b>{{ pad_stats|index:forloop.counter0|index:2 }}</p>
-                <p> <b>Status: </b>{{ pad.status|lower|title }}</p>
+                <p> <b>Status: </b>{{ pad.0.status|lower|title }}</p>
             </div>
         </div>
         {% endfor %}
@@ -127,20 +127,20 @@
     
     <h1 style="font-size: 3em;">Recovery Zones</h1>
 
-    {% if recovery_zones %}
-        {% for zone in recovery_zones %}
+    {% if zone_stats %}
+        {% for zone in zone_stats %}
         <div class="rocket-container" style="border: 1px solid white;">
             <div style="background-color: #333;"></div>
-            <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ zone.image.url }}');"></div>
+            <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ zone.0.image.url }}');"></div>
             <div class="info-wrapper blue-text">
-                <h1 style="text-align: left">{{ zone.name|upper }}</h1>
-                <p> <b>Nickname: </b>{{ zone.nickname }}</p>
-                {% if zone.serial_number %}
-                    <p> <b>Boat ID: </b>{{ zone.serial_number }}</p>
+                <h1 style="text-align: left">{{ zone.0.name|upper }}</h1>
+                <p> <b>Nickname: </b>{{ zone.0.nickname }}</p>
+                {% if zone.0.serial_number %}
+                    <p> <b>Boat ID: </b>{{ zone.0.serial_number }}</p>
                 {% endif %}
                 <p> <b>Successful Landings: </b>{{ zone_stats|index:forloop.counter0|index:1 }}</p>
                 <p> <b>Fastest Turnaround: </b>{{ zone_stats|index:forloop.counter0|index:2 }}</p>
-                <p> <b>Status: </b>{{ zone.status|lower|title }}</p>
+                <p> <b>Status: </b>{{ zone.0.status|lower|title }}</p>
             </div>
         </div>
         {% endfor %}

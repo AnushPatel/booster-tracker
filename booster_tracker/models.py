@@ -297,9 +297,9 @@ class Launch(models.Model):
 
         if launch_landings == "":
             if self.time > datetime.now(pytz.utc):
-                launch_landings = "The first stage will be expended"
+                launch_landings = "The stage will be expended"
             else:
-                launch_landings = "The first stage was expended"
+                launch_landings = "The stage was expended"
         launch_landings: list = launch_landings.rstrip("; ")
 
         return launch_landings

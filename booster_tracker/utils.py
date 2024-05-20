@@ -90,9 +90,54 @@ class TurnaroundObjects(StrEnum):
     PAD = "pad"
     ALL = "all"
 
-#This section we start defining functions to create stats:
 #Simply gets the turnaround time between two objects; the exact list should be specified elsewhere
 def turnaround_time(launches: list[Launch]) -> int:
     if len(launches) > 1:
         return((launches[len(launches)-1].time-launches[len(launches)-2].time).total_seconds())
     return None
+
+#This section we'll define functions that are used for generating the home page:
+def get_launches_and_successes_per_rocket() -> list:
+    values: list = []
+    for rocket in Rocket.objects.all():
+        launches = Launch.objects.filter(rocket=rocket, time__lte=datetime.now(pytz.utc)).count()
+        successes = Launch.objects.filter(rocket=rocket, launch_outcome="SUCCESS", time__lte=datetime.now(pytz.utc)).count()
+        values.append([rocket.name, launches, successes])
+
+    return values
+
+def get_landings_and_successes() -> tuple:
+    num_landing_attempts = StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc)).filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD")).filter(~Q(method_success="PRECLUDED")).count()
+    num_successes = StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc), method_success="SUCCESS").filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD")).count()
+
+    return (num_landing_attempts, num_successes)
+
+def get_pad_stats() -> list:
+    stats: list = []
+    for pad in Pad.objects.filter(padused__rocket__provider__name="SpaceX").distinct().order_by("id"):
+        fastest_turnaround = "N/A"
+        num_launches = Launch.objects.filter(pad=pad, time__lte=datetime.now(pytz.utc)).count()
+
+        if Launch.objects.filter(time__lte=datetime.now(pytz.utc), pad=pad).exists():
+            turnarounds = Launch.objects.filter(time__lte=datetime.now(pytz.utc), pad=pad).first().calculate_turnarounds(object=TurnaroundObjects.PAD)
+            specific_pad_turnarounds = [row for row in turnarounds[1] if f"{pad.nickname}" == row[0]]
+            if len(specific_pad_turnarounds) > 0:
+                fastest_turnaround = convert_seconds(specific_pad_turnarounds[0][1])
+        stats.append([pad, num_launches, fastest_turnaround])
+
+    return stats
+
+def get_zone_stats() -> list:
+    stats: list = []
+    for zone in LandingZone.objects.filter(stageandrecovery__stage__rocket__provider__name="SpaceX").distinct().order_by("id"):
+        fastest_turnaround = "N/A"
+        num_landings = Launch.objects.filter(stageandrecovery__landing_zone=zone, time__lte=datetime.now(pytz.utc), stageandrecovery__method_success="SUCCESS").count()
+
+        if Launch.objects.filter(time__lte=datetime.now(pytz.utc), stageandrecovery__landing_zone=zone).exists():
+            turnarounds = Launch.objects.filter(time__lte=datetime.now(pytz.utc), stageandrecovery__landing_zone=zone).first().calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE)
+            specific_zone_turnarounds = [row for row in turnarounds[1] if f"{zone.nickname}" == row[0]]
+            if len(specific_zone_turnarounds) > 0:
+                fastest_turnaround = convert_seconds(specific_zone_turnarounds[0][1])
+        stats.append([zone, num_landings, fastest_turnaround])
+
+    return stats
