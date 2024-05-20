@@ -61,8 +61,17 @@ def home(request):
     falcon_9_reflights = Launch.objects.filter(time__lte=datetime.now(pytz.utc), rocket__name="Falcon 9").first().get_rocket_flights_reused_vehicle()
     falcon_heavy_reflights = Launch.objects.filter(time__lte=datetime.now(pytz.utc), rocket__name="Falcon Heavy").first().get_rocket_flights_reused_vehicle()
 
-    pad_stats = get_pad_stats()
-    recovery_zone_stats = get_zone_stats()
+    pad_stats: list = []
+    for pad in Pad.objects.filter(padused__rocket__provider__name="SpaceX").distinct().order_by("id"):
+        num_launches = pad.num_launches
+        fastest_turnaround = pad.fastest_turnaround
+        pad_stats.append([pad, num_launches, fastest_turnaround])
+
+    recovery_zone_stats: list = []
+    for zone in LandingZone.objects.filter(stageandrecovery__stage__rocket__provider__name="SpaceX").distinct().order_by("id"):
+        num_launches = zone.num_launches
+        fastest_turnaround = zone.fastest_turnaround
+        recovery_zone_stats.append([zone, num_launches, fastest_turnaround])
 
     context = {
         'launches_per_vehicle': num_launches_per_rocket_and_successes,

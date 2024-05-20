@@ -291,40 +291,17 @@ class StatsTestCases(TestCase):
         
         self.assertEqual(get_landings_and_successes(), (9, 7))
 
-    def test_get_pad_stats(self):
-        self.assertEqual(get_pad_stats(), [[Pad.objects.get(nickname="SLC-40"), 5, '29 days'], [Pad.objects.get(nickname="LC-39A"), 0, 'N/A']])
+    #Test the methods for pads and landing zones
+    def test_num_launches(self):
+        self.assertEqual(Pad.objects.get(nickname="SLC-40").num_launches, 5)
+        self.assertEqual(Pad.objects.get(nickname="LC-39A").num_launches, 0)
+
+        self.assertEqual(LandingZone.objects.get(nickname="LZ-1").num_launches, 4)
+        self.assertEqual(LandingZone.objects.get(nickname="LZ-2").num_launches, 1)
+        self.assertEqual(LandingZone.objects.get(nickname="JRtI").num_launches, 1)
 
         Launch.objects.create(
             time=datetime(2024, 4, 1, tzinfo=pytz.utc),
-            pad=Pad.objects.get(name="Launch Complex 39A"),
-            rocket=Rocket.objects.get(name="Falcon 9"),
-            name="Falcon 9 Temp Launch 1",
-            orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
-            customer="SpaceX",
-            launch_outcome = "SUCCESS"
-        )
-
-        self.assertEqual(get_pad_stats(), [[Pad.objects.get(nickname="SLC-40"), 5, '29 days'], [Pad.objects.get(nickname="LC-39A"), 1, 'N/A']])
-
-        Launch.objects.create(
-            time=datetime(2024, 4, 2, tzinfo=pytz.utc),
-            pad=Pad.objects.get(name="Launch Complex 39A"),
-            rocket=Rocket.objects.get(name="Falcon 9"),
-            name="Falcon 9 Temp Launch 2",
-            orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
-            customer="SpaceX",
-            launch_outcome = "SUCCESS"
-        )
-
-        self.assertEqual(get_pad_stats(), [[Pad.objects.get(nickname="SLC-40"), 5, '29 days'], [Pad.objects.get(nickname="LC-39A"), 2, '1 day']])
-
-    def test_get_zone_stats(self):
-        #self.assertEqual(get_zone_stats(), [[LandingZone.objects.get(name="Landing Zone 1"), 4, '29 days'], [LandingZone.objects.get(name="Landing Zone 2"), 1, 'N/A'], [LandingZone.objects.get(name="Just Read the Instructions"), 1, 'N/A']])
-
-        Launch.objects.create(
-            time=datetime(2024, 4, 2, tzinfo=pytz.utc),
             pad=Pad.objects.get(name="Launch Complex 39A"),
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 1",
@@ -343,10 +320,15 @@ class StatsTestCases(TestCase):
             recovery_success = True
         )
 
-        self.assertEqual(get_zone_stats(), [[LandingZone.objects.get(name="Landing Zone 1"), 4, '29 days'], [LandingZone.objects.get(name="Landing Zone 2"), 2, '1 day'], [LandingZone.objects.get(name="Just Read the Instructions"), 1, 'N/A']])
+        self.assertEqual(Pad.objects.get(nickname="SLC-40").num_launches, 5)
+        self.assertEqual(Pad.objects.get(nickname="LC-39A").num_launches, 1)
+
+        self.assertEqual(LandingZone.objects.get(nickname="LZ-1").num_launches, 4)
+        self.assertEqual(LandingZone.objects.get(nickname="LZ-2").num_launches, 2)
+        self.assertEqual(LandingZone.objects.get(nickname="JRtI").num_launches, 1)
 
         Launch.objects.create(
-            time=datetime(2024, 3, 5, tzinfo=pytz.utc),
+            time=datetime(2024, 4, 2, tzinfo=pytz.utc),
             pad=Pad.objects.get(name="Launch Complex 39A"),
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 2",
@@ -365,7 +347,74 @@ class StatsTestCases(TestCase):
             recovery_success = True
         )
 
-        self.assertEqual(get_zone_stats(), [[LandingZone.objects.get(name="Landing Zone 1"), 5, '4 days'], [LandingZone.objects.get(name="Landing Zone 2"), 2, '1 day'], [LandingZone.objects.get(name="Just Read the Instructions"), 1, 'N/A']])
+        self.assertEqual(Pad.objects.get(nickname="SLC-40").num_launches, 5)
+        self.assertEqual(Pad.objects.get(nickname="LC-39A").num_launches, 2)
+
+        self.assertEqual(LandingZone.objects.get(nickname="LZ-1").num_launches, 5)
+        self.assertEqual(LandingZone.objects.get(nickname="LZ-2").num_launches, 2)
+        self.assertEqual(LandingZone.objects.get(nickname="JRtI").num_launches, 1)
+
+    def test_fastest_turnaround(self):
+        self.assertEqual(Pad.objects.get(nickname="SLC-40").fastest_turnaround, "29 days")
+        self.assertEqual(Pad.objects.get(nickname="LC-39A").fastest_turnaround, "N/A")
+
+        self.assertEqual(LandingZone.objects.get(nickname="LZ-1").fastest_turnaround, "29 days")
+        self.assertEqual(LandingZone.objects.get(nickname="LZ-2").fastest_turnaround, "N/A")
+        self.assertEqual(LandingZone.objects.get(nickname="JRtI").fastest_turnaround, "N/A")
+
+        Launch.objects.create(
+            time=datetime(2024, 4, 1, tzinfo=pytz.utc),
+            pad=Pad.objects.get(name="Launch Complex 39A"),
+            rocket=Rocket.objects.get(name="Falcon 9"),
+            name="Falcon 9 Temp Launch 1",
+            orbit=Orbit.objects.get(name="low-Earth Orbit"),
+            mass="1000 kg",
+            customer="SpaceX",
+            launch_outcome = "SUCCESS"
+        )
+
+        StageAndRecovery.objects.create(
+            launch = Launch.objects.get(name="Falcon 9 Temp Launch 1"),
+            stage = Stage.objects.get(name="B1080"),
+            landing_zone = LandingZone.objects.get(name="Landing Zone 2"),
+            method = "GROUND_PAD",
+            method_success = "SUCCESS",
+            recovery_success = True
+        )
+
+        self.assertEqual(Pad.objects.get(nickname="SLC-40").fastest_turnaround, "29 days")
+        self.assertEqual(Pad.objects.get(nickname="LC-39A").fastest_turnaround, "N/A")
+
+        self.assertEqual(LandingZone.objects.get(nickname="LZ-1").fastest_turnaround, "29 days")
+        self.assertEqual(LandingZone.objects.get(nickname="LZ-2").fastest_turnaround, "N/A")
+        self.assertEqual(LandingZone.objects.get(nickname="JRtI").fastest_turnaround, "N/A")
+
+        Launch.objects.create(
+            time=datetime(2024, 4, 2, tzinfo=pytz.utc),
+            pad=Pad.objects.get(name="Launch Complex 39A"),
+            rocket=Rocket.objects.get(name="Falcon 9"),
+            name="Falcon 9 Temp Launch 2",
+            orbit=Orbit.objects.get(name="low-Earth Orbit"),
+            mass="1000 kg",
+            customer="SpaceX",
+            launch_outcome = "SUCCESS"
+        )
+
+        StageAndRecovery.objects.create(
+            launch = Launch.objects.get(name="Falcon 9 Temp Launch 2"),
+            stage = Stage.objects.get(name="B1080"),
+            landing_zone = LandingZone.objects.get(name="Landing Zone 1"),
+            method = "GROUND_PAD",
+            method_success = "SUCCESS",
+            recovery_success = True
+        )
+
+        self.assertEqual(Pad.objects.get(nickname="SLC-40").fastest_turnaround, "29 days")
+        self.assertEqual(Pad.objects.get(nickname="LC-39A").fastest_turnaround, "1 day")
+
+        self.assertEqual(LandingZone.objects.get(nickname="LZ-1").fastest_turnaround, "1 day")
+        self.assertEqual(LandingZone.objects.get(nickname="LZ-2").fastest_turnaround, "N/A")
+        self.assertEqual(LandingZone.objects.get(nickname="JRtI").fastest_turnaround, "N/A")
 
     #And now test functions in models.py
     def test_droneship_needed(self):

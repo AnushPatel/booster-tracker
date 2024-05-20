@@ -70,6 +70,22 @@ class Pad(models.Model):
 
     def __str__(self):
         return self.nickname
+    
+    @property
+    def num_launches(self):
+        return Launch.objects.filter(pad=self, time__lte=datetime.now(pytz.utc)).count()
+    
+    @property
+    def fastest_turnaround(self):
+        fastest_turnaround = "N/A"
+
+        if Launch.objects.filter(time__lte=datetime.now(pytz.utc), pad=self).exists():
+            turnarounds = Launch.objects.filter(time__lte=datetime.now(pytz.utc), pad=self).first().calculate_turnarounds(object=TurnaroundObjects.PAD)
+            specific_pad_turnarounds = [row for row in turnarounds[1] if f"{self.nickname}" == row[0]]
+            if len(specific_pad_turnarounds) > 0:
+                fastest_turnaround = convert_seconds(specific_pad_turnarounds[0][1])
+
+        return fastest_turnaround
 
 class Launch(models.Model):
     time = models.DateTimeField("Launch Time")
@@ -496,6 +512,22 @@ class LandingZone(models.Model):
 
     def __str__(self):
         return self.name
+    
+    @property
+    def num_launches(self):
+        return Launch.objects.filter(stageandrecovery__landing_zone=self, time__lte=datetime.now(pytz.utc), stageandrecovery__method_success="SUCCESS").count()
+    
+    @property
+    def fastest_turnaround(self):
+        fastest_turnaround = "N/A"
+    
+        if Launch.objects.filter(time__lte=datetime.now(pytz.utc), stageandrecovery__landing_zone=self).exists():
+            turnarounds = Launch.objects.filter(time__lte=datetime.now(pytz.utc), stageandrecovery__landing_zone=self).first().calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE)
+            specific_zone_turnarounds = [row for row in turnarounds[1] if f"{self.nickname}" == row[0]]
+            if len(specific_zone_turnarounds) > 0:
+                fastest_turnaround = convert_seconds(specific_zone_turnarounds[0][1])
+        
+        return fastest_turnaround
 
 class StageAndRecovery(models.Model):
     launch = models.ForeignKey(Launch, on_delete=models.CASCADE)
