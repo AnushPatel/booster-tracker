@@ -220,9 +220,9 @@ class StatsTestCases(TestCase):
         )
 
         self.assertEqual(turnaround_time(Launch.objects.all().order_by("time")), 86400)
-
-    def test_get_launches_and_successes_per_rocket(self):
-        self.assertEqual(get_launches_and_successes_per_rocket(), [['Falcon 9', 4, 4], ['Falcon Heavy', 1, 1]])
+    def test_num_launches(self):
+        self.assertEqual(Rocket.objects.get(name="Falcon 9").num_launches, 4)
+        self.assertEqual(Rocket.objects.get(name="Falcon Heavy").num_launches, 1)
 
         Launch.objects.create(
             time=datetime(2024, 5, 2, 0, 0, tzinfo=pytz.utc),
@@ -246,7 +246,37 @@ class StatsTestCases(TestCase):
             launch_outcome = "SUCCESS"
         )
 
-        self.assertEqual(get_launches_and_successes_per_rocket(), [['Falcon 9', 5, 4], ['Falcon Heavy', 2, 2]])
+        self.assertEqual(Rocket.objects.get(name="Falcon 9").num_launches, 5)
+        self.assertEqual(Rocket.objects.get(name="Falcon Heavy").num_launches, 2)
+
+    def test_num_successes(self):
+        self.assertEqual(Rocket.objects.get(name="Falcon 9").num_successes, 4)
+        self.assertEqual(Rocket.objects.get(name="Falcon Heavy").num_successes, 1)
+
+        Launch.objects.create(
+            time=datetime(2024, 5, 2, 0, 0, tzinfo=pytz.utc),
+            pad=Pad.objects.get(name="Space Launch Complex 40"),
+            rocket=Rocket.objects.get(name="Falcon 9"),
+            name="Falcon 9 Temp Launch 1",
+            orbit=Orbit.objects.get(name="low-Earth Orbit"),
+            mass="1000 kg",
+            customer="SpaceX",
+            launch_outcome = "FAILURE"
+        )
+
+        Launch.objects.create(
+            time=datetime(2024, 5, 2, 0, 0, tzinfo=pytz.utc),
+            pad=Pad.objects.get(name="Space Launch Complex 40"),
+            rocket=Rocket.objects.get(name="Falcon Heavy"),
+            name="Falcon 9 Temp Launch 2",
+            orbit=Orbit.objects.get(name="low-Earth Orbit"),
+            mass="1000 kg",
+            customer="SpaceX",
+            launch_outcome = "SUCCESS"
+        )
+
+        self.assertEqual(Rocket.objects.get(name="Falcon 9").num_successes, 4)
+        self.assertEqual(Rocket.objects.get(name="Falcon Heavy").num_successes, 2)
 
     def test_get_landings_and_successes(self):
         self.assertEqual(get_landings_and_successes(), (6, 6))

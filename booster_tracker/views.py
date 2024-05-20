@@ -45,7 +45,10 @@ def home(request):
     
 
     #Gather information needed for all of the stats
-    num_launches_per_rocket_and_successes = get_launches_and_successes_per_rocket()
+    num_launches_per_rocket_and_successes = []
+    for rocket in Rocket.objects.filter(provider__name="SpaceX"):
+        num_launches_per_rocket_and_successes.append([rocket.name, rocket.num_launches, rocket.num_successes])
+
     num_landings_and_successes = get_landings_and_successes()
     most_flown_boosters = get_most_flown_boosters()
     most_flown_boosters_string = f"{concatenated_list(most_flown_boosters[0])}; {most_flown_boosters[1]} flights"

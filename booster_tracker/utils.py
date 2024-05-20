@@ -96,16 +96,7 @@ def turnaround_time(launches: list[Launch]) -> int:
         return((launches[len(launches)-1].time-launches[len(launches)-2].time).total_seconds())
     return None
 
-#This section we'll define functions that are used for generating the home page:
-def get_launches_and_successes_per_rocket() -> list:
-    values: list = []
-    for rocket in Rocket.objects.all():
-        launches = Launch.objects.filter(rocket=rocket, time__lte=datetime.now(pytz.utc)).count()
-        successes = Launch.objects.filter(rocket=rocket, launch_outcome="SUCCESS", time__lte=datetime.now(pytz.utc)).count()
-        values.append([rocket.name, launches, successes])
-
-    return values
-
+#Functions used for home page:
 def get_landings_and_successes() -> tuple:
     num_landing_attempts = StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc)).filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD")).filter(~Q(method_success="PRECLUDED")).count()
     num_successes = StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc), method_success="SUCCESS").filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD")).count()

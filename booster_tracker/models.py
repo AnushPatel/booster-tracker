@@ -27,6 +27,14 @@ class Rocket(models.Model):
 
     def __str__(self):
         return self.name
+    
+    @property
+    def num_launches(self):
+        return Launch.objects.filter(rocket=self, time__lte=datetime.now(pytz.utc)).count()
+    
+    @property
+    def num_successes(self):
+        return Launch.objects.filter(rocket=self, launch_outcome="SUCCESS", time__lte=datetime.now(pytz.utc)).count()
 
 class Stage(models.Model):
     name = models.CharField(max_length=20)
