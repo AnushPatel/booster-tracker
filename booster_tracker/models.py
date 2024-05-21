@@ -9,21 +9,23 @@ import pytz
 RECOVERY_METHODS = [("EXPENDED", "expended"), ("OCEAN_SURFACE", "ocean"), ("DRONE_SHIP", "ASDS"), ("GROUND_PAD", "landing zone"), ("PARACHUTE", "parachute")]
 LAUNCH_OUTCOMES = [("SUCCESS", "success"), ("FAILURE", "failure"), ("PARTIAL FAILURE", "partial failure")]
 LANDING_METHOD_OUTCOMES = [("SUCCESS", "success"), ("FAILURE", "failure"), ("PRECLUDED", "precluded")]
-BOAT_TYPES = [("TUG", "tug"), ("FAIRING_RECOVERY", "fairing recovery"), ("SUPPORT", "support")]
+BOAT_TYPES = [("TUG", "tug"), ("FAIRING_RECOVERY", "fairing recovery"), ("SUPPORT", "support"), ("SPACECRAFT_RECOVERY", "spacecraft recovery")]
 STAGE_TYPES = [("BOOSTER", "booster"), ("SECOND_STAGE", "second stage")]
 SPACECRAFT_TYPES = [("CARGO", "cargo"), ("CREW", "crew")]
 STAGE_LIFE_OPTIONS = [("ACTIVE", "active"), ("RETIRED", "retired"), ("EXPENDED", "expended"), ("LOST", "lost")]
 LIFE_OPTIONS = [("ACTIVE", "active"), ("RETIRED", "retired")]
+BOOSTER_TYPES = [("MY", "MY"), ("PY", "PY"), ("CENTER", "center"), ("SINGLE_CORE", "single core")]
 
 class Operator(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
         return self.name
 
 class Rocket(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, unique=True)
     provider = models.ForeignKey(Operator, on_delete=models.CASCADE, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=LIFE_OPTIONS, default="ACTIVE")
 
     def __str__(self):
         return self.name
@@ -46,31 +48,54 @@ class Stage(models.Model):
 
     def __str__(self):
         return self.name
+    
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['name', 'rocket'], name='unique_rocket_stage')]
+    
+class SpacecraftFamily(models.Model):
+    name = models.CharField(max_length=200, unique=True)
+    provider = models.ForeignKey(Operator, on_delete=models.CASCADE, null=True, blank=True)
+    status = models.CharField(max_length=200, choices=LIFE_OPTIONS)
+
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        verbose_name_plural = "Spacecraft Families"
 
 class Spacecraft(models.Model):
     name = models.CharField(max_length=20)
     nickname = models.CharField(max_length=20, blank=True, null=True)
     version = models.CharField(max_length=20, blank=True, null=True)
     type = models.CharField(max_length=20, choices=SPACECRAFT_TYPES)
-    operator = models.ForeignKey(Operator, on_delete=models.CASCADE)
+    family = models.ForeignKey(SpacecraftFamily, on_delete=models.CASCADE, blank=True, null=True)
+    status = models.CharField(max_length=50, choices=STAGE_LIFE_OPTIONS, default="ACTIVE")
 
     def __str__(self):
         return self.name
+    
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['name', 'family'], name='unique_family_name')]
 
 class Boat(models.Model):
     name = models.CharField(max_length=200)
     type = models.CharField(max_length=200, choices=BOAT_TYPES)
+    status = models.CharField(max_length=50, choices=LIFE_OPTIONS, default="ACTIVE")
+
     def __str__(self):
         return self.name
+    
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['name', 'type'], name='unique_boat_name_type')]
 
 class Orbit(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True)
 
     def __str__(self):
         return self.name
     
 class Pad(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True)
     nickname = models.CharField(max_length=25)
     location = models.CharField(max_length=100, null=True, blank=True)
     status = models.CharField(max_length=20, choices=LIFE_OPTIONS, default="ACTIVE")
@@ -100,7 +125,7 @@ class Launch(models.Model):
     pad = models.ForeignKey(Pad, on_delete=models.CASCADE)
     rocket = models.ForeignKey(Rocket, on_delete=models.CASCADE)
     name = models.CharField(max_length=200, unique=True)
-    orbit = models.ForeignKey(Orbit, on_delete=models.CASCADE)
+    orbit = models.ForeignKey(Orbit, on_delete=models.CASCADE, null=True, blank=True)
     mass = models.CharField(max_length=200)
     customer = models.CharField(max_length=200)
     launch_outcome = models.CharField(max_length=200, choices=LAUNCH_OUTCOMES, blank=True, null=True)
@@ -262,13 +287,13 @@ class Launch(models.Model):
     #This function gets booster and recovery information
     def get_boosters(self):
         boosters = []
-        for stage in Stage.objects.filter(stageandrecovery__launch=self):
+        for stage in Stage.objects.filter(stageandrecovery__launch=self).order_by("stageandrecovery__stage_position"):
                 boosters.append(f"{stage}-{self.get_stage_flights_and_turnaround(stage=stage)[0]}")
         return concatenated_list(boosters)
     
     def get_recoveries(self):
         recoveries = []
-        for stage_and_recovery in StageAndRecovery.objects.filter(launch=self):
+        for stage_and_recovery in StageAndRecovery.objects.filter(launch=self).order_by("stage_position"):
             if stage_and_recovery.landing_zone:
                 recoveries.append(f"{stage_and_recovery.landing_zone.nickname}")
             else:
@@ -280,7 +305,7 @@ class Launch(models.Model):
         stages_string = ""
         turnaround_string = ""
 
-        for stage in Stage.objects.filter(stageandrecovery__launch=self):
+        for stage in Stage.objects.filter(stageandrecovery__launch=self).order_by("stageandrecovery__stage_position"):
             stage_flights_and_turnaround = self.get_stage_flights_and_turnaround(stage=stage)
             stages_string += stage.name + "-" + f"{stage_flights_and_turnaround[0]}" + ", "
 
@@ -405,7 +430,6 @@ class Launch(models.Model):
                         if len(specific_pad_turnarounds) > 1:
                             pad_string += f". Previous record: {convert_seconds(specific_pad_turnarounds[1][1])} between {specific_pad_turnarounds[1][3]} and {specific_pad_turnarounds[1][2]}"
                         stats.append(pad_string)
-
         return stats
     
     #This section uses the functions above to create the EDA-style launch table for each launch!
@@ -458,7 +482,7 @@ class Launch(models.Model):
         data["Rocket"] = [f"{self.rocket}{boosters_display}"]
         data["Launch Location"] = [f"{launch_location}"]
         data["Payload mass"] = [self.mass]
-        data["Where are the satellites going?"] = [self.orbit.name]
+        data["Where are the satellites going?"] = [self.orbit.name] if self.orbit else ["Unknown"]
         data["Where will the first stage land?"] = [f"{launch_landings}"]
 
         if self.droneship_needed:
@@ -512,7 +536,7 @@ class Launch(models.Model):
         return data
 
 class LandingZone(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, unique=True)
     nickname = models.CharField(max_length=20)
     serial_number = models.CharField(max_length=10, blank=True, null=True)
     status = models.CharField(max_length=20, choices=LIFE_OPTIONS, default="ACTIVE")
@@ -520,6 +544,9 @@ class LandingZone(models.Model):
 
     def __str__(self):
         return self.name
+    
+    class Meta:
+        verbose_name_plural = "Landing Zones"
     
     @property
     def num_launches(self):
@@ -540,6 +567,7 @@ class LandingZone(models.Model):
 class StageAndRecovery(models.Model):
     launch = models.ForeignKey(Launch, on_delete=models.CASCADE)
     stage = models.ForeignKey(Stage, on_delete=models.CASCADE, null=True, blank=True)
+    stage_position = models.CharField(max_length=50, choices=BOOSTER_TYPES, null=True, blank=True, default="SINGLE_CORE")
     landing_zone = models.ForeignKey(LandingZone, on_delete=models.CASCADE, null=True, blank=True)
     method = models.CharField(max_length=200, choices=RECOVERY_METHODS)
     method_success = models.CharField(max_length=200, choices=LANDING_METHOD_OUTCOMES, null=True, blank=True)
@@ -551,6 +579,9 @@ class StageAndRecovery(models.Model):
         if self.stage and self.stage.name:
             return f"{self.stage.name} recovery"
         return("Unknown recovery")
+    
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['launch', 'stage'], name='unique_launch_stage')]
     
 class FairingRecovery(models.Model):
     launch = models.ForeignKey(Launch, on_delete=models.CASCADE)
@@ -575,6 +606,7 @@ class TugOnLaunch(models.Model):
 
     class Meta:
         verbose_name_plural = "Tugs on Launch"
+        constraints = [models.UniqueConstraint(fields=['launch', 'boat'], name='unique_launch_tug')]
 
     def __str__(self):
         if self.boat:
@@ -585,7 +617,8 @@ class SupportOnLaunch(models.Model):
     boat = models.ForeignKey(Boat, on_delete=models.CASCADE, limit_choices_to={"type": "SUPPORT"})
 
     class Meta:
-        verbose_name_plural = "Support ships on launch"
+        verbose_name_plural = "Support Ships on Launch"
+        constraints = [models.UniqueConstraint(fields=['launch', 'boat'], name='unique_launch_support')]
     
     def __str__(self):
         if self.boat:
@@ -595,9 +628,11 @@ class SpacecraftOnLaunch(models.Model):
     launch = models.ForeignKey(Launch, on_delete=models.CASCADE)
     spacecraft = models.ForeignKey(Spacecraft, on_delete=models.CASCADE)
     splashdown_time = models.DateTimeField("Splashdown Time", null=True)
+    recovery_boat = models.ForeignKey(Boat, on_delete=models.CASCADE, limit_choices_to={"type": "SPACECRAFT_RECOVERY"}, blank=True, null=True)
 
     class Meta:
-        verbose_name_plural = "Dragon on launch"
+        verbose_name_plural = "Dragon on Launch"
+        constraints = [models.UniqueConstraint(fields=['launch', 'spacecraft'], name='unique_launch_spacecraft')]
     
     def __str__(self):
         if self.spacecraft:
@@ -609,7 +644,8 @@ class PadUsed(models.Model):
     image = models.ImageField(upload_to='rocket_pad_photos/', default='rocket_pad_photos/rocket_launch_image.jpg')
 
     class Meta:
-        verbose_name_plural = "Pads used"
+        verbose_name_plural = "Pads Used"
+        constraints = [models.UniqueConstraint(fields=['rocket', 'pad'], name='unique_rocket_pad')]
     
     def __str__(self):
         if self.pad:

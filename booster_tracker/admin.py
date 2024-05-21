@@ -3,8 +3,10 @@ from django.contrib import admin
 from django.contrib.admin import SimpleListFilter
 from django.db import models
 from functools import reduce
-from django.forms.models import BaseInlineFormSet
+from django.forms.models import BaseInlineFormSet, ModelChoiceField
+from django.core.exceptions import ValidationError
 from datetime import datetime
+from django.http import HttpRequest
 import pytz
 
 from django.db.models.query import QuerySet
@@ -16,31 +18,74 @@ class StageRecoveryInLine(admin.TabularInline):
     extra = 0
     
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "stage":
-            try:
-                launch_instance = self.parent_model.objects.get(pk=request.resolver_match.kwargs['object_id'])
-            except (AttributeError, KeyError, self.parent_model.DoesNotExist):
-                launch_instance = None
-                
-            if not launch_instance or launch_instance.time > datetime.now(pytz.UTC):
-                kwargs["queryset"] = Stage.objects.filter(status="ACTIVE")
+        try:
+            launch_instance = self.parent_model.objects.get(pk=request.resolver_match.kwargs['object_id'])
+        except (AttributeError, KeyError, self.parent_model.DoesNotExist):
+            launch_instance = None
+        if not launch_instance or launch_instance.time > datetime.now(pytz.UTC):
+            if db_field.name == "stage":
+                    kwargs["queryset"] = Stage.objects.filter(status="ACTIVE")
+            if db_field.name == "landing_zone":
+                kwargs["queryset"] = LandingZone.objects.filter(status="ACTIVE")
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 class FairingRecoveryInLine(admin.TabularInline):
     model = FairingRecovery
     extra = 0
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        try:
+            launch_instance = self.parent_model.objects.get(pk=request.resolver_match.kwargs['object_id'])
+        except (AttributeError, KeyError, self.parent_model.DoesNotExist):
+            launch_instance = None
+        if not launch_instance or launch_instance.time > datetime.now(pytz.UTC):
+            if db_field.name == "boat":
+                    kwargs["queryset"] = Boat.objects.filter(status="ACTIVE", type="FAIRING_RECOVERY")
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
 class TugInLine(admin.TabularInline):
     model = TugOnLaunch
     extra = 0
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        try:
+            launch_instance = self.parent_model.objects.get(pk=request.resolver_match.kwargs['object_id'])
+        except (AttributeError, KeyError, self.parent_model.DoesNotExist):
+            launch_instance = None
+        if not launch_instance or launch_instance.time > datetime.now(pytz.UTC):
+            if db_field.name == "boat":
+                    kwargs["queryset"] = Boat.objects.filter(status="ACTIVE", type="TUG")
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 class SupportInLine(admin.TabularInline):
     model = SupportOnLaunch
     extra = 0
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        try:
+            launch_instance = self.parent_model.objects.get(pk=request.resolver_match.kwargs['object_id'])
+        except (AttributeError, KeyError, self.parent_model.DoesNotExist):
+            launch_instance = None
+        if not launch_instance or launch_instance.time > datetime.now(pytz.UTC):
+            if db_field.name == "boat":
+                    kwargs["queryset"] = Boat.objects.filter(status="ACTIVE", type="SUPPORT")
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
 class DragonInLine(admin.TabularInline):
     model = SpacecraftOnLaunch
     extra = 0
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        try:
+            launch_instance = self.parent_model.objects.get(pk=request.resolver_match.kwargs['object_id'])
+        except (AttributeError, KeyError, self.parent_model.DoesNotExist):
+            launch_instance = None
+        if not launch_instance or launch_instance.time > datetime.now(pytz.UTC):
+            if db_field.name == "spacecraft":
+                kwargs["queryset"] = Spacecraft.objects.filter(status="ACTIVE")
+            if db_field.name == "recovery_boat":
+                kwargs["queryset"] = Boat.objects.filter(status="ACTIVE", type="SPACECRAFT_RECOVERY")
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 class PadInLine(admin.TabularInline):
     model = PadUsed
@@ -251,11 +296,23 @@ class LaunchAdmin(admin.ModelAdmin):
     def custom_time_display(self, obj):
         return obj.time.strftime("%B %d, %Y %H:%M")
     
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        try:
+            launch_instance = Launch.objects.get(pk=request.resolver_match.kwargs.get('object_id'))
+        except (AttributeError, KeyError, Launch.DoesNotExist):
+            launch_instance = None
+        if not launch_instance or launch_instance.time > datetime.now(pytz.UTC):
+            if db_field.name == "rocket":
+                kwargs["queryset"] = Rocket.objects.filter(status="ACTIVE")
+            if db_field.name == "pad":
+                kwargs["queryset"] = Pad.objects.filter(status="ACTIVE")
+
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+    
     list_display = ["name", "custom_time_display", "pad"]
     list_filter = (RocketFilter, PadFilter, LandingMethodFilter, LandingLocationFilter, LandingOutcomeFilter, MethodSuccessFilter, LaunchOutcomeFilter,
                    FairingMethodFilter, FairingRecoveryOutcome, OrbitFilter, StageNameFilter, BoosterLocationMissingFilter, FairingLocationMissingFilter)
     search_fields = ["name"]
-
 
 class VersionFilter(admin.SimpleListFilter):
     title = 'Version'
@@ -321,9 +378,23 @@ class BoatTypeFilter(admin.SimpleListFilter):
         else:
             return queryset
 
+class BoatStatusFilter(admin.SimpleListFilter):
+    title = 'Status'
+    parameter_name = 'status'
+
+    def lookups(self, request, model_admin):
+        statuses = set([boat.status for boat in Boat.objects.all()])
+        return [(status, status) for status in statuses]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(status=self.value())
+        else:
+            return queryset
+        
 class BoatAdmin(admin.ModelAdmin):
-    list_display = ["name", "type"]
-    list_filter = [BoatTypeFilter]
+    list_display = ["name", "type", "status"]
+    list_filter = [BoatTypeFilter, BoatStatusFilter]
     search_fields = ["name"]
 
 admin.site.register(Launch, LaunchAdmin)
@@ -333,5 +404,6 @@ admin.site.register(Boat, BoatAdmin)
 admin.site.register(Orbit)
 admin.site.register(LandingZone)
 admin.site.register(Pad)
+admin.site.register(SpacecraftFamily)
 admin.site.register(Spacecraft)
 admin.site.register(Operator)

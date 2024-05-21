@@ -43,7 +43,6 @@ def home(request):
     last_launch_tugs = concatenated_list(list(Boat.objects.filter(type="TUG", tugonlaunch__launch=last_launch).all().values_list("name", flat=True)))
     last_launch_fairing_recovery = concatenated_list(list(set(Boat.objects.filter(type="FAIRING_RECOVERY", fairingrecovery__launch=last_launch).all().values_list("name", flat=True))))
     
-
     #Gather information needed for all of the stats
     num_launches_per_rocket_and_successes = []
     for rocket in Rocket.objects.filter(provider__name="SpaceX"):
