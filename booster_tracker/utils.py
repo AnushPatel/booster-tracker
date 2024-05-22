@@ -5,8 +5,8 @@ from datetime import datetime
 from enum import StrEnum
 from django.db.models import Q, Count, Max
 
-#First several functions will be defined that are commonly used. 
-#As the name implies, this formats the time to be in the following format: March 25, 2024 04:38 UTC
+# First several functions will be defined that are commonly used. 
+# As the name implies, this formats the time to be in the following format: March 25, 2024 04:38 UTC
 def format_time(time_obj):
     formatted_date = time_obj.strftime("%B %d, %Y")
     formatted_time = time_obj.strftime("%H:%M")
@@ -16,7 +16,7 @@ def format_time(time_obj):
 
     return formatted_str
 
-#This converts from seconds to a human readable format in days, hours, minutes, and seconds. If any are zero, they are removed.
+# This converts from seconds to a human readable format in days, hours, minutes, and seconds. If any are zero, they are removed.
 def convert_seconds(x):
     d = int(x/86400)
     x -= (d*86400)
@@ -47,7 +47,7 @@ def convert_seconds(x):
 
     return time_str
 
-#Makes an ordinal; 1 -> 1st
+# Makes an ordinal; 1 -> 1st
 def make_ordinal(n: int):
     if n is None:
         return "None"
@@ -57,7 +57,7 @@ def make_ordinal(n: int):
         suffix = ['th', 'st', 'nd', 'rd', 'th'][min(n % 10, 4)]
     return str(n) + suffix
 
-#Takes in a list of items and returns them in concatinated form [Bob, Doug, GO Beyond] -> Bob, Doug, and GO Beyond
+# Takes in a list of items and returns them in concatinated form [Bob, Doug, GO Beyond] -> Bob, Doug, and GO Beyond
 concatenated_list = lambda items: items[0] if len(items) == 1 else ', '.join(items[:-1]) + (', and ' if len(items) > 2 else ' and ') + str(items[-1]) if items else 'N/A'
 
 def get_most_flown_boosters():
@@ -67,14 +67,14 @@ def get_most_flown_boosters():
 
     return(most_flown_boosters, max_launch_count)
 
-#This item creates a list without any repeats
+# This item creates a list without any repeats
 def remove_duplicates(objects: list[Boat]) -> list:
     names: set[str] = set()
     for item in objects:
         names.add(item.name)
     return list(names)
 
-#Helps convert boolean to human readable text in stats
+# Helps convert boolean to human readable text in stats
 def success(value: str) -> str:
     if value == "SUCCESS" or value is None:
         return "successfully completed"
@@ -82,7 +82,7 @@ def success(value: str) -> str:
         return "was precluded from completing"
     return "failed to complete"
 
-#This section we create StrEnums to limit options in functions
+# This section we create StrEnums to limit options in functions
 class TurnaroundObjects(StrEnum):
     BOOSTER = "booster"
     SECOND_STAGE = "second stage"
@@ -90,13 +90,13 @@ class TurnaroundObjects(StrEnum):
     PAD = "pad"
     ALL = "all"
 
-#Simply gets the turnaround time between two objects; the exact list should be specified elsewhere
+# Simply gets the turnaround time between two objects; the exact list should be specified elsewhere
 def turnaround_time(launches: list[Launch]) -> int:
     if len(launches) > 1:
         return((launches[len(launches)-1].time-launches[len(launches)-2].time).total_seconds())
     return None
 
-#Functions used for home page:
+# Functions used for home page:
 def get_landings_and_successes() -> tuple:
     num_landing_attempts = StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc)).filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD")).filter(~Q(method_success="PRECLUDED")).count()
     num_successes = StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc), method_success="SUCCESS").filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD")).count()

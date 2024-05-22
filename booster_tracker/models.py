@@ -115,9 +115,9 @@ class Pad(models.Model):
         """Function returns fastest turnaround of launch pad in string form (ex: 12 days, 4 hours, and 3 minutes)"""
         fastest_turnaround = "N/A"
 
-        if (launch := Launch.objects.filter(time__lte=datetime.now(pytz.utc), pad=self).first()):
+        if ((launch := Launch.objects.filter(time__lte=datetime.now(pytz.utc), pad=self).first())):
             turnarounds = launch.calculate_turnarounds(object=TurnaroundObjects.PAD)
-            specific_pad_turnarounds = [row for row in turnarounds[1] if f"{self.nickname}" == row['turnaround_object']]
+            specific_pad_turnarounds = [row for row in turnarounds['ordered_turnarounds'] if f"{self.nickname}" == row['turnaround_object']]
             if len(specific_pad_turnarounds) > 0:
                 fastest_turnaround = convert_seconds(specific_pad_turnarounds[0]['turnaround_time'])
 
@@ -230,7 +230,7 @@ class Launch(models.Model):
         return make_ordinal(Launch.objects.filter(pad=self.pad, time__lte=self.time).count())
     
     #Returns list of turnaround times for object type
-    def calculate_turnarounds(self, object: TurnaroundObjects) -> tuple:
+    def calculate_turnarounds(self, object: TurnaroundObjects) -> dict:
         """Takes in an object, returns a list of turnarounds sorted from quickest to longest. Return format style: (Bool (is this a new record), [[Object, Int (num of seconds turnaround), launch, last launch],...])"""
         turnarounds: list = []
         new_record: bool = False
@@ -264,9 +264,9 @@ class Launch(models.Model):
             for i in range(0, len(launches)+1):
                 turnaround = turnaround_time(launches=launches[:i])
                 if turnaround and object != TurnaroundObjects.ALL:
-                    turnarounds.append(dict(turnaround_object = getattr(item, name_field), turnaround_time = turnaround, launch_name = launches[i-1].name, last_launch_name = launches[i-2].name))
+                    turnarounds.append({"turnaround_object": getattr(item, name_field), "turnaround_time": turnaround, "launch_name": launches[i-1].name, "last_launch_name": launches[i-2].name})
                 elif turnaround:
-                    turnarounds.append(dict(turnaround_object = "", turnaround_time = turnaround, launch_name = launches[i-1].name, last_launch_name = launches[i-2].name))
+                    turnarounds.append({"turnaround_object": "", "turnaround_time": turnaround, "launch_name": launches[i-1].name, "last_launch_name": launches[i-2].name})
 
         #Sort the turnarounds so they go in order of quickest to slowest (or non-applicable) turnaround
         turnarounds = sorted(turnarounds, key=lambda x: (x["turnaround_time"] is None, x["turnaround_time"] if x["turnaround_time"] is not None else float('inf')))
@@ -276,7 +276,7 @@ class Launch(models.Model):
             new_record = True
 
         if not len(turnarounds) == 0:
-            return new_record, turnarounds
+            return {"is_record": new_record, "ordered_turnarounds": turnarounds}
         return None
     
     def get_consec_landings(self) -> str:
@@ -398,14 +398,14 @@ class Launch(models.Model):
         #This section adds quickest turnaround stats. As the names imply, booster, zones, company, and pad. If it is the quickest overall for an object type, the object-specific stat is not given since it follows tautologically
         booster_turnarounds = self.calculate_turnarounds(object=TurnaroundObjects.BOOSTER)
         if booster_turnarounds:
-            if booster_turnarounds[0]:
-                booster_string = f"– Qickest turnaround of a booster to date at {convert_seconds(booster_turnarounds[1][0]['turnaround_time'])}"
-                if len(booster_turnarounds[1]) > 1:
-                    booster_string += f". Previous record: {booster_turnarounds[1][1]['turnaround_object']} at {convert_seconds(booster_turnarounds[1][1]['turnaround_time'])} between {booster_turnarounds[1][1]['last_launch_name']} and {booster_turnarounds[1][1]['launch_name']}"
+            if booster_turnarounds['is_record']:
+                booster_string = f"– Qickest turnaround of a booster to date at {convert_seconds(booster_turnarounds['ordered_turnarounds'][0]['turnaround_time'])}"
+                if len(booster_turnarounds['ordered_turnarounds']) > 1:
+                    booster_string += f". Previous record: {booster_turnarounds['ordered_turnarounds'][1]['turnaround_object']} at {convert_seconds(booster_turnarounds['ordered_turnarounds'][1]['turnaround_time'])} between {booster_turnarounds['ordered_turnarounds'][1]['last_launch_name']} and {booster_turnarounds['ordered_turnarounds'][1]['launch_name']}"
                 stats.append(booster_string)
             else:
                 for recovery in StageAndRecovery.objects.filter(launch=self):
-                    specific_booster_turnarounds = [row for row in booster_turnarounds[1] if f"{recovery.stage.name}" == row['turnaround_object']]
+                    specific_booster_turnarounds = [row for row in booster_turnarounds['ordered_turnarounds'] if f"{recovery.stage.name}" == row['turnaround_object']]
                     if len(specific_booster_turnarounds) > 0 and specific_booster_turnarounds[0]['launch_name'] == self.name:
                         booster_string = f"– Quickest turnaround of {recovery.stage.name} to date at {convert_seconds(specific_booster_turnarounds[0]['turnaround_time'])}"
                         if len(specific_booster_turnarounds) > 1:
@@ -414,15 +414,15 @@ class Launch(models.Model):
 
         landing_zone_turnarounds = self.calculate_turnarounds(TurnaroundObjects.LANDING_ZONE)
         if landing_zone_turnarounds:
-            if landing_zone_turnarounds[0]:
-                zone_string = f"– Quickest turnaround time of a landing zone to date at {convert_seconds(landing_zone_turnarounds[1][0]['turnaround_time'])}"
-                if len(landing_zone_turnarounds[1]) > 1:
-                    zone_string += f". Previous record: {landing_zone_turnarounds[1][1]['turnaround_object']} at {convert_seconds(landing_zone_turnarounds[1][1]['turnaround_time'])} between {landing_zone_turnarounds[1][1]['last_launch_name']} and {landing_zone_turnarounds[1][1]['launch_name']}"
+            if landing_zone_turnarounds['is_record']:
+                zone_string = f"– Quickest turnaround time of a landing zone to date at {convert_seconds(landing_zone_turnarounds['ordered_turnarounds'][0]['turnaround_time'])}"
+                if len(landing_zone_turnarounds['ordered_turnarounds']) > 1:
+                    zone_string += f". Previous record: {landing_zone_turnarounds['ordered_turnarounds'][1]['turnaround_object']} at {convert_seconds(landing_zone_turnarounds['ordered_turnarounds'][1]['turnaround_time'])} between {landing_zone_turnarounds['ordered_turnarounds'][1]['last_launch_name']} and {landing_zone_turnarounds['ordered_turnarounds'][1]['launch_name']}"
                 stats.append(zone_string)
             else:
                 for recovery in StageAndRecovery.objects.filter(launch=self):
                     if recovery.landing_zone:
-                        specific_zone_turnarounds = [row for row in landing_zone_turnarounds[1] if f"{recovery.landing_zone.nickname}" == row['turnaround_object']]
+                        specific_zone_turnarounds = [row for row in landing_zone_turnarounds['ordered_turnarounds'] if f"{recovery.landing_zone.nickname}" == row['turnaround_object']]
                         if len(specific_zone_turnarounds) > 0 and specific_zone_turnarounds[0]['launch_name'] == self.name:
                             zone_string = f"– Qickest turnaround of {recovery.landing_zone.nickname} to date at {convert_seconds(specific_zone_turnarounds[0]['turnaround_time'])}"
                             if len(specific_zone_turnarounds) > 1:
@@ -431,21 +431,21 @@ class Launch(models.Model):
 
         company_turnaround = self.calculate_turnarounds(object=TurnaroundObjects.ALL)
         if company_turnaround:
-            if company_turnaround[0]:
-                company_string = f"– Shortest time between any two SpaceX launches at {convert_seconds(company_turnaround[1][0]['turnaround_time'])}"
-                if len(company_turnaround[1]) > 1:
-                    company_string += f". Previous record: {convert_seconds(company_turnaround[1][1]['turnaround_time'])} between {company_turnaround[1][1]['last_launch_name']} and {company_turnaround[1][1]['launch_name']}"
+            if company_turnaround['is_record']:
+                company_string = f"– Shortest time between any two SpaceX launches at {convert_seconds(company_turnaround['ordered_turnarounds'][0]['turnaround_time'])}"
+                if len(company_turnaround['ordered_turnarounds']) > 1:
+                    company_string += f". Previous record: {convert_seconds(company_turnaround['ordered_turnarounds'][1]['turnaround_time'])} between {company_turnaround['ordered_turnarounds'][1]['last_launch_name']} and {company_turnaround['ordered_turnarounds'][1]['launch_name']}"
                 stats.append(company_string)
 
         pad_turnarounds = self.calculate_turnarounds(object=TurnaroundObjects.PAD)
         if pad_turnarounds:
-            if pad_turnarounds[0]:
-                pad_string = f"– Qickest turnaround of a SpaceX pad to date at {convert_seconds(pad_turnarounds[1][0]['turnaround_time'])}"
-                if len(pad_turnarounds[1]) > 1:
-                    pad_string += f". Previous record: {pad_turnarounds[1][1]['turnaround_object']} at {convert_seconds(pad_turnarounds[1][1]['turnaround_time'])} between {pad_turnarounds[1][1]['last_launch_name']} and {pad_turnarounds[1][1]['launch_name']}"
+            if pad_turnarounds['is_record']:
+                pad_string = f"– Qickest turnaround of a SpaceX pad to date at {convert_seconds(pad_turnarounds['ordered_turnarounds'][0]['turnaround_time'])}"
+                if len(pad_turnarounds['ordered_turnarounds']) > 1:
+                    pad_string += f". Previous record: {pad_turnarounds['ordered_turnarounds'][1]['turnaround_object']} at {convert_seconds(pad_turnarounds['ordered_turnarounds'][1]['turnaround_time'])} between {pad_turnarounds['ordered_turnarounds'][1]['last_launch_name']} and {pad_turnarounds['ordered_turnarounds'][1]['launch_name']}"
                 stats.append(pad_string)
             else:
-                specific_pad_turnarounds = [row for row in pad_turnarounds[1] if f"{self.pad.nickname}" == row['turnaround_object']]
+                specific_pad_turnarounds = [row for row in pad_turnarounds['ordered_turnarounds'] if f"{self.pad.nickname}" == row['turnaround_object']]
                 if len(specific_pad_turnarounds) > 0 and specific_pad_turnarounds[0]['launch_name'] == self.name:
                         pad_string = (f"– Qickest turnaround of {self.pad.nickname} to date at {convert_seconds(specific_pad_turnarounds[0]['turnaround_time'])}")
                         if len(specific_pad_turnarounds) > 1:
@@ -579,9 +579,9 @@ class LandingZone(models.Model):
         """Returns the fastest turnaround of landing zone"""
         fastest_turnaround = "N/A"
     
-        if (launch := Launch.objects.filter(time__lte=datetime.now(pytz.utc), stageandrecovery__landing_zone=self).first()):
+        if ((launch := Launch.objects.filter(time__lte=datetime.now(pytz.utc), stageandrecovery__landing_zone=self).first())):
             turnarounds = launch.calculate_turnarounds(object=TurnaroundObjects.LANDING_ZONE)
-            specific_zone_turnarounds = [row for row in turnarounds[1] if f"{self.nickname}" == row['turnaround_object']]
+            specific_zone_turnarounds = [row for row in turnarounds['ordered_turnarounds'] if f"{self.nickname}" == row['turnaround_object']]
             if len(specific_zone_turnarounds) > 0:
                 fastest_turnaround = convert_seconds(specific_zone_turnarounds[0]['turnaround_time'])
         

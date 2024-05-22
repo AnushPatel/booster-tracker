@@ -23,7 +23,7 @@ def home(request):
     next_launch = Launch.objects.filter(time__gt=datetime.now(pytz.utc)).last()
     last_launch = Launch.objects.filter(time__lte=datetime.now(pytz.utc)).first()
     
-    #Gather all needed information to create next launch card
+    # Gather all needed information to create next launch card
     if next_launch:
         next_launch_boosters = next_launch.get_boosters().replace("N/A", "Unknown")
         next_launch_recoveries = next_launch.get_recoveries()
@@ -36,14 +36,14 @@ def home(request):
     next_launch_tugs = concatenated_list(list(Boat.objects.filter(type="TUG", tugonlaunch__launch=next_launch).all().values_list("name", flat=True)))
     next_launch_fairing_recovery = concatenated_list(list(set(Boat.objects.filter(type="FAIRING_RECOVERY", fairingrecovery__launch=next_launch).all().values_list("name", flat=True))))
     
-    #Gather all needed information to create last launch card
+    # Gather all needed information to create last launch card
     last_launch_boosters = last_launch.get_boosters()
     last_launch_recoveries = last_launch.get_recoveries()
     last_launch_photo = PadUsed.objects.get(pad=last_launch.pad, rocket=last_launch.rocket).image.url
     last_launch_tugs = concatenated_list(list(Boat.objects.filter(type="TUG", tugonlaunch__launch=last_launch).all().values_list("name", flat=True)))
     last_launch_fairing_recovery = concatenated_list(list(set(Boat.objects.filter(type="FAIRING_RECOVERY", fairingrecovery__launch=last_launch).all().values_list("name", flat=True))))
     
-    #Gather information needed for all of the stats
+    # Gather information needed for all of the stats
     num_launches_per_rocket_and_successes = []
     for rocket in Rocket.objects.filter(provider__name="SpaceX"):
         num_launches_per_rocket_and_successes.append([rocket.name, rocket.num_launches, rocket.num_successes])
@@ -52,10 +52,10 @@ def home(request):
     most_flown_boosters = get_most_flown_boosters()
     most_flown_boosters_string = f"{concatenated_list(most_flown_boosters[0])}; {most_flown_boosters[1]} flights"
     quickest_booster_turnaround = last_launch.calculate_turnarounds(object=TurnaroundObjects.BOOSTER)
-    quickest_booster_turnaround_string = f"{quickest_booster_turnaround[1][0]['turnaround_object']} at {convert_seconds(quickest_booster_turnaround[1][0]['turnaround_time'])}"
-    shortest_time_between_launches = convert_seconds(last_launch.calculate_turnarounds(object=TurnaroundObjects.ALL)[1][0]['turnaround_time'])
+    quickest_booster_turnaround_string = f"{quickest_booster_turnaround['ordered_turnarounds'][0]['turnaround_object']} at {convert_seconds(quickest_booster_turnaround['ordered_turnarounds'][0]['turnaround_time'])}"
+    shortest_time_between_launches = convert_seconds(last_launch.calculate_turnarounds(object=TurnaroundObjects.ALL)['ordered_turnarounds'][0]['turnaround_time'])
     
-    #this section gets total number of reflights; it takes the number of booster uses and subtracts the number of boosters that have flown
+    # this section gets total number of reflights; it takes the number of booster uses and subtracts the number of boosters that have flown
     num_booster_uses = StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc)).filter(launch__rocket__name__icontains="Falcon").count()
     num_stages_used = Stage.objects.filter(type="BOOSTER", stageandrecovery__launch__time__lte=datetime.now(pytz.utc)).filter(rocket__name__icontains="Falcon").distinct().count()
     num_booster_reflights = num_booster_uses - num_stages_used
