@@ -52,8 +52,8 @@ def home(request):
     most_flown_boosters = get_most_flown_boosters()
     most_flown_boosters_string = f"{concatenated_list(most_flown_boosters[0])}; {most_flown_boosters[1]} flights"
     quickest_booster_turnaround = last_launch.calculate_turnarounds(object=TurnaroundObjects.BOOSTER)
-    quickest_booster_turnaround_string = f"{quickest_booster_turnaround[1][0][0]} at {convert_seconds(quickest_booster_turnaround[1][0][1])}"
-    shortest_time_between_launches = convert_seconds(last_launch.calculate_turnarounds(object=TurnaroundObjects.ALL)[1][0][1])
+    quickest_booster_turnaround_string = f"{quickest_booster_turnaround[1][0]['turnaround_object']} at {convert_seconds(quickest_booster_turnaround[1][0]['turnaround_time'])}"
+    shortest_time_between_launches = convert_seconds(last_launch.calculate_turnarounds(object=TurnaroundObjects.ALL)[1][0]['turnaround_time'])
     
     #this section gets total number of reflights; it takes the number of booster uses and subtracts the number of boosters that have flown
     num_booster_uses = StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc)).filter(launch__rocket__name__icontains="Falcon").count()
@@ -65,15 +65,15 @@ def home(request):
 
     pad_stats: list = []
     for pad in Pad.objects.filter(padused__rocket__provider__name="SpaceX").distinct().order_by("id"):
-        num_launches = pad.num_launches
+        num_landings = pad.num_launches
         fastest_turnaround = pad.fastest_turnaround
-        pad_stats.append([pad, num_launches, fastest_turnaround])
+        pad_stats.append([pad, num_landings, fastest_turnaround])
 
     recovery_zone_stats: list = []
     for zone in LandingZone.objects.filter(stageandrecovery__stage__rocket__provider__name="SpaceX").distinct().order_by("id"):
-        num_launches = zone.num_launches
+        num_landings = zone.num_landings
         fastest_turnaround = zone.fastest_turnaround
-        recovery_zone_stats.append([zone, num_launches, fastest_turnaround])
+        recovery_zone_stats.append([zone, num_landings, fastest_turnaround])
 
     context = {
         'launches_per_vehicle': num_launches_per_rocket_and_successes,
