@@ -2,6 +2,7 @@ from django.http import HttpResponse
 from django.template import loader
 from django.http import Http404, JsonResponse
 from django.shortcuts import render, get_object_or_404
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from .utils import *
 
 import pytz
@@ -12,9 +13,37 @@ from django.shortcuts import render
 from .models import Launch
 
 def launches_list(request):
-    launches = Launch.objects.all().order_by("-time")
+    # Get the search query from the request
+    query = request.GET.get('q')
+    
+    # Fetch all launches, optionally filtering by search query
+    if query:
+        launches = Launch.objects.filter(name__icontains=query).order_by("-time")
+    else:
+        launches = Launch.objects.all().order_by("-time")
+    
+    # Number of launches per page
+    per_page = 50
+
+    # Create a paginator object
+    paginator = Paginator(launches, per_page)
+    
+    # Get the current page number from the request
+    page_number = request.GET.get('page', 1)
+
+    try:
+        # Get the launches for the current page
+        paginated_launches = paginator.page(page_number)
+    except PageNotAnInteger:
+        # If the page is not an integer, deliver the first page
+        paginated_launches = paginator.page(1)
+    except EmptyPage:
+        # If the page is out of range, deliver the last page of results
+        paginated_launches = paginator.page(paginator.num_pages)
+
     context = {
-        'launches': launches
+        'paginated_launches': paginated_launches,
+        'query': query,
     }
 
     return render(request, 'launches/launches_list.html', context)
@@ -25,8 +54,8 @@ def home(request):
     
     # Gather all needed information to create next launch card
     if next_launch:
-        next_launch_boosters = next_launch.get_boosters().replace("N/A", "Unknown")
-        next_launch_recoveries = next_launch.get_recoveries()
+        next_launch_boosters = next_launch.get_boosters.replace("N/A", "Unknown")
+        next_launch_recoveries = next_launch.get_recoveries
         next_launch_photo = PadUsed.objects.get(pad=next_launch.pad, rocket=next_launch.rocket).image.url
     else:
         next_launch_boosters = "TBD"
@@ -37,8 +66,8 @@ def home(request):
     next_launch_fairing_recovery = concatenated_list(list(set(Boat.objects.filter(type="FAIRING_RECOVERY", fairingrecovery__launch=next_launch).all().values_list("name", flat=True))))
     
     # Gather all needed information to create last launch card
-    last_launch_boosters = last_launch.get_boosters()
-    last_launch_recoveries = last_launch.get_recoveries()
+    last_launch_boosters = last_launch.get_boosters
+    last_launch_recoveries = last_launch.get_recoveries
     last_launch_photo = PadUsed.objects.get(pad=last_launch.pad, rocket=last_launch.rocket).image.url
     last_launch_tugs = concatenated_list(list(Boat.objects.filter(type="TUG", tugonlaunch__launch=last_launch).all().values_list("name", flat=True)))
     last_launch_fairing_recovery = concatenated_list(list(set(Boat.objects.filter(type="FAIRING_RECOVERY", fairingrecovery__launch=last_launch).all().values_list("name", flat=True))))

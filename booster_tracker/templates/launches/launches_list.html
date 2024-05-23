@@ -1,13 +1,94 @@
 {% extends "base_generic.html" %}
 {% load static %}
+{% load filters %}
 
 {% block extra_css %}
     <link rel="stylesheet" type="text/css" href="{% static 'css/home.css' %}">
+    <style>
+    
+        /* Pagination styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+    
+        .pagination a {
+            color: #009879;
+            padding: 8px 16px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+            border: 1px solid #dddddd;
+            margin: 0 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+    
+        .pagination a:hover {
+            background-color: #009879;
+            color: white;
+        }
+    
+        .pagination .current {
+            padding: 8px 16px;
+            border: 1px solid #009879;
+            background-color: #009879;
+            color: white;
+            margin: 0 4px;
+            border-radius: 4px;
+        }
+    
+        .pagination .step-links {
+            display: flex;
+        }
+    
+        .pagination a svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+         /* Search form styles */
+        .search-form {
+            display: flex;
+            justify-content: right;
+            margin-bottom: -16px;
+        }
+
+        .search-form input[type="text"] {
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #dddddd;
+            border-radius: 4px 0 0 4px;
+        }
+
+        .search-form button {
+            padding: 8px 16px;
+            font-size: 16px;
+            border: 1px solid #009879;
+            background-color: #009879;
+            color: white;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+        }
+
+        .search-form button:hover {
+            background-color: #007f6e;
+        }
+      </style>
 {% endblock %}
 
 {% block content %}
-{% if launches %}
-    {% for launch in launches %}
+<div class="search-form">
+    <form method="GET" action="{% url 'launches:launches' %}">
+      <input type="text" placeholder="Search Launches" value="{{ query|default_if_none:'' }}">
+      <button type="submit">Search</button>
+    </form>
+  </div>
+{% if paginated_launches %}
+    {% for launch in paginated_launches %}
     <a href="{% url 'launches:launch' launch.name %}" style="text-decoration: none !important; padding: 5px;">
         <div class="rocket-container">
             <div class="blue-background"></div>
@@ -16,12 +97,11 @@
             <div class="info-wrapper blue-text">
                 <h1 style="text-align: left">{{ launch.name }}</h1>
                 <p> <b>Rocket: </b> {{ launch.rocket.name }}</p>
-                <p> <b>Scheduled: </b> {{ launch.time|date:"F j, Y H:i" }} UTC</p>
+                <p> <b>Liftoff Time: </b> {{ launch.time|date:"F j, Y H:i" }} UTC</p>
                 <p> <b>Launch Site: </b>{{ launch.pad.name }}</p>
-                <p> <b>Booster{% if "and" in launch_boosters %}s{% endif %}: </b>{{ launch_boosters }}</p>
-                <p> <b>Landing Location{% if "and" in launch_recoveries %}s{% endif %}: </b>{{ launch_recoveries }}</p>
-                <p> <b>Tug{% if "and" in launch_tugs %}s{% endif %}: </b>{{ launch_tugs }}</p>
-                <p> <b>Fairing Recovery: </b>{{ launch_fairing_recovery }}</p>
+                <p> <b>Booster{% if "and" in launch.get_boosters %}s{% endif %}: </b>{{ launch.get_boosters }}</p>
+                <p> <b>Landing Location{% if "and" in launch.get_recoveries %}s{% endif %}: </b>{{ launch.get_recoveries }}</p>
+                <p> <b>Outcome: </b>{{ launch.launch_outcome|lower|title|replace:"None|TBD" }}</p>
             </div>
         </div>
     </a>
@@ -29,4 +109,21 @@
 {% else %}
 <p>No launches are available.</p>
 {% endif %}
+<div class="pagination">
+    <span class="step-links">
+        {% if paginated_launches.has_previous %}
+            <a href="?page=1{% if query %}&q={{ query }}{% endif %}" title="First page">&laquo;</a>
+            <a href="?page={{ paginated_launches.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" title="Previous page">&lsaquo;</a>
+        {% endif %}
+
+        <span class="current">
+            {{ paginated_launches.number }} of {{ paginated_launches.paginator.num_pages }}
+        </span>
+
+        {% if paginated_launches.has_next %}
+            <a href="?page={{ paginated_launches.next_page_number }}{% if query %}&q={{ query }}{% endif %}" title="Next page">&rsaquo;</a>
+            <a href="?page={{ paginated_launches.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}" title="Last page">&raquo;</a>
+        {% endif %}
+    </span>
+  </div>
 {% endblock %}

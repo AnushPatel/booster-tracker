@@ -174,7 +174,7 @@ class Launch(models.Model):
         return(flights, turnaround)
     
     def get_rocket_flights_reused_vehicle(self) -> tuple:
-        """Up to and including the launch, counts number of launchues of that vehicle that have flown with one or more flight proven boosters; increments by one regardless of if one, two, or three boosters are flight proven"""
+        """Up to and including the launch, counts number of launches of that vehicle that have flown with one or more flight proven boosters; increments by one regardless of if one, two, or three boosters are flight proven"""
         count = 0
         stages_seen: set = set()
 
@@ -300,7 +300,8 @@ class Launch(models.Model):
                 count += 1
                 count_list.append(make_ordinal(count))
         return concatenated_list(count_list)
-        
+    
+    @property
     def get_boosters(self) -> str:
         """Returns concatenated string of boosters on launch; these are ordered by position (so center, MY, PY) for three core launches"""
         boosters = []
@@ -308,6 +309,7 @@ class Launch(models.Model):
                 boosters.append(f"{stage}-{self.get_stage_flights_and_turnaround(stage=stage)[0]}")
         return concatenated_list(boosters).replace("N/A", "Unknown")
     
+    @property
     def get_recoveries(self) -> str:
         """Returns concatenated string of recoveries on launch; these are ordered by position (so center, MY, PY) for three core launches"""
         recoveries = []
@@ -318,7 +320,7 @@ class Launch(models.Model):
                 recoveries.append("Expended")
         return concatenated_list(recoveries)
     
-    #Configure the display of stages. For exmaple, formatting as B1067-20; 20.42 day turnaround
+    @property
     def make_booster_display(self) -> str:
         """Returns booster display for launch; returns all boosters on flight (with flight number) and turnaround. Ordered by position of cores"""
         stages_string = ""
@@ -472,7 +474,7 @@ class Launch(models.Model):
             "Where to watch": ["Official coverage"]
         }
 
-        boosters_display = self.make_booster_display()
+        boosters_display = self.make_booster_display
         launch_landings = self.make_landing_string()
 
         #Configure timezone for local time conversion. I also change what default weather says based on the location

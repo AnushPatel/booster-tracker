@@ -956,10 +956,10 @@ class TestCases(TestCase):
 
     def test_get_boosters(self):
         # Test for perm objects
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").get_boosters(), "B1062-1")
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").get_boosters(), "B1062-2")
-        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").get_boosters(), "B1084-1, B1080-2, and B1062-3")
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").get_boosters(), "B1080-3")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").get_boosters, "B1062-1")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").get_boosters, "B1062-2")
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").get_boosters, "B1084-1, B1080-2, and B1062-3")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").get_boosters, "B1080-3")
 
         Launch.objects.create(
             time=datetime(2024, 1, 1, 0, 0, tzinfo=pytz.utc),
@@ -973,14 +973,14 @@ class TestCases(TestCase):
         )
 
         # Ensure launch with no booster assigned gets unknown
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 1").get_boosters(), "Unknown")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 1").get_boosters, "Unknown")
 
     def test_get_recoveries(self):
         # Test for perm objects
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").get_recoveries(), "LZ-1")
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").get_recoveries(), "LZ-1")
-        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").get_recoveries(), "JRtI, LZ-1, and LZ-2")
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").get_recoveries(), "Expended")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").get_recoveries, "LZ-1")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").get_recoveries, "LZ-1")
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").get_recoveries, "JRtI, LZ-1, and LZ-2")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").get_recoveries, "Expended")
 
         Launch.objects.create(
             time=datetime(2024, 1, 1, 0, 0, tzinfo=pytz.utc),
@@ -994,13 +994,13 @@ class TestCases(TestCase):
         )
 
         # Test for when no recovery information added
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 1").get_recoveries(), "N/A")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 1").get_recoveries, "N/A")
 
     def test_make_booster_display(self):
         # Test for perm objects; space is intentional for formatting in table
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").make_booster_display(), " B1062-1; N/A-day turnaround")
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").make_booster_display(), " B1062-2; 31.00-day turnaround")
-        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").make_booster_display(), " B1084-1, B1080-2, B1062-3; N/A, 31.00, 60.00-day turnaround")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").make_booster_display, " B1062-1; N/A-day turnaround")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").make_booster_display, " B1062-2; 31.00-day turnaround")
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").make_booster_display, " B1084-1, B1080-2, B1062-3; N/A, 31.00, 60.00-day turnaround")
 
         Launch.objects.create(
             time=datetime(2024, 1, 1, 0, 0, tzinfo=pytz.utc),
@@ -1014,7 +1014,7 @@ class TestCases(TestCase):
         )
 
         # Test for launch with unknown booster
-        self.assertAlmostEqual(Launch.objects.get(name="Falcon 9 Temp Launch 1").make_booster_display(), "; Unknown booster")
+        self.assertAlmostEqual(Launch.objects.get(name="Falcon 9 Temp Launch 1").make_booster_display, "; Unknown booster")
 
     def test_make_landing_string(self):
         # Test for perm objects
