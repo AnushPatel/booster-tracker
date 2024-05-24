@@ -31,12 +31,12 @@ data = sheet.get_all_values()
 data2 = sheet2.get_all_values()
 
 
-with open("ChronologicalOrder.csv", "w") as csv_file:
-        writer = csv.writer(csv_file, delimiter=',')
-        for line in data:
-            writer.writerow(line)
+with open("ChronologicalOrder.csv", "w", encoding="utf-8") as csv_file:
+    writer = csv.writer(csv_file, delimiter=',')
+    for line in data:
+        writer.writerow(line)
 
-with open("FalconCores.csv", "w") as csv_file:
-      writer = csv.writer(csv_file, delimiter=',')
-      for line in data2:
-            writer.writerow(line)
+with open("FalconCores.csv", "w", encoding="utf-8") as csv_file:
+    writer = csv.writer(csv_file, delimiter=',')
+    for line in data2:
+        writer.writerow(line)

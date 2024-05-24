@@ -83,7 +83,7 @@
 {% block content %}
 <div class="search-form">
     <form method="GET" action="{% url 'launches:launches' %}">
-      <input type="text" placeholder="Search Launches" value="{{ query|default_if_none:'' }}">
+      <input type="text" name="q" placeholder="Search Launches" value="{{ query|default_if_none:'' }}">
       <button type="submit">Search</button>
     </form>
   </div>
@@ -99,8 +99,8 @@
                 <p> <b>Rocket: </b> {{ launch.rocket.name }}</p>
                 <p> <b>Liftoff Time: </b> {{ launch.time|date:"F j, Y H:i" }} UTC</p>
                 <p> <b>Launch Site: </b>{{ launch.pad.name }}</p>
-                <p> <b>Booster{% if "and" in launch.get_boosters %}s{% endif %}: </b>{{ launch.get_boosters }}</p>
-                <p> <b>Landing Location{% if "and" in launch.get_recoveries %}s{% endif %}: </b>{{ launch.get_recoveries }}</p>
+                <p> <b>Booster{% if "and" in launch.get_boosters %}s{% endif %}: </b>{{ launch.boosters }}</p>
+                <p> <b>Landing Location{% if "and" in launch.get_recoveries %}s{% endif %}: </b>{{ launch.recoveries }}</p>
                 <p> <b>Outcome: </b>{{ launch.launch_outcome|lower|title|replace:"None|TBD" }}</p>
             </div>
         </div>
