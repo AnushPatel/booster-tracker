@@ -1122,7 +1122,7 @@ class TestCases(TestCase):
                 "is_record": True,
                 "ordered_turnarounds": [
                     {
-                        "turnaround_object": "B1062",
+                        "turnaround_object": Stage.objects.get(name="B1062"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon 9 Launch 2",
                         "last_launch_name": "Falcon 9 Launch 1",
@@ -1138,7 +1138,7 @@ class TestCases(TestCase):
                 "is_record": False,
                 "ordered_turnarounds": [
                     {
-                        "turnaround_object": "B1062",
+                        "turnaround_object": Stage.objects.get(name="B1062"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon 9 Launch 2",
                         "last_launch_name": "Falcon 9 Launch 1",
@@ -1154,19 +1154,19 @@ class TestCases(TestCase):
                 "is_record": False,
                 "ordered_turnarounds": [
                     {
-                        "turnaround_object": "B1062",
+                        "turnaround_object": Stage.objects.get(name="B1062"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon 9 Launch 2",
                         "last_launch_name": "Falcon 9 Launch 1",
                     },
                     {
-                        "turnaround_object": "B1080",
+                        "turnaround_object": Stage.objects.get(name="B1080"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon Heavy Launch 1",
                         "last_launch_name": "Falcon 9 Launch 3",
                     },
                     {
-                        "turnaround_object": "B1062",
+                        "turnaround_object": Stage.objects.get(name="B1062"),
                         "turnaround_time": 5184000.0,
                         "launch_name": "Falcon Heavy Launch 1",
                         "last_launch_name": "Falcon 9 Launch 2",
@@ -1182,25 +1182,25 @@ class TestCases(TestCase):
                 "is_record": True,
                 "ordered_turnarounds": [
                     {
-                        "turnaround_object": "B1080",
+                        "turnaround_object": Stage.objects.get(name="B1080"),
                         "turnaround_time": 2592000.0,
                         "launch_name": "Falcon 9 Launch 4",
                         "last_launch_name": "Falcon Heavy Launch 1",
                     },
                     {
-                        "turnaround_object": "B1062",
+                        "turnaround_object": Stage.objects.get(name="B1062"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon 9 Launch 2",
                         "last_launch_name": "Falcon 9 Launch 1",
                     },
                     {
-                        "turnaround_object": "B1080",
+                        "turnaround_object": Stage.objects.get(name="B1080"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon Heavy Launch 1",
                         "last_launch_name": "Falcon 9 Launch 3",
                     },
                     {
-                        "turnaround_object": "B1062",
+                        "turnaround_object": Stage.objects.get(name="B1062"),
                         "turnaround_time": 5184000.0,
                         "launch_name": "Falcon Heavy Launch 1",
                         "last_launch_name": "Falcon 9 Launch 2",
@@ -1224,7 +1224,7 @@ class TestCases(TestCase):
                 "is_record": True,
                 "ordered_turnarounds": [
                     {
-                        "turnaround_object": "SLC-40",
+                        "turnaround_object": Pad.objects.get(nickname="SLC-40"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon 9 Launch 2",
                         "last_launch_name": "Falcon 9 Launch 1",
@@ -1240,13 +1240,13 @@ class TestCases(TestCase):
                 "is_record": True,
                 "ordered_turnarounds": [
                     {
-                        "turnaround_object": "SLC-40",
+                        "turnaround_object": Pad.objects.get(nickname="SLC-40"),
                         "turnaround_time": 2505600.0,
                         "launch_name": "Falcon 9 Launch 3",
                         "last_launch_name": "Falcon 9 Launch 2",
                     },
                     {
-                        "turnaround_object": "SLC-40",
+                        "turnaround_object": Pad.objects.get(nickname="SLC-40"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon 9 Launch 2",
                         "last_launch_name": "Falcon 9 Launch 1",
@@ -1262,19 +1262,19 @@ class TestCases(TestCase):
                 "is_record": False,
                 "ordered_turnarounds": [
                     {
-                        "turnaround_object": "SLC-40",
+                        "turnaround_object": Pad.objects.get(nickname="SLC-40"),
                         "turnaround_time": 2505600.0,
                         "launch_name": "Falcon 9 Launch 3",
                         "last_launch_name": "Falcon 9 Launch 2",
                     },
                     {
-                        "turnaround_object": "SLC-40",
+                        "turnaround_object": Pad.objects.get(nickname="SLC-40"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon 9 Launch 2",
                         "last_launch_name": "Falcon 9 Launch 1",
                     },
                     {
-                        "turnaround_object": "SLC-40",
+                        "turnaround_object": Pad.objects.get(nickname="SLC-40"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon Heavy Launch 1",
                         "last_launch_name": "Falcon 9 Launch 3",
@@ -1290,25 +1290,25 @@ class TestCases(TestCase):
                 "is_record": False,
                 "ordered_turnarounds": [
                     {
-                        "turnaround_object": "SLC-40",
+                        "turnaround_object": Pad.objects.get(nickname="SLC-40"),
                         "turnaround_time": 2505600.0,
                         "launch_name": "Falcon 9 Launch 3",
                         "last_launch_name": "Falcon 9 Launch 2",
                     },
                     {
-                        "turnaround_object": "SLC-40",
+                        "turnaround_object": Pad.objects.get(nickname="SLC-40"),
                         "turnaround_time": 2592000.0,
                         "launch_name": "Falcon 9 Launch 4",
                         "last_launch_name": "Falcon Heavy Launch 1",
                     },
                     {
-                        "turnaround_object": "SLC-40",
+                        "turnaround_object": Pad.objects.get(nickname="SLC-40"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon 9 Launch 2",
                         "last_launch_name": "Falcon 9 Launch 1",
                     },
                     {
-                        "turnaround_object": "SLC-40",
+                        "turnaround_object": Pad.objects.get(nickname="SLC-40"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon Heavy Launch 1",
                         "last_launch_name": "Falcon 9 Launch 3",
@@ -1332,7 +1332,7 @@ class TestCases(TestCase):
                 "is_record": True,
                 "ordered_turnarounds": [
                     {
-                        "turnaround_object": "LZ-1",
+                        "turnaround_object": LandingZone.objects.get(nickname="LZ-1"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon 9 Launch 2",
                         "last_launch_name": "Falcon 9 Launch 1",
@@ -1348,13 +1348,13 @@ class TestCases(TestCase):
                 "is_record": True,
                 "ordered_turnarounds": [
                     {
-                        "turnaround_object": "LZ-1",
+                        "turnaround_object": LandingZone.objects.get(nickname="LZ-1"),
                         "turnaround_time": 2505600.0,
                         "launch_name": "Falcon 9 Launch 3",
                         "last_launch_name": "Falcon 9 Launch 2",
                     },
                     {
-                        "turnaround_object": "LZ-1",
+                        "turnaround_object": LandingZone.objects.get(nickname="LZ-1"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon 9 Launch 2",
                         "last_launch_name": "Falcon 9 Launch 1",
@@ -1370,19 +1370,19 @@ class TestCases(TestCase):
                 "is_record": False,
                 "ordered_turnarounds": [
                     {
-                        "turnaround_object": "LZ-1",
+                        "turnaround_object": LandingZone.objects.get(nickname="LZ-1"),
                         "turnaround_time": 2505600.0,
                         "launch_name": "Falcon 9 Launch 3",
                         "last_launch_name": "Falcon 9 Launch 2",
                     },
                     {
-                        "turnaround_object": "LZ-1",
+                        "turnaround_object": LandingZone.objects.get(nickname="LZ-1"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon 9 Launch 2",
                         "last_launch_name": "Falcon 9 Launch 1",
                     },
                     {
-                        "turnaround_object": "LZ-1",
+                        "turnaround_object": LandingZone.objects.get(nickname="LZ-1"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon Heavy Launch 1",
                         "last_launch_name": "Falcon 9 Launch 3",
@@ -1398,19 +1398,19 @@ class TestCases(TestCase):
                 "is_record": False,
                 "ordered_turnarounds": [
                     {
-                        "turnaround_object": "LZ-1",
+                        "turnaround_object": LandingZone.objects.get(nickname="LZ-1"),
                         "turnaround_time": 2505600.0,
                         "launch_name": "Falcon 9 Launch 3",
                         "last_launch_name": "Falcon 9 Launch 2",
                     },
                     {
-                        "turnaround_object": "LZ-1",
+                        "turnaround_object": LandingZone.objects.get(nickname="LZ-1"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon 9 Launch 2",
                         "last_launch_name": "Falcon 9 Launch 1",
                     },
                     {
-                        "turnaround_object": "LZ-1",
+                        "turnaround_object": LandingZone.objects.get(nickname="LZ-1"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon Heavy Launch 1",
                         "last_launch_name": "Falcon 9 Launch 3",
@@ -1448,25 +1448,25 @@ class TestCases(TestCase):
                 "is_record": True,
                 "ordered_turnarounds": [
                     {
-                        "turnaround_object": "B1080",
+                        "turnaround_object": Stage.objects.get(name="B1080"),
                         "turnaround_time": 86400.0,
                         "launch_name": "Falcon 9 Temp Launch 1",
                         "last_launch_name": "Falcon Heavy Launch 1",
                     },
                     {
-                        "turnaround_object": "B1062",
+                        "turnaround_object": Stage.objects.get(name="B1062"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon 9 Launch 2",
                         "last_launch_name": "Falcon 9 Launch 1",
                     },
                     {
-                        "turnaround_object": "B1080",
+                        "turnaround_object": Stage.objects.get(name="B1080"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon Heavy Launch 1",
                         "last_launch_name": "Falcon 9 Launch 3",
                     },
                     {
-                        "turnaround_object": "B1062",
+                        "turnaround_object": Stage.objects.get(name="B1062"),
                         "turnaround_time": 5184000.0,
                         "launch_name": "Falcon Heavy Launch 1",
                         "last_launch_name": "Falcon 9 Launch 2",
@@ -1482,25 +1482,25 @@ class TestCases(TestCase):
                 "is_record": True,
                 "ordered_turnarounds": [
                     {
-                        "turnaround_object": "SLC-40",
+                        "turnaround_object": Pad.objects.get(nickname="SLC-40"),
                         "turnaround_time": 86400.0,
                         "launch_name": "Falcon 9 Temp Launch 1",
                         "last_launch_name": "Falcon Heavy Launch 1",
                     },
                     {
-                        "turnaround_object": "SLC-40",
+                        "turnaround_object": Pad.objects.get(nickname="SLC-40"),
                         "turnaround_time": 2505600.0,
                         "launch_name": "Falcon 9 Launch 3",
                         "last_launch_name": "Falcon 9 Launch 2",
                     },
                     {
-                        "turnaround_object": "SLC-40",
+                        "turnaround_object": Pad.objects.get(nickname="SLC-40"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon 9 Launch 2",
                         "last_launch_name": "Falcon 9 Launch 1",
                     },
                     {
-                        "turnaround_object": "SLC-40",
+                        "turnaround_object": Pad.objects.get(nickname="SLC-40"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon Heavy Launch 1",
                         "last_launch_name": "Falcon 9 Launch 3",
@@ -1516,25 +1516,25 @@ class TestCases(TestCase):
                 "is_record": True,
                 "ordered_turnarounds": [
                     {
-                        "turnaround_object": "JRtI",
+                        "turnaround_object": LandingZone.objects.get(nickname="JRtI"),
                         "turnaround_time": 86400.0,
                         "launch_name": "Falcon 9 Temp Launch 1",
                         "last_launch_name": "Falcon Heavy Launch 1",
                     },
                     {
-                        "turnaround_object": "LZ-1",
+                        "turnaround_object": LandingZone.objects.get(nickname="LZ-1"),
                         "turnaround_time": 2505600.0,
                         "launch_name": "Falcon 9 Launch 3",
                         "last_launch_name": "Falcon 9 Launch 2",
                     },
                     {
-                        "turnaround_object": "LZ-1",
+                        "turnaround_object": LandingZone.objects.get(nickname="LZ-1"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon 9 Launch 2",
                         "last_launch_name": "Falcon 9 Launch 1",
                     },
                     {
-                        "turnaround_object": "LZ-1",
+                        "turnaround_object": LandingZone.objects.get(nickname="LZ-1"),
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon Heavy Launch 1",
                         "last_launch_name": "Falcon 9 Launch 3",

@@ -21,8 +21,8 @@
             <p> <b>Rocket: </b> {{ next_launch.rocket.name }}</p>
             <p> <b>Scheduled: </b> {{ next_launch.time|date:"F j, Y H:i" }} UTC</p>
             <p> <b>Launch Site: </b>{{ next_launch.pad.name }}</p>
-            <p> <b>Booster{% if "and" in next_launch_boosters %}s{% endif %}: </b>{{ launch.boosters }}</p>
-            <p> <b>Landing Location{% if "and" in next_launch_recoveries %}s{% endif %}: </b>{{ launch.recoveries }}</p>
+            <p> <b>Booster{% if "and" in next_launch.boosters %}s{% endif %}: </b>{{ next_launch.boosters }}</p>
+            <p> <b>Landing Location{% if "and" in next_launch.recoveries %}s{% endif %}: </b>{{ next_launch.recoveries }}</p>
             <p> <b>Tug{% if "and" in next_launch_tugs %}s{% endif %}: </b>{{ next_launch_tugs }}</p>
             <p> <b>Fairing Recovery: </b>{{ next_launch_fairing_recovery }}</p>
         </div>
@@ -30,7 +30,7 @@
 
     <div class="rocket-container">
         <div class="yellow-background"></div>
-        <div class="image-background" style="background-image: linear-gradient(95deg, rgba(248, 211, 102, 1) 7.87%, transparent 32.13%), url('{{ last_launch.image }}');"></div>
+        <div class="image-background" style="background-image: linear-gradient(95deg, rgba(242, 164, 88, 1) 7.87%, transparent 32.13%), url('{{ last_launch.image }}');"></div>
         <div class="info-wrapper yellow-text">
             <h3>PREVIOUS MISSION:</h3>
             <h1 style="text-align: left">{{ last_launch.name }}</h1>

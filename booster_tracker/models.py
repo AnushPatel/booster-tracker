@@ -92,10 +92,12 @@ class Stage(models.Model):
     rocket = models.ForeignKey(Rocket, on_delete=models.CASCADE)
     version = models.CharField(max_length=20)
     type = models.CharField(max_length=20, choices=STAGE_TYPES)
+    image = models.ImageField(
+        upload_to="stage_photos/", default="stage_photos/default_booster.jpg"
+    )
     status = models.CharField(
         max_length=20, choices=STAGE_LIFE_OPTIONS, default="ACTIVE"
     )
-    photo = models.ImageField(upload_to="stage_photos/", null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -106,6 +108,36 @@ class Stage(models.Model):
                 fields=["name", "rocket"], name="unique_rocket_stage"
             )
         ]
+
+    @property
+    def num_launches(self):
+        return StageAndRecovery.objects.filter(
+            launch__time__lte=datetime.now(pytz.utc), stage=self
+        ).count()
+
+    @property
+    def fastest_turnaround(self):
+        """Function returns fastest turnaround of booster in string form (ex: 12 days, 4 hours, and 3 minutes)"""
+        fastest_turnaround = "N/A"
+
+        if launch := Launch.objects.filter(
+            time__lte=datetime.now(pytz.utc), stageandrecovery__stage=self
+        ).first():
+            turnarounds = launch.calculate_turnarounds(
+                turnaround_object=TurnaroundObjects.BOOSTER
+            )
+            if turnarounds:
+                specific_pad_turnarounds = [
+                    row
+                    for row in turnarounds["ordered_turnarounds"]
+                    if self == row["turnaround_object"]
+                ]
+                if len(specific_pad_turnarounds) > 0:
+                    fastest_turnaround = convert_seconds(
+                        specific_pad_turnarounds[0]["turnaround_time"]
+                    )
+
+        return fastest_turnaround
 
 
 class SpacecraftFamily(models.Model):
@@ -133,6 +165,9 @@ class Spacecraft(models.Model):
     status = models.CharField(
         max_length=50, choices=STAGE_LIFE_OPTIONS, default="ACTIVE"
     )
+    image = models.ImageField(
+        upload_to="spacecraft_photos/", default="spacecraft_photos/default_dragon.jpg"
+    )
 
     def __str__(self):
         return self.name
@@ -143,6 +178,36 @@ class Spacecraft(models.Model):
                 fields=["name", "family"], name="unique_family_name"
             )
         ]
+
+    @property
+    def num_launches(self):
+        return SpacecraftOnLaunch.objects.filter(
+            launch__time__lte=datetime.now(pytz.utc), spacecraft=self
+        ).count()
+
+    # @property
+    # def fastest_turnaround(self):
+    #     """Function returns fastest turnaround of booster in string form (ex: 12 days, 4 hours, and 3 minutes)"""
+    #     fastest_turnaround = "N/A"
+
+    #     if launch := Launch.objects.filter(
+    #         time__lte=datetime.now(pytz.utc), stageandrecovery__stage=self
+    #     ).first():
+    #         turnarounds = launch.calculate_turnarounds(
+    #             turnaround_object=TurnaroundObjects.BOOSTER
+    #         )
+    #         if turnarounds:
+    #             specific_pad_turnarounds = [
+    #                 row
+    #                 for row in turnarounds["ordered_turnarounds"]
+    #                 if f"{self.name}" == row["turnaround_object"]
+    #             ]
+    #             if len(specific_pad_turnarounds) > 0:
+    #                 fastest_turnaround = convert_seconds(
+    #                     specific_pad_turnarounds[0]["turnaround_time"]
+    #                 )
+
+    #     return fastest_turnaround
 
 
 class Boat(models.Model):
@@ -173,7 +238,9 @@ class Pad(models.Model):
     nickname = models.CharField(max_length=25)
     location = models.CharField(max_length=100, null=True, blank=True)
     status = models.CharField(max_length=20, choices=LIFE_OPTIONS, default="ACTIVE")
-    image = models.ImageField(upload_to="pad_photos/", default="default.png")
+    image = models.ImageField(
+        upload_to="pad_photos/", default="media/pad_photos/default.png"
+    )
 
     def __str__(self):
         return self.nickname
@@ -196,7 +263,7 @@ class Pad(models.Model):
             specific_pad_turnarounds = [
                 row
                 for row in turnarounds["ordered_turnarounds"]
-                if f"{self.nickname}" == row["turnaround_object"]
+                if self == row["turnaround_object"]
             ]
             if len(specific_pad_turnarounds) > 0:
                 fastest_turnaround = convert_seconds(
@@ -416,16 +483,14 @@ class Launch(models.Model):
         # Based on the object calculating turnaround times of, change queriy set and name name_field accordingly; for all, queryset just needs to be a one element set, whose value is not used at all.
         if turnaround_object == TurnaroundObjects.BOOSTER:
             queryset = Stage.objects.filter(type="BOOSTER").distinct()
-            name_field = "name"
         elif turnaround_object == TurnaroundObjects.PAD:
             queryset = Pad.objects.all()
-            name_field = "nickname"
         elif turnaround_object == TurnaroundObjects.LANDING_ZONE:
             queryset = LandingZone.objects.all()
-            name_field = "nickname"
+        elif turnaround_object == TurnaroundObjects.SPACECRAFT:
+            queryset = Spacecraft.objects.all()
         elif turnaround_object == TurnaroundObjects.ALL:
             queryset = [""]
-            name_field = "name"
 
         for item in queryset:
             if isinstance(
@@ -460,19 +525,10 @@ class Launch(models.Model):
             # Cycle through the launches one at a time to calculate the needed turnaround
             for i in range(0, len(launches) + 1):
                 turnaround = turnaround_time(launches=launches[:i])
-                if turnaround and turnaround_object != TurnaroundObjects.ALL:
+                if turnaround:
                     turnarounds.append(
                         {
-                            "turnaround_object": getattr(item, name_field),
-                            "turnaround_time": turnaround,
-                            "launch_name": launches[i - 1].name,
-                            "last_launch_name": launches[i - 2].name,
-                        }
-                    )
-                elif turnaround:
-                    turnarounds.append(
-                        {
-                            "turnaround_object": "",
+                            "turnaround_object": item,
                             "turnaround_time": turnaround,
                             "launch_name": launches[i - 1].name,
                             "last_launch_name": launches[i - 2].name,
@@ -667,14 +723,14 @@ class Launch(models.Model):
             if booster_turnarounds["is_record"]:
                 booster_string = f"– Qickest turnaround of a booster to date at {convert_seconds(booster_turnarounds['ordered_turnarounds'][0]['turnaround_time'])}"
                 if len(booster_turnarounds["ordered_turnarounds"]) > 1:
-                    booster_string += f". Previous record: {booster_turnarounds['ordered_turnarounds'][1]['turnaround_object']} at {convert_seconds(booster_turnarounds['ordered_turnarounds'][1]['turnaround_time'])} between {booster_turnarounds['ordered_turnarounds'][1]['last_launch_name']} and {booster_turnarounds['ordered_turnarounds'][1]['launch_name']}"
+                    booster_string += f". Previous record: {booster_turnarounds['ordered_turnarounds'][1]['turnaround_object'].name} at {convert_seconds(booster_turnarounds['ordered_turnarounds'][1]['turnaround_time'])} between {booster_turnarounds['ordered_turnarounds'][1]['last_launch_name']} and {booster_turnarounds['ordered_turnarounds'][1]['launch_name']}"
                 stats.append(booster_string)
             else:
                 for recovery in StageAndRecovery.objects.filter(launch=self):
                     specific_booster_turnarounds = [
                         row
                         for row in booster_turnarounds["ordered_turnarounds"]
-                        if f"{recovery.stage.name}" == row["turnaround_object"]
+                        if recovery.stage == row["turnaround_object"]
                     ]
                     if (
                         len(specific_booster_turnarounds) > 0
@@ -692,7 +748,7 @@ class Launch(models.Model):
             if landing_zone_turnarounds["is_record"]:
                 zone_string = f"– Quickest turnaround time of a landing zone to date at {convert_seconds(landing_zone_turnarounds['ordered_turnarounds'][0]['turnaround_time'])}"
                 if len(landing_zone_turnarounds["ordered_turnarounds"]) > 1:
-                    zone_string += f". Previous record: {landing_zone_turnarounds['ordered_turnarounds'][1]['turnaround_object']} at {convert_seconds(landing_zone_turnarounds['ordered_turnarounds'][1]['turnaround_time'])} between {landing_zone_turnarounds['ordered_turnarounds'][1]['last_launch_name']} and {landing_zone_turnarounds['ordered_turnarounds'][1]['launch_name']}"
+                    zone_string += f". Previous record: {landing_zone_turnarounds['ordered_turnarounds'][1]['turnaround_object'].nickname} at {convert_seconds(landing_zone_turnarounds['ordered_turnarounds'][1]['turnaround_time'])} between {landing_zone_turnarounds['ordered_turnarounds'][1]['last_launch_name']} and {landing_zone_turnarounds['ordered_turnarounds'][1]['launch_name']}"
                 stats.append(zone_string)
             else:
                 for recovery in StageAndRecovery.objects.filter(launch=self):
@@ -700,8 +756,7 @@ class Launch(models.Model):
                         specific_zone_turnarounds = [
                             row
                             for row in landing_zone_turnarounds["ordered_turnarounds"]
-                            if f"{recovery.landing_zone.nickname}"
-                            == row["turnaround_object"]
+                            if recovery.landing_zone == row["turnaround_object"]
                         ]
                         if (
                             len(specific_zone_turnarounds) > 0
@@ -729,13 +784,13 @@ class Launch(models.Model):
             if pad_turnarounds["is_record"]:
                 pad_string = f"– Qickest turnaround of a SpaceX pad to date at {convert_seconds(pad_turnarounds['ordered_turnarounds'][0]['turnaround_time'])}"
                 if len(pad_turnarounds["ordered_turnarounds"]) > 1:
-                    pad_string += f". Previous record: {pad_turnarounds['ordered_turnarounds'][1]['turnaround_object']} at {convert_seconds(pad_turnarounds['ordered_turnarounds'][1]['turnaround_time'])} between {pad_turnarounds['ordered_turnarounds'][1]['last_launch_name']} and {pad_turnarounds['ordered_turnarounds'][1]['launch_name']}"
+                    pad_string += f". Previous record: {pad_turnarounds['ordered_turnarounds'][1]['turnaround_object'].nickname} at {convert_seconds(pad_turnarounds['ordered_turnarounds'][1]['turnaround_time'])} between {pad_turnarounds['ordered_turnarounds'][1]['last_launch_name']} and {pad_turnarounds['ordered_turnarounds'][1]['launch_name']}"
                 stats.append(pad_string)
             else:
                 specific_pad_turnarounds = [
                     row
                     for row in pad_turnarounds["ordered_turnarounds"]
-                    if f"{self.pad.nickname}" == row["turnaround_object"]
+                    if self.pad == row["turnaround_object"]
                 ]
                 if (
                     len(specific_pad_turnarounds) > 0
@@ -882,7 +937,7 @@ class LandingZone(models.Model):
     serial_number = models.CharField(max_length=10, blank=True, null=True)
     status = models.CharField(max_length=20, choices=LIFE_OPTIONS, default="ACTIVE")
     image = models.ImageField(
-        upload_to="landing_zone_photos/", default="pad_photos/default.png"
+        upload_to="landing_zone_photos/", default="media/pad_photos/default.png"
     )
 
     def __str__(self):
@@ -914,7 +969,7 @@ class LandingZone(models.Model):
             specific_zone_turnarounds = [
                 row
                 for row in turnarounds["ordered_turnarounds"]
-                if f"{self.nickname}" == row["turnaround_object"]
+                if self == row["turnaround_object"]
             ]
             if len(specific_zone_turnarounds) > 0:
                 fastest_turnaround = convert_seconds(
@@ -1024,7 +1079,7 @@ class SupportOnLaunch(models.Model):
 class SpacecraftOnLaunch(models.Model):
     launch = models.ForeignKey(Launch, on_delete=models.CASCADE)
     spacecraft = models.ForeignKey(Spacecraft, on_delete=models.CASCADE)
-    splashdown_time = models.DateTimeField("Splashdown Time", null=True)
+    splashdown_time = models.DateTimeField("Splashdown Time", null=True, blank=True)
     recovery_boat = models.ForeignKey(
         Boat,
         on_delete=models.CASCADE,
@@ -1052,7 +1107,7 @@ class PadUsed(models.Model):
     pad = models.ForeignKey(Pad, on_delete=models.CASCADE)
     image = models.ImageField(
         upload_to="rocket_pad_photos/",
-        default="rocket_pad_photos/rocket_launch_image.jpg",
+        default="media/pad_photos/default.png",
     )
 
     class Meta:

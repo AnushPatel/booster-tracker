@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.db.models import Q
 from booster_tracker.utils import concatenated_list, TurnaroundObjects, convert_seconds
 from booster_tracker.home_utils import (
     get_landings_and_successes,
@@ -7,6 +8,7 @@ from booster_tracker.home_utils import (
 )
 
 import pytz
+import statistics
 from datetime import datetime
 
 from .models import (
@@ -18,6 +20,7 @@ from .models import (
     Pad,
     LandingZone,
     Launch,
+    Spacecraft,
 )
 
 
@@ -127,9 +130,11 @@ def home(request):
     most_flown_boosters_string = (
         f"{concatenated_list(most_flown_boosters[0])}; {most_flown_boosters[1]} flights"
     )
+
     quickest_booster_turnaround = last_launch.calculate_turnarounds(
         turnaround_object=TurnaroundObjects.BOOSTER
     )
+
     quickest_booster_turnaround_string = f"{quickest_booster_turnaround['ordered_turnarounds'][0]['turnaround_object']} at {convert_seconds(quickest_booster_turnaround['ordered_turnarounds'][0]['turnaround_time'])}"
     shortest_time_between_launches = convert_seconds(
         last_launch.calculate_turnarounds(turnaround_object=TurnaroundObjects.ALL)[
@@ -168,7 +173,10 @@ def home(request):
 
     pad_stats: list = []
     for pad in (
-        Pad.objects.filter(padused__rocket__provider__name="SpaceX")
+        Pad.objects.filter(
+            padused__rocket__name__icontains="Falcon",
+            padused__rocket__provider__name="SpaceX",
+        )
         .distinct()
         .order_by("id")
     ):
@@ -179,7 +187,8 @@ def home(request):
     recovery_zone_stats: list = []
     for zone in (
         LandingZone.objects.filter(
-            stageandrecovery__stage__rocket__provider__name="SpaceX"
+            stageandrecovery__stage__rocket__provider__name="SpaceX",
+            stageandrecovery__stage__rocket__name__icontains="Falcon",
         )
         .distinct()
         .order_by("id")
@@ -216,5 +225,84 @@ def home(request):
 
 def launch_details(request, launch_name):
     launch = get_object_or_404(Launch, name=launch_name)
-    context = {"data": launch.create_launch_table()}
+    context = {"data": launch.create_launch_table(), "launch": launch}
     return render(request, "launches/launch_table.html", context)
+
+
+def booster_list(request):
+    falcon_boosters = Stage.objects.filter(
+        rocket__provider__name="SpaceX",
+        type="BOOSTER",
+        rocket__name__icontains="Falcon",
+    )
+
+    active_boosters = falcon_boosters.filter(status="ACTIVE").order_by("name")
+    lost_boosters = falcon_boosters.filter(
+        Q(status="LOST") | Q(status="EXPENDED")
+    ).order_by("name")
+    retired_boosters = falcon_boosters.filter(status="RETIRED").order_by("name")
+
+    context = {
+        "active_boosters": active_boosters,
+        "retired_boosters": retired_boosters,
+        "lost_boosters": lost_boosters,
+    }
+
+    return render(request, "boosters/booster_list.html", context)
+
+
+def booster_info(request, booster_name):
+    booster = get_object_or_404(Stage, name=booster_name)
+    launches = Launch.objects.filter(stageandrecovery__stage=booster).order_by("time")
+    launches_information = []
+    turnarounds = []
+
+    for launch in launches:
+        turnaround = launch.get_stage_flights_and_turnaround(stage=booster)[1]
+        launches_information.append(
+            [
+                launch,
+                turnaround,
+                StageAndRecovery.objects.get(launch=launch, stage=booster),
+            ]
+        )
+        if turnaround:
+            turnarounds.append(turnaround)
+
+    average_turnaround = None
+    turnaround_stdev = None
+    quickest_turnaround = None
+
+    if len(turnarounds) > 0:
+        average_turnaround = round(statistics.mean(turnarounds), 2)
+        quickest_turnaround = round(min(turnarounds), 2)
+    if len(turnarounds) > 1:
+        turnaround_stdev = round(statistics.stdev(turnarounds), 2)
+
+    context = {
+        "booster": booster,
+        "launches": launches_information,
+        "average_turnaround": average_turnaround,
+        "stdev": turnaround_stdev,
+        "quickest_turnaround": quickest_turnaround,
+    }
+
+    return render(request, "boosters/booster_info.html", context)
+
+
+def dragon_list(request):
+    dragons = Spacecraft.objects.filter(family__name="Dragon")
+
+    active_dragons = dragons.filter(status="ACTIVE").order_by("name")
+    lost_dragons = dragons.filter(Q(status="LOST") | Q(status="EXPENDED")).order_by(
+        "name"
+    )
+    retired_dragons = dragons.filter(status="RETIRED").order_by("name")
+
+    context = {
+        "active_dragons": active_dragons,
+        "retired_dragons": retired_dragons,
+        "lost_dragons": lost_dragons,
+    }
+
+    return render(request, "dragons/dragon_list.html", context)

@@ -13,9 +13,8 @@
   padding: 0.4em; /* Fixed padding */
   max-width: 1200px; /* Set the maximum width of the container */
   margin: 0 auto; /* Center the container */
-  padding: 0 20px; /* Add padding to the container */
   box-sizing: border-box; /* Include padding in the total width */
-
+  z-index: 10000;
 }
 
 .navbar-container {
@@ -56,7 +55,7 @@
 }
 
 .logo {
-  height: 4.5em; /* Adjusted height */
+  height: 4.2em; /* Adjusted height */
   margin-right: 1em; /* Fixed margin */
   vertical-align: middle; /* Align the logo vertically middle */
 }
@@ -79,6 +78,8 @@
 @media (max-width: 850px) {
   .navbar {
     opacity: 0.95;
+    position: relative;
+    z-index: 10;
   }
 
   .navbar-container input[type="checkbox"],

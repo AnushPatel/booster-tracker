@@ -1,0 +1,58 @@
+{% extends "base_generic.html" %}
+{% load static %}
+{% load filters %}
+
+{% block extra_css %}
+    <link rel="stylesheet" type="text/css" href="{% static 'css/object_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<h1 style="font-size: 3em; clear: both; padding-top: 0px; margin-top: 0px;">Active Boosters</h1>
+{% for booster in active_boosters %}
+<div class="rocket-container">
+    <a href="{% url 'booster_tracker:booster' booster.name %}" class="rocket-link">
+        <div class="blue-background"></div>
+        <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ booster.image.url }}');"></div>
+        <div class="info-wrapper blue-text">
+            <h1 style="text-align: left">{{ booster.name }}</h1>
+            <p> <b>Rocket: </b> {{ booster.rocket.name }}</p>
+            <p> <b>Version: </b> {{ booster.version }}</p>
+            <p> <b>Number of Launches: </b>{{ booster.num_launches }}</p>
+        </div>
+    </a>
+</div>
+{% endfor %}
+
+<h1>Lost Boosters</h1>
+{% for booster in lost_boosters %}
+<div class="rocket-container">
+    <a href="{% url 'booster_tracker:booster' booster.name %}" class="rocket-link">
+        <div class="blue-background"></div>
+        <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ booster.image.url }}');"></div>
+        <div class="info-wrapper blue-text">
+            <h1 style="text-align: left">{{ booster.name }}</h1>
+            <p> <b>Rocket: </b> {{ booster.rocket.name }}</p>
+            <p> <b>Version: </b> {{ booster.version }}</p>
+            <p> <b>Number of Launches: </b>{{ booster.num_launches }}</p>
+        </div>
+    </a>
+</div>
+{% endfor %}
+
+<h1>Retired Boosters</h1>
+{% for booster in retired_boosters %}
+<div class="rocket-container">
+    <a href="{% url 'booster_tracker:booster' booster.name %}" class="rocket-link">
+        <div class="blue-background"></div>
+        <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ booster.image.url }}');"></div>
+        <div class="info-wrapper blue-text">
+            <h1 style="text-align: left">{{ booster.name }}</h1>
+            <p> <b>Rocket: </b> {{ booster.rocket.name }}</p>
+            <p> <b>Version: </b> {{ booster.version }}</p>
+            <p> <b>Number of Launches: </b>{{ booster.num_launches }}</p>
+        </div>
+    </a>
+</div>
+{% endfor %}
+
+{% endblock %}

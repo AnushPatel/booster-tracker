@@ -9,6 +9,7 @@ class TurnaroundObjects(StrEnum):
     LANDING_ZONE = "landing zone"
     PAD = "pad"
     ALL = "all"
+    SPACECRAFT = "spacecraft"
 
 
 # First several functions will be defined that are commonly used.

@@ -128,7 +128,7 @@ class RocketFilter(admin.SimpleListFilter):
     parameter_name = "rocket"
 
     def lookups(self, request, model_admin):
-        rockets = {[launch.rocket for launch in Launch.objects.all()]}
+        rockets = set([launch.rocket for launch in Launch.objects.all()])
         return [(rocket, rocket) for rocket in rockets]
 
     def queryset(self, request, queryset):
@@ -142,7 +142,7 @@ class StageNameFilter(admin.SimpleListFilter):
     parameter_name = "stage_name"
 
     def lookups(self, request, model_admin):
-        stage_names = {[stage.stage for stage in StageAndRecovery.objects.all()]}
+        stage_names = set([stage.stage for stage in StageAndRecovery.objects.all()])
         return [(stage_name, stage_name) for stage_name in stage_names]
 
     def queryset(self, request, queryset):
@@ -156,7 +156,7 @@ class PadFilter(admin.SimpleListFilter):
     parameter_name = "pad"
 
     def lookups(self, request, model_admin):
-        pads = {[launch.pad for launch in Launch.objects.all()]}
+        pads = set([launch.pad for launch in Launch.objects.all()])
         return [(pad, pad) for pad in pads]
 
     def queryset(self, request, queryset):
@@ -170,12 +170,12 @@ class LandingLocationFilter(admin.SimpleListFilter):
     parameter_name = "landing_zone"
 
     def lookups(self, request, model_admin):
-        landing_zones = {
+        landing_zones = set(
             [
                 landing_zone.landing_zone
                 for landing_zone in StageAndRecovery.objects.all()
             ]
-        }
+        )
         return [(landing_zone, landing_zone) for landing_zone in landing_zones]
 
     def queryset(self, request, queryset):
@@ -189,7 +189,9 @@ class LaunchOutcomeFilter(admin.SimpleListFilter):
     parameter_name = "launch_outcome"
 
     def lookups(self, request, model_admin):
-        launch_outcomes = {[launch.launch_outcome for launch in Launch.objects.all()]}
+        launch_outcomes = set(
+            [launch.launch_outcome for launch in Launch.objects.all()]
+        )
         return [(launch_outcome, launch_outcome) for launch_outcome in launch_outcomes]
 
     def queryset(self, request, queryset):
@@ -203,7 +205,7 @@ class OrbitFilter(admin.SimpleListFilter):
     parameter_name = "orbit"
 
     def lookups(self, request, model_admin):
-        orbits = {[launch.orbit for launch in Launch.objects.all()]}
+        orbits = set([launch.orbit for launch in Launch.objects.all()])
         return [(orbit, orbit) for orbit in orbits]
 
     def queryset(self, request, queryset):
@@ -217,7 +219,9 @@ class LandingMethodFilter(admin.SimpleListFilter):
     parameter_name = "method"
 
     def lookups(self, request, model_admin):
-        landing_methods = {[method.method for method in StageAndRecovery.objects.all()]}
+        landing_methods = set(
+            [method.method for method in StageAndRecovery.objects.all()]
+        )
         return [(method, method) for method in landing_methods]
 
     def queryset(self, request, queryset):
@@ -282,7 +286,9 @@ class FairingMethodFilter(admin.SimpleListFilter):
     parameter_name = "catch"
 
     def lookups(self, request, model_admin):
-        recovery_methods = {[method.catch for method in FairingRecovery.objects.all()]}
+        recovery_methods = set(
+            [method.catch for method in FairingRecovery.objects.all()]
+        )
         return [(method, method) for method in recovery_methods]
 
     def queryset(self, request, queryset):
@@ -296,9 +302,9 @@ class FairingRecoveryOutcome(admin.SimpleListFilter):
     parameter_name = "recovery"
 
     def lookups(self, request, model_admin):
-        recovery_outcomes = {
+        recovery_outcomes = set(
             [recovery.recovery for recovery in FairingRecovery.objects.all()]
-        }
+        )
         return [(recovery, recovery) for recovery in recovery_outcomes]
 
     def queryset(self, request, queryset):
@@ -407,7 +413,7 @@ class VersionFilter(admin.SimpleListFilter):
     parameter_name = "version"
 
     def lookups(self, request, model_admin):
-        versions = {[stage.version for stage in Stage.objects.all()]}
+        versions = set([stage.version for stage in Stage.objects.all()])
         return [(version, version) for version in versions]
 
     def queryset(self, request, queryset):
@@ -421,7 +427,7 @@ class StageTypeFilter(admin.SimpleListFilter):
     parameter_name = "type"
 
     def lookups(self, request, model_admin):
-        types = {[stage.type for stage in Stage.objects.all()]}
+        types = set([stage.type for stage in Stage.objects.all()])
         return [(type, type) for type in types]
 
     def queryset(self, request, queryset):
@@ -435,7 +441,7 @@ class StageStatusFilter(admin.SimpleListFilter):
     parameter_name = "status"
 
     def lookups(self, request, model_admin):
-        statuses = {[stage.status for stage in Stage.objects.all()]}
+        statuses = set([stage.status for stage in Stage.objects.all()])
         return [(status, status) for status in statuses]
 
     def queryset(self, request, queryset):
@@ -459,7 +465,7 @@ class BoatTypeFilter(admin.SimpleListFilter):
     parameter_name = "type"
 
     def lookups(self, request, model_admin):
-        types = {[boat.type for boat in Boat.objects.all()]}
+        types = set([boat.type for boat in Boat.objects.all()])
         return [(type, type) for type in types]
 
     def queryset(self, request, queryset):
@@ -473,7 +479,7 @@ class BoatStatusFilter(admin.SimpleListFilter):
     parameter_name = "status"
 
     def lookups(self, request, model_admin):
-        statuses = {[boat.status for boat in Boat.objects.all()]}
+        statuses = set([boat.status for boat in Boat.objects.all()])
         return [(status, status) for status in statuses]
 
     def queryset(self, request, queryset):
