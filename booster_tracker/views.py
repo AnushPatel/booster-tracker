@@ -21,6 +21,7 @@ from .models import (
     LandingZone,
     Launch,
     Spacecraft,
+    SpacecraftOnLaunch,
 )
 
 
@@ -125,17 +126,23 @@ def home(request):
             [rocket.name, rocket.num_launches, rocket.num_successes]
         )
 
-    num_landings_and_successes = get_landings_and_successes()
-    most_flown_boosters = get_most_flown_boosters()
+    num_landings_and_successes = get_landings_and_successes(rocket_name="Falcon")
+    most_flown_boosters = get_most_flown_boosters(rocket_name="Falcon")
     most_flown_boosters_string = (
         f"{concatenated_list(most_flown_boosters[0])}; {most_flown_boosters[1]} flights"
     )
 
-    quickest_booster_turnaround = last_launch.calculate_turnarounds(
+    booster_turnarounds = last_launch.calculate_turnarounds(
         turnaround_object=TurnaroundObjects.BOOSTER
     )
 
-    quickest_booster_turnaround_string = f"{quickest_booster_turnaround['ordered_turnarounds'][0]['turnaround_object']} at {convert_seconds(quickest_booster_turnaround['ordered_turnarounds'][0]['turnaround_time'])}"
+    falcon_booster_turnarounds = [
+        row
+        for row in booster_turnarounds["ordered_turnarounds"]
+        if "Falcon" in row["turnaround_object"].rocket.name
+    ]
+
+    quickest_booster_turnaround_string = f"{falcon_booster_turnarounds[0]['turnaround_object']} at {convert_seconds(falcon_booster_turnarounds[0]['turnaround_time'])}"
     shortest_time_between_launches = convert_seconds(
         last_launch.calculate_turnarounds(turnaround_object=TurnaroundObjects.ALL)[
             "ordered_turnarounds"
@@ -252,7 +259,9 @@ def booster_list(request):
 
 
 def booster_info(request, booster_name):
-    booster = get_object_or_404(Stage, name=booster_name)
+    booster = get_object_or_404(
+        Stage, name=booster_name, rocket__name__icontains="Falcon"
+    )
     launches = Launch.objects.filter(stageandrecovery__stage=booster).order_by("time")
     launches_information = []
     turnarounds = []
@@ -266,7 +275,7 @@ def booster_info(request, booster_name):
                 StageAndRecovery.objects.get(launch=launch, stage=booster),
             ]
         )
-        if turnaround:
+        if turnaround and launch.time < datetime.now(pytz.utc):
             turnarounds.append(turnaround)
 
     average_turnaround = None
@@ -306,3 +315,39 @@ def dragon_list(request):
     }
 
     return render(request, "dragons/dragon_list.html", context)
+
+
+def dragon_info(request, dragon_name):
+    dragon = get_object_or_404(Spacecraft, name=dragon_name, family__name="Dragon")
+    launches = Launch.objects.filter(spacecraftonlaunch__spacecraft=dragon).order_by(
+        "time"
+    )
+    launches_information = []
+    turnarounds = []
+
+    for launch in launches:
+        spacecraft_on_launch = SpacecraftOnLaunch.objects.get(launch=launch)
+        turnaround = spacecraft_on_launch.get_spacecraft_turnaround()
+        launches_information.append([launch, turnaround, spacecraft_on_launch])
+        if turnaround and launch.time < datetime.now(pytz.utc):
+            turnarounds.append(turnaround)
+
+    average_turnaround = None
+    turnaround_stdev = None
+    quickest_turnaround = None
+
+    if len(turnarounds) > 0:
+        average_turnaround = round(statistics.mean(turnarounds), 2)
+        quickest_turnaround = round(min(turnarounds), 2)
+    if len(turnarounds) > 1:
+        turnaround_stdev = round(statistics.stdev(turnarounds), 2)
+
+    context = {
+        "dragon": dragon,
+        "launches": launches_information,
+        "average_turnaround": average_turnaround,
+        "stdev": turnaround_stdev,
+        "quickest_turnaround": quickest_turnaround,
+    }
+
+    return render(request, "dragons/dragon_info.html", context)

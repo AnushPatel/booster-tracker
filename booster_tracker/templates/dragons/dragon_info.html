@@ -1,0 +1,70 @@
+{% extends "base_generic.html" %}
+{% load filters %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/object_info.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="card" style="background-image: url(' {{dragon.image.url}}');">
+    <h1 class="title">{{dragon.type|lower|title}} Dragon {{dragon.name}}</h1>
+    <div class="stats">
+      {% if dragon.nickname %}
+        <div class="stat">
+        <p><b>Nickname: {{dragon.nickname}}</b></p>
+        </div>
+      {% endif %}
+        <div class="stat">
+            <p><b>Version: {{dragon.version}}</b></p>
+          </div>
+      <div class="stat">
+        <p><b>Status: {{dragon.status|lower|title}}</b></p>
+      </div>
+      <div class="stat">
+        <p><b>Number of Flights: {{dragon.num_launches}}</b></p>
+      </div>
+      {% if quickest_turnaround %}
+      <div class="stat">
+        <p><b>Quickest Turnaround: {{quickest_turnaround}} days</b></p>
+      </div>
+      {% endif %}
+      {% if average_turnaround %}
+      <div class="stat">
+        <p><b>Average Turnaround: {{average_turnaround}} days</b></p>
+      </div>
+      {% endif %}
+      {% if stdev %}
+      <div class="stat">
+        <p><b>Turnaround St Deviation: {{stdev}} days</b></p>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <h1>Launches:</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Launch</th>
+        <th>Time (UTC)</th>
+        <th>Splashdown Time (UTC)</th>
+        <th>Turnaround Time</th>
+        <th>Recovery Ship</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for launch in launches %}
+      <tr>
+        <td><a class="link" href="{% url 'booster_tracker:launch' launch.0.name %}">{{ launch.0.name }}</a></td>
+        <td>{{ launch.0.time|date:"F j, Y H:i" }}</td>
+        <td>{{ launch.2.splashdown_time|date:"F j, Y H:i"|default:"TBD" }}</td>
+        <td>{{ launch.1 }}</td>
+        <td>{{ launch.2.recovery_boat|lower|title|replace:"None|TBD" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  
+{% endblock %}

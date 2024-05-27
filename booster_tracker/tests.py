@@ -264,7 +264,9 @@ class TestCases(TestCase):
 
     def test_get_most_flown_boosters(self):
         # Ensure most flown boosters being grabbed successfully
-        self.assertEqual(get_most_flown_boosters(), (["B1062", "B1080"], 3))
+        self.assertEqual(
+            get_most_flown_boosters(rocket_name="Falcon"), (["B1062", "B1080"], 3)
+        )
 
         Launch.objects.create(
             time=datetime(2024, 1, 1, 0, 0, tzinfo=pytz.utc),
@@ -287,7 +289,7 @@ class TestCases(TestCase):
         )
 
         # After adding the launch, ensure the output updates accordingly
-        self.assertEqual(get_most_flown_boosters(), (["B1080"], 4))
+        self.assertEqual(get_most_flown_boosters(rocket_name="Falcon"), (["B1080"], 4))
 
     def test_turnaround_time(self):
         self.assertIsNone(turnaround_time([]))
@@ -373,7 +375,7 @@ class TestCases(TestCase):
 
     def test_get_landings_and_successes(self):
         # Test function on perm objects
-        self.assertEqual(get_landings_and_successes(), (6, 6))
+        self.assertEqual(get_landings_and_successes(rocket_name="Falcon"), (6, 6))
 
         Launch.objects.create(
             time=datetime(2024, 4, 1, tzinfo=pytz.utc),
@@ -417,7 +419,7 @@ class TestCases(TestCase):
         )
 
         # following the addition of three landing attempts (two successful), ensure function responds accordingly
-        self.assertEqual(get_landings_and_successes(), (9, 7))
+        self.assertEqual(get_landings_and_successes(rocket_name="Falcon"), (9, 7))
 
     # Test the methods for pads and landing zones
     def test_num_launches(self):

@@ -185,30 +185,6 @@ class Spacecraft(models.Model):
             launch__time__lte=datetime.now(pytz.utc), spacecraft=self
         ).count()
 
-    # @property
-    # def fastest_turnaround(self):
-    #     """Function returns fastest turnaround of booster in string form (ex: 12 days, 4 hours, and 3 minutes)"""
-    #     fastest_turnaround = "N/A"
-
-    #     if launch := Launch.objects.filter(
-    #         time__lte=datetime.now(pytz.utc), stageandrecovery__stage=self
-    #     ).first():
-    #         turnarounds = launch.calculate_turnarounds(
-    #             turnaround_object=TurnaroundObjects.BOOSTER
-    #         )
-    #         if turnarounds:
-    #             specific_pad_turnarounds = [
-    #                 row
-    #                 for row in turnarounds["ordered_turnarounds"]
-    #                 if f"{self.name}" == row["turnaround_object"]
-    #             ]
-    #             if len(specific_pad_turnarounds) > 0:
-    #                 fastest_turnaround = convert_seconds(
-    #                     specific_pad_turnarounds[0]["turnaround_time"]
-    #                 )
-
-    #     return fastest_turnaround
-
 
 class Boat(models.Model):
     name = models.CharField(max_length=200)
@@ -1100,6 +1076,20 @@ class SpacecraftOnLaunch(models.Model):
         if self.spacecraft:
             return f"{self.spacecraft.name} on launch"
         return "Spacecraft"
+
+    def get_spacecraft_turnaround(self):
+        if (
+            last_launch := SpacecraftOnLaunch.objects.filter(
+                spacecraft=self.spacecraft, launch__time__lt=self.launch.time
+            )
+            .order_by("splashdown_time")
+            .last()
+        ):
+            turnaround = (
+                self.launch.time - last_launch.splashdown_time
+            ).total_seconds()
+
+            return round(turnaround / 86400, 2)
 
 
 class PadUsed(models.Model):
