@@ -19,6 +19,7 @@ RECOVERY_METHODS = [
     ("DRONE_SHIP", "ASDS"),
     ("GROUND_PAD", "landing zone"),
     ("PARACHUTE", "parachute"),
+    ("CATCH", "catch"),
 ]
 LAUNCH_OUTCOMES = [
     ("SUCCESS", "success"),

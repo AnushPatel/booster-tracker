@@ -2,13 +2,19 @@ from django.db.models import Q, Count, Max
 from booster_tracker.models import Stage, StageAndRecovery, Rocket
 from datetime import datetime
 import pytz
+from enum import StrEnum
 
 
-def get_most_flown_boosters(rocket_name: str):
+class StageObjects(StrEnum):
+    BOOSTER = "BOOSTER"
+    SECOND_STAGE = "SECOND_STAGE"
+
+
+def get_most_flown_stages(rocket_name: str, type: StrEnum):
     """Returns the booster(s) with the highest number of flights, and how many flights that is"""
     booster_and_launch_count = Stage.objects.filter(
         stageandrecovery__launch__time__lte=datetime.now(pytz.utc),
-        type="BOOSTER",
+        type=type,
         rocket__name__icontains=rocket_name,
     ).annotate(launch_count=Count("stageandrecovery__launch", distinct=True))
 
