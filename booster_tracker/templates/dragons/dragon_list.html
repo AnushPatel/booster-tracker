@@ -1,67 +1,69 @@
 {% extends "base_generic.html" %}
 {% load static %}
 {% load filters %}
+{% block title %}
+    Booster Tracker
+{% endblock %}
 
 {% block extra_css %}
     <link rel="stylesheet" type="text/css" href="{% static 'css/object_list.css' %}">
 {% endblock %}
 
 {% block content %}
-<h1 style="font-size: 3em; clear: both; padding-top: 0px; margin-top: 0px;">Active Dragons</h1>
-{% for dragon in active_dragons %}
-<div class="rocket-container">
-    <a href="{% url 'booster_tracker:dragon' dragon.name %}" class="rocket-link">
-        <div class="blue-background"></div>
-        <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ dragon.image.url }}');"></div>
-        <div class="info-wrapper blue-text">
-            <h1 style="text-align: left">{{ dragon.name }}</h1>
-            {% if dragon.nickname %}
-            <p> <b>Nickname: </b> {{ dragon.nickname }}</p>
-            {% endif %}
-            <p> <b>Type: </b> {{ dragon.type|lower|title }}</p>
-            <p> <b>Version: </b> {{ dragon.version }}</p>
-            <p> <b>Number of Launches: </b>{{ dragon.num_launches }}</p>
+    <h1 style="font-size: 3em; clear: both; padding-top: 0px; margin-top: 0px;">Active Dragons</h1>
+    {% for dragon in active_dragons %}
+        <div class="rocket-container">
+            <a href="{% url 'booster_tracker:dragon' dragon.name %}" class="rocket-link">
+                <div class="blue-background"></div>
+                <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ dragon.image.url }}');"></div>
+                <div class="info-wrapper blue-text">
+                    <h1 style="text-align: left">{{ dragon.name }}</h1>
+                    {% if dragon.nickname %}
+                        <p><b>Nickname: </b>{{ dragon.nickname }}</p>
+                    {% endif %}
+                    <p><b>Type: </b>{{ dragon.type|lower|title }}</p>
+                    <p><b>Version: </b>{{ dragon.version }}</p>
+                    <p><b>Number of Launches: </b>{{ dragon.num_launches }}</p>
+                </div>
+            </a>
         </div>
-    </a>
-</div>
-{% endfor %}
+    {% endfor %}
 
-<h1>Lost Dragons</h1>
-{% for dragon in lost_dragons %}
-<div class="rocket-container">
-    <a href="{% url 'booster_tracker:dragon' dragon.name %}" class="rocket-link">
-        <div class="blue-background"></div>
-        <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ dragon.image.url }}');"></div>
-        <div class="info-wrapper blue-text">
-            <h1 style="text-align: left">{{ dragon.name }}</h1>
-            {% if dragon.nickname %}
-            <p> <b>Nickname: </b> {{ dragon.nickname }}</p>
-            {% endif %}
-            <p> <b>Type: </b> {{ dragon.type|lower|title }}</p>
-            <p> <b>Version: </b> {{ dragon.version }}</p>
-            <p> <b>Number of Launches: </b>{{ dragon.num_launches }}</p>
+    <h1>Lost Dragons</h1>
+    {% for dragon in lost_dragons %}
+        <div class="rocket-container">
+            <a href="{% url 'booster_tracker:dragon' dragon.name %}" class="rocket-link">
+                <div class="blue-background"></div>
+                <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ dragon.image.url }}');"></div>
+                <div class="info-wrapper blue-text">
+                    <h1 style="text-align: left">{{ dragon.name }}</h1>
+                    {% if dragon.nickname %}
+                        <p><b>Nickname: </b>{{ dragon.nickname }}</p>
+                    {% endif %}
+                    <p><b>Type: </b>{{ dragon.type|lower|title }}</p>
+                    <p><b>Version: </b>{{ dragon.version }}</p>
+                    <p><b>Number of Launches: </b>{{ dragon.num_launches }}</p>
+                </div>
+            </a>
         </div>
-    </a>
-</div>
-{% endfor %}
+    {% endfor %}
 
-<h1>Retired Dragons</h1>
-{% for dragon in retired_dragons %}
-<div class="rocket-container">
-    <a href="{% url 'booster_tracker:dragon' dragon.name %}" class="rocket-link">
-        <div class="blue-background"></div>
-        <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ dragon.image.url }}');"></div>
-        <div class="info-wrapper blue-text">
-            <h1 style="text-align: left">{{ dragon.name }}</h1>
-            {% if dragon.nickname %}
-            <p> <b>Nickname: </b> {{ dragon.nickname }}</p>
-            {% endif %}
-            <p> <b>Type: </b> {{ dragon.type|lower|title }}</p>
-            <p> <b>Version: </b> {{ dragon.version }}</p>
-            <p> <b>Number of Launches: </b>{{ dragon.num_launches }}</p>
+    <h1>Retired Dragons</h1>
+    {% for dragon in retired_dragons %}
+        <div class="rocket-container">
+            <a href="{% url 'booster_tracker:dragon' dragon.name %}" class="rocket-link">
+                <div class="blue-background"></div>
+                <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ dragon.image.url }}');"></div>
+                <div class="info-wrapper blue-text">
+                    <h1 style="text-align: left">{{ dragon.name }}</h1>
+                    {% if dragon.nickname %}
+                        <p><b>Nickname: </b>{{ dragon.nickname }}</p>
+                    {% endif %}
+                    <p><b>Type: </b>{{ dragon.type|lower|title }}</p>
+                    <p><b>Version: </b>{{ dragon.version }}</p>
+                    <p><b>Number of Launches: </b>{{ dragon.num_launches }}</p>
+                </div>
+            </a>
         </div>
-    </a>
-</div>
-{% endfor %}
-
+    {% endfor %}
 {% endblock %}

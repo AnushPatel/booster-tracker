@@ -23,6 +23,7 @@ from .models import (
     Launch,
     Spacecraft,
     SpacecraftOnLaunch,
+    RocketFamily,
 )
 
 
@@ -72,6 +73,7 @@ def home(request):
         next_launch_boosters = next_launch.boosters.replace("N/A", "Unknown")
         next_launch_recoveries = next_launch.recoveries
         next_launch_photo = PadUsed.objects.get(pad=next_launch.pad, rocket=next_launch.rocket).image.url
+        next_launch_link = next_launch.name
     else:
         next_launch_boosters = "TBD"
         next_launch_recoveries = "TBD"
@@ -108,7 +110,7 @@ def home(request):
 
     # Gather information needed for all of the stats
     num_launches_per_rocket_and_successes = []
-    for rocket in Rocket.objects.filter(provider__name="SpaceX"):
+    for rocket in Rocket.objects.filter(family__provider__name="SpaceX"):
         num_launches_per_rocket_and_successes.append([rocket.name, rocket.num_launches, rocket.num_successes])
 
     num_landings_and_successes = get_landings_and_successes(rocket_name="Falcon")
@@ -158,7 +160,7 @@ def home(request):
     for pad in (
         Pad.objects.filter(
             padused__rocket__name__icontains="Falcon",
-            padused__rocket__provider__name="SpaceX",
+            padused__rocket__family__provider__name="SpaceX",
         )
         .distinct()
         .order_by("id")
@@ -170,7 +172,7 @@ def home(request):
     recovery_zone_stats: list = []
     for zone in (
         LandingZone.objects.filter(
-            stageandrecovery__stage__rocket__provider__name="SpaceX",
+            stageandrecovery__stage__rocket__family__provider__name="SpaceX",
             stageandrecovery__stage__rocket__name__icontains="Falcon",
         )
         .distinct()
@@ -212,39 +214,37 @@ def launch_details(request, launch_name):
     return render(request, "launches/launch_table.html", context)
 
 
-def booster_list(request):
-    falcon_boosters = Stage.objects.filter(
-        rocket__provider__name="SpaceX",
-        type="BOOSTER",
-        rocket__name__icontains="Falcon",
-    )
+def stage_list(request, rocket_family: RocketFamily, stage_type):
+    stages = Stage.objects.filter(rocket__family__name__icontains=rocket_family, type__icontains=stage_type)
 
-    active_boosters = falcon_boosters.filter(status="ACTIVE").order_by("name")
-    lost_boosters = falcon_boosters.filter(Q(status="LOST") | Q(status="EXPENDED")).order_by("name")
-    retired_boosters = falcon_boosters.filter(status="RETIRED").order_by("name")
+    active_stages = stages.filter(status="ACTIVE").order_by("name")
+    lost_stages = stages.filter(Q(status="LOST") | Q(status="EXPENDED")).order_by("name")
+    retired_stages = stages.filter(status="RETIRED").order_by("name")
 
     context = {
-        "active_boosters": active_boosters,
-        "retired_boosters": retired_boosters,
-        "lost_boosters": lost_boosters,
+        "active_stages": active_stages,
+        "retired_stages": retired_stages,
+        "lost_stages": lost_stages,
+        "stage_type": stage_type,
+        "rocket_family": rocket_family,
     }
 
-    return render(request, "boosters/booster_list.html", context)
+    return render(request, "stages/stage_list.html", context)
 
 
-def booster_info(request, booster_name):
-    booster = get_object_or_404(Stage, name=booster_name, rocket__name__icontains="Falcon")
-    launches = Launch.objects.filter(stageandrecovery__stage=booster).order_by("time")
+def stage_info(request, rocket_family: RocketFamily, stage_type, stage_name):
+    stage = get_object_or_404(Stage, name=stage_name, rocket__name__icontains=rocket_family, type__icontains=stage_type)
+    launches = Launch.objects.filter(stageandrecovery__stage=stage).order_by("time")
     launches_information = []
     turnarounds = []
 
     for launch in launches:
-        turnaround = launch.get_stage_flights_and_turnaround(stage=booster)[1]
+        turnaround = launch.get_stage_flights_and_turnaround(stage=stage)[1]
         launches_information.append(
             [
                 launch,
                 turnaround,
-                StageAndRecovery.objects.get(launch=launch, stage=booster),
+                StageAndRecovery.objects.get(launch=launch, stage=stage),
             ]
         )
         if turnaround and launch.time < datetime.now(pytz.utc):
@@ -261,14 +261,14 @@ def booster_info(request, booster_name):
         turnaround_stdev = round(statistics.stdev(turnarounds), 2)
 
     context = {
-        "booster": booster,
+        "stage": stage,
         "launches": launches_information,
         "average_turnaround": average_turnaround,
         "stdev": turnaround_stdev,
         "quickest_turnaround": quickest_turnaround,
     }
 
-    return render(request, "boosters/booster_info.html", context)
+    return render(request, "stages/stage_info.html", context)
 
 
 def dragon_list(request):
@@ -321,19 +321,16 @@ def dragon_info(request, dragon_name):
     return render(request, "dragons/dragon_info.html", context)
 
 
-""" def starship_home(request):
+def starship_home(request):
     # Gather information needed for all of the stats
+    last_launch = Launch.objects.filter(time__lte=datetime.now(pytz.utc), rocket__name="Starship").first()
     num_launches_per_rocket_and_successes = []
-    for rocket in Rocket.objects.filter(provider__name="SpaceX"):
-        num_launches_per_rocket_and_successes.append(
-            [rocket.name, rocket.num_launches, rocket.num_successes]
-        )
+    for rocket in Rocket.objects.filter(family__provider__name="SpaceX", name="Starship"):
+        num_launches_per_rocket_and_successes.append([rocket.name, rocket.num_launches, rocket.num_successes])
 
     ship_landing_attempts = (
-        StageAndRecovery.objects.filter(
-            stage__rocket__name="Starship", stage__type="SECOND_STAGE"
-        )
-        .filter((Q(method="DRONE_SHIP") | Q(method="GROUND_PAD" | Q(method="CATCH"))))
+        StageAndRecovery.objects.filter(stage__rocket__name="Starship", stage__type="SECOND_STAGE")
+        .filter((Q(method="DRONE_SHIP") | Q(method="GROUND_PAD") | Q(method="CATCH")))
         .count()
     )
 
@@ -343,15 +340,13 @@ def dragon_info(request, dragon_name):
             stage__type="SECOND_STAGE",
             method_success="SUCCESS",
         )
-        .filter((Q(method="DRONE_SHIP") | Q(method="GROUND_PAD" | Q(method="CATCH"))))
+        .filter((Q(method="DRONE_SHIP") | Q(method="GROUND_PAD") | Q(method="CATCH")))
         .count()
     )
 
     booster_landing_attempts = (
-        StageAndRecovery.objects.filter(
-            stage__rocket__name="Starship", stage__type="BOOSTER"
-        )
-        .filter((Q(method="DRONE_SHIP") | Q(method="GROUND_PAD" | Q(method="CATCH"))))
+        StageAndRecovery.objects.filter(stage__rocket__name="Starship", stage__type="BOOSTER")
+        .filter((Q(method="DRONE_SHIP") | Q(method="GROUND_PAD") | Q(method="CATCH")))
         .count()
     )
 
@@ -361,53 +356,42 @@ def dragon_info(request, dragon_name):
             stage__type="BOOSTER",
             method_success="SUCCESS",
         )
-        .filter((Q(method="DRONE_SHIP") | Q(method="GROUND_PAD" | Q(method="CATCH"))))
+        .filter((Q(method="DRONE_SHIP") | Q(method="GROUND_PAD") | Q(method="CATCH")))
         .count()
     )
 
-    most_flown_boosters = get_most_flown_stages(
-        rocket_name="Starship", type=StageObjects.BOOSTER
-    )
-    most_flown_ships = get_most_flown_stages(
-        rocket_name="Starship", type=StageObjects.SECOND_STAGE
-    )
+    most_flown_boosters = get_most_flown_stages(rocket_name="Starship", type=StageObjects.BOOSTER)
+    most_flown_ships = get_most_flown_stages(rocket_name="Starship", type=StageObjects.SECOND_STAGE)
 
-    most_flown_boosters_string = (
-        f"{concatenated_list(most_flown_boosters[0])}; {most_flown_boosters[1]} flights"
-    )
+    most_flown_boosters_string = f"{concatenated_list(most_flown_boosters[0])}; {most_flown_boosters[1]} flights"
+    most_flown_ships_string = f"{concatenated_list(most_flown_ships[0])}; {most_flown_ships[1]} flights"
 
-    most_flown_stages_string = (
-        f"{concatenated_list(most_flown_ships[0])}; {most_flown_ships[1]} flights"
-    )
+    quickest_booster_turnaround_string = "N/A"
+    quickest_ship_turnaround_string = "N/A"
 
-    starship_turnarounds = [
-        row
-        for row in starship_turnarounds["ordered_turnarounds"]
-        if "Starship" in row["turnaround_object"].rocket.name
-    ]
+    if booster_turnarounds := last_launch.calculate_turnarounds(turnaround_object=TurnaroundObjects.BOOSTER):
+        starship_booster_turnarounds = [
+            row
+            for row in booster_turnarounds["ordered_turnarounds"]
+            if "Starship" in row["turnaround_object"].rocket.name
+        ]
+        if len(starship_booster_turnarounds):
+            quickest_booster_turnaround_string = f"{starship_booster_turnarounds[0]['turnaround_object']} at {convert_seconds(starship_booster_turnarounds[0]['turnaround_time'])}"
 
-    starship_booster_turnarounds = [
-        row
-        for row in starship_turnarounds["ordered_turnarounds"]
-        if "BOOSTER" == row["turnaround_object"].type
-    ]
-
-    starship_ship_turnarounds = [
-        row
-        for row in starship_turnarounds["ordered_turnarounds"]
-        if "SECOND_STAGE" == row["turnaround_object"].type
-    ]
-
-    quickest_booster_turnaround_string = f"{starship_booster_turnarounds[0]['turnaround_object']} at {convert_seconds(starship_booster_turnarounds[0]['turnaround_time'])}"
-    quickest_ship_turnaround_string = f"{starship_ship_turnarounds[0]['turnaround_object']} at {convert_seconds(starship_ship_turnarounds[0]['turnaround_time'])}"
+    if ship_turnarounds := last_launch.calculate_turnarounds(turnaround_object=TurnaroundObjects.SECOND_STAGE):
+        starship_ship_turnarounds = [
+            row for row in ship_turnarounds["ordered_turnarounds"] if "Starship" in row["turnaround_object"].rocket.name
+        ]
+        if len(starship_ship_turnarounds):
+            quickest_ship_turnaround_string = f"{starship_ship_turnarounds[0]['turnaround_object']} at {convert_seconds(starship_ship_turnarounds[0]['turnaround_time'])}"
 
     # this section gets total number of reflights; it takes the number of booster uses and subtracts the number of boosters that have flown
     num_booster_uses = (
-        StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc))
+        StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc), stage__type=StageObjects.BOOSTER)
         .filter(launch__rocket__name__icontains="Starship")
         .count()
     )
-    num_stages_used = (
+    num_boosters_used = (
         Stage.objects.filter(
             type=StageObjects.BOOSTER,
             stageandrecovery__launch__time__lte=datetime.now(pytz.utc),
@@ -416,10 +400,10 @@ def dragon_info(request, dragon_name):
         .distinct()
         .count()
     )
-    num_booster_reflights = num_booster_uses - num_stages_used
+    num_booster_reflights = num_booster_uses - num_boosters_used
 
     num_ship_uses = (
-        StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc))
+        StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc), stage__type=StageObjects.SECOND_STAGE)
         .filter(launch__rocket__name__icontains="Starship")
         .count()
     )
@@ -443,8 +427,8 @@ def dragon_info(request, dragon_name):
     pad_stats: list = []
     for pad in (
         Pad.objects.filter(
-            padused__rocket__name__icontains="Falcon",
-            padused__rocket__provider__name="SpaceX",
+            padused__rocket__name__icontains="Starship",
+            padused__rocket__family__provider__name="SpaceX",
         )
         .distinct()
         .order_by("id")
@@ -456,8 +440,8 @@ def dragon_info(request, dragon_name):
     recovery_zone_stats: list = []
     for zone in (
         LandingZone.objects.filter(
-            stageandrecovery__stage__rocket__provider__name="SpaceX",
-            stageandrecovery__stage__rocket__name__icontains="Falcon",
+            stageandrecovery__stage__rocket__family__provider__name="SpaceX",
+            stageandrecovery__stage__rocket__name__icontains="Starship",
         )
         .distinct()
         .order_by("id")
@@ -468,25 +452,39 @@ def dragon_info(request, dragon_name):
 
     context = {
         "launches_per_vehicle": num_launches_per_rocket_and_successes,
-        "num_landings": num_landings_and_successes,
-        "num_booster_reflights": num_booster_reflights,
-        "next_launch": next_launch,
-        "last_launch": last_launch,
-        "next_launch_boosters": next_launch_boosters,
-        "next_launch_recoveries": next_launch_recoveries,
-        "next_launch_tugs": next_launch_tugs,
-        "next_launch_fairing_recovery": next_launch_fairing_recovery,
-        "next_launch_photo": next_launch_photo,
-        "last_launch_boosters": last_launch_boosters,
-        "last_launch_recoveries": last_launch_recoveries,
-        "last_launch_tugs": last_launch_tugs,
-        "last_launch_fairing_recovery": last_launch_fairing_recovery,
+        "booster_landing_attempts": booster_landing_attempts,
+        "ship_landing_attempts": ship_landing_attempts,
+        "booster_landing_successes": booster_landing_successes,
+        "ship_landing_successes": ship_landing_successes,
         "most_flown_boosters": most_flown_boosters_string,
+        "most_flown_ships": most_flown_ships_string,
         "quickest_booster_turnaround": quickest_booster_turnaround_string,
-        "falcon_heavy_reflights": falcon_heavy_reflights,
-        "falcon_9_reflights": falcon_9_reflights,
+        "quickest_ship_turnaround": quickest_ship_turnaround_string,
+        "num_booster_reflights": num_booster_reflights,
+        "num_ship_reflights": num_ship_reflights,
+        "quickest_booster_turnaround": quickest_booster_turnaround_string,
+        "starship_reflights": starship_reflights,
         "pad_stats": pad_stats,
         "zone_stats": recovery_zone_stats,
-        "shortest_time_between_launches": shortest_time_between_launches,
     }
-    return render(request, "launches/home.html", context=context) """
+    return render(request, "starship/starship_home.html", context=context)
+
+
+def starship_booster_list(request):
+    super_heavies = Stage.objects.filter(
+        rocket__family__provider__name="SpaceX",
+        type="BOOSTER",
+        rocket__name__icontains="Starship",
+    )
+
+    active_boosters = super_heavies.filter(status="ACTIVE").order_by("name")
+    lost_boosters = super_heavies.filter(Q(status="LOST") | Q(status="EXPENDED")).order_by("name")
+    retired_boosters = super_heavies.filter(status="RETIRED").order_by("name")
+
+    context = {
+        "active_boosters": active_boosters,
+        "retired_boosters": retired_boosters,
+        "lost_boosters": lost_boosters,
+    }
+
+    return render(request, "boosters/booster_list.html", context)

@@ -18,9 +18,11 @@ from .models import (
     Rocket,
     Orbit,
     Operator,
+    RocketFamily,
 )
 
 # Register your models here.
+# pylint: disable=consider-using-set-comprehension
 
 
 class StageRecoveryInLine(admin.TabularInline):
@@ -29,9 +31,7 @@ class StageRecoveryInLine(admin.TabularInline):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         try:
-            launch_instance = self.parent_model.objects.get(
-                pk=request.resolver_match.kwargs["object_id"]
-            )
+            launch_instance = self.parent_model.objects.get(pk=request.resolver_match.kwargs["object_id"])
         except (AttributeError, KeyError, self.parent_model.DoesNotExist):
             launch_instance = None
         if not launch_instance or launch_instance.time > datetime.now(pytz.UTC):
@@ -48,16 +48,12 @@ class FairingRecoveryInLine(admin.TabularInline):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         try:
-            launch_instance = self.parent_model.objects.get(
-                pk=request.resolver_match.kwargs["object_id"]
-            )
+            launch_instance = self.parent_model.objects.get(pk=request.resolver_match.kwargs["object_id"])
         except (AttributeError, KeyError, self.parent_model.DoesNotExist):
             launch_instance = None
         if not launch_instance or launch_instance.time > datetime.now(pytz.UTC):
             if db_field.name == "boat":
-                kwargs["queryset"] = Boat.objects.filter(
-                    status="ACTIVE", type="FAIRING_RECOVERY"
-                )
+                kwargs["queryset"] = Boat.objects.filter(status="ACTIVE", type="FAIRING_RECOVERY")
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
@@ -67,9 +63,7 @@ class TugInLine(admin.TabularInline):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         try:
-            launch_instance = self.parent_model.objects.get(
-                pk=request.resolver_match.kwargs["object_id"]
-            )
+            launch_instance = self.parent_model.objects.get(pk=request.resolver_match.kwargs["object_id"])
         except (AttributeError, KeyError, self.parent_model.DoesNotExist):
             launch_instance = None
         if not launch_instance or launch_instance.time > datetime.now(pytz.UTC):
@@ -84,16 +78,12 @@ class SupportInLine(admin.TabularInline):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         try:
-            launch_instance = self.parent_model.objects.get(
-                pk=request.resolver_match.kwargs["object_id"]
-            )
+            launch_instance = self.parent_model.objects.get(pk=request.resolver_match.kwargs["object_id"])
         except (AttributeError, KeyError, self.parent_model.DoesNotExist):
             launch_instance = None
         if not launch_instance or launch_instance.time > datetime.now(pytz.UTC):
             if db_field.name == "boat":
-                kwargs["queryset"] = Boat.objects.filter(
-                    status="ACTIVE", type="SUPPORT"
-                )
+                kwargs["queryset"] = Boat.objects.filter(status="ACTIVE", type="SUPPORT")
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
@@ -103,18 +93,14 @@ class DragonInLine(admin.TabularInline):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         try:
-            launch_instance = self.parent_model.objects.get(
-                pk=request.resolver_match.kwargs["object_id"]
-            )
+            launch_instance = self.parent_model.objects.get(pk=request.resolver_match.kwargs["object_id"])
         except (AttributeError, KeyError, self.parent_model.DoesNotExist):
             launch_instance = None
         if not launch_instance or launch_instance.time > datetime.now(pytz.UTC):
             if db_field.name == "spacecraft":
                 kwargs["queryset"] = Spacecraft.objects.filter(status="ACTIVE")
             if db_field.name == "recovery_boat":
-                kwargs["queryset"] = Boat.objects.filter(
-                    status="ACTIVE", type="SPACECRAFT_RECOVERY"
-                )
+                kwargs["queryset"] = Boat.objects.filter(status="ACTIVE", type="SPACECRAFT_RECOVERY")
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
@@ -170,12 +156,7 @@ class LandingLocationFilter(admin.SimpleListFilter):
     parameter_name = "landing_zone"
 
     def lookups(self, request, model_admin):
-        landing_zones = set(
-            [
-                landing_zone.landing_zone
-                for landing_zone in StageAndRecovery.objects.all()
-            ]
-        )
+        landing_zones = set([landing_zone.landing_zone for landing_zone in StageAndRecovery.objects.all()])
         return [(landing_zone, landing_zone) for landing_zone in landing_zones]
 
     def queryset(self, request, queryset):
@@ -189,9 +170,7 @@ class LaunchOutcomeFilter(admin.SimpleListFilter):
     parameter_name = "launch_outcome"
 
     def lookups(self, request, model_admin):
-        launch_outcomes = set(
-            [launch.launch_outcome for launch in Launch.objects.all()]
-        )
+        launch_outcomes = set([launch.launch_outcome for launch in Launch.objects.all()])
         return [(launch_outcome, launch_outcome) for launch_outcome in launch_outcomes]
 
     def queryset(self, request, queryset):
@@ -219,9 +198,7 @@ class LandingMethodFilter(admin.SimpleListFilter):
     parameter_name = "method"
 
     def lookups(self, request, model_admin):
-        landing_methods = set(
-            [method.method for method in StageAndRecovery.objects.all()]
-        )
+        landing_methods = set([method.method for method in StageAndRecovery.objects.all()])
         return [(method, method) for method in landing_methods]
 
     def queryset(self, request, queryset):
@@ -236,14 +213,9 @@ class LandingOutcomeFilter(admin.SimpleListFilter):
 
     def lookups(self, request, model_admin):
         # Get distinct recovery outcomes
-        recovery_outcomes = StageAndRecovery.objects.values_list(
-            "recovery_success", flat=True
-        ).distinct()
+        recovery_outcomes = StageAndRecovery.objects.values_list("recovery_success", flat=True).distinct()
         # Convert boolean values to human-readable strings
-        return [
-            (str(outcome), "Success" if outcome else "Failure")
-            for outcome in recovery_outcomes
-        ]
+        return [(str(outcome), "Success" if outcome else "Failure") for outcome in recovery_outcomes]
 
     def queryset(self, request, queryset):
         if self.value() is not None:
@@ -258,18 +230,12 @@ class MethodSuccessFilter(admin.SimpleListFilter):
 
     def lookups(self, request, model_admin):
         # Get distinct method success values
-        method_success_values = StageAndRecovery.objects.values_list(
-            "method_success", flat=True
-        ).distinct()
+        method_success_values = StageAndRecovery.objects.values_list("method_success", flat=True).distinct()
         # Convert boolean values to human-readable strings
         return [
             (
                 str(value),
-                (
-                    "Success"
-                    if value == "SUCCESS"
-                    else "Precluded" if value == "PRECLUDED" else "Failure"
-                ),
+                ("Success" if value == "SUCCESS" else "Precluded" if value == "PRECLUDED" else "Failure"),
             )
             for value in method_success_values
         ]
@@ -286,9 +252,7 @@ class FairingMethodFilter(admin.SimpleListFilter):
     parameter_name = "catch"
 
     def lookups(self, request, model_admin):
-        recovery_methods = set(
-            [method.catch for method in FairingRecovery.objects.all()]
-        )
+        recovery_methods = set([method.catch for method in FairingRecovery.objects.all()])
         return [(method, method) for method in recovery_methods]
 
     def queryset(self, request, queryset):
@@ -302,9 +266,7 @@ class FairingRecoveryOutcome(admin.SimpleListFilter):
     parameter_name = "recovery"
 
     def lookups(self, request, model_admin):
-        recovery_outcomes = set(
-            [recovery.recovery for recovery in FairingRecovery.objects.all()]
-        )
+        recovery_outcomes = set([recovery.recovery for recovery in FairingRecovery.objects.all()])
         return [(recovery, recovery) for recovery in recovery_outcomes]
 
     def queryset(self, request, queryset):
@@ -327,14 +289,14 @@ class BoosterLocationMissingFilter(admin.SimpleListFilter):
     def queryset(self, request, queryset):
         if self.value() == "true":
             # Filter for missions that have missing latitude or longitude
-            return queryset.filter(
-                stageandrecovery__latitude__isnull=True
-            ) | queryset.filter(stageandrecovery__longitude__isnull=True)
+            return queryset.filter(stageandrecovery__latitude__isnull=True) | queryset.filter(
+                stageandrecovery__longitude__isnull=True
+            )
         if self.value() == "false":
             # Filter for missions that have both latitude and longitude
-            return queryset.exclude(
-                stageandrecovery__latitude__isnull=True
-            ) & queryset.exclude(stageandrecovery__longitude__isnull=True)
+            return queryset.exclude(stageandrecovery__latitude__isnull=True) & queryset.exclude(
+                stageandrecovery__longitude__isnull=True
+            )
         return queryset
 
 
@@ -351,14 +313,14 @@ class FairingLocationMissingFilter(admin.SimpleListFilter):
     def queryset(self, request, queryset):
         if self.value() == "true":
             # Filter for missions that have missing latitude or longitude
-            return queryset.filter(
-                fairingrecovery__latitude__isnull=True
-            ) | queryset.filter(fairingrecovery__longitude__isnull=True)
+            return queryset.filter(fairingrecovery__latitude__isnull=True) | queryset.filter(
+                fairingrecovery__longitude__isnull=True
+            )
         if self.value() == "false":
             # Filter for missions that have both latitude and longitude
-            return queryset.exclude(
-                fairingrecovery__latitude__isnull=True
-            ) & queryset.exclude(fairingrecovery__longitude__isnull=True)
+            return queryset.exclude(fairingrecovery__latitude__isnull=True) & queryset.exclude(
+                fairingrecovery__longitude__isnull=True
+            )
         return queryset
 
 
@@ -376,9 +338,7 @@ class LaunchAdmin(admin.ModelAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         try:
-            launch_instance = Launch.objects.get(
-                pk=request.resolver_match.kwargs.get("object_id")
-            )
+            launch_instance = Launch.objects.get(pk=request.resolver_match.kwargs.get("object_id"))
         except (AttributeError, KeyError, Launch.DoesNotExist):
             launch_instance = None
         if not launch_instance or launch_instance.time > datetime.now(pytz.UTC):
@@ -504,3 +464,4 @@ admin.site.register(Pad)
 admin.site.register(SpacecraftFamily)
 admin.site.register(Spacecraft)
 admin.site.register(Operator)
+admin.site.register(RocketFamily)

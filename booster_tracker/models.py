@@ -63,11 +63,20 @@ class Operator(models.Model):
         return self.name
 
 
+class RocketFamily(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    provider = models.ForeignKey(Operator, on_delete=models.CASCADE, null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name_plural = "Rocket Families"
+
+
 class Rocket(models.Model):
     name = models.CharField(max_length=100, unique=True)
-    provider = models.ForeignKey(
-        Operator, on_delete=models.CASCADE, null=True, blank=True
-    )
+    family = models.ForeignKey(RocketFamily, on_delete=models.CASCADE, null=True, blank=True)
     status = models.CharField(max_length=20, choices=LIFE_OPTIONS, default="ACTIVE")
 
     def __str__(self):
@@ -76,16 +85,12 @@ class Rocket(models.Model):
     @property
     def num_launches(self):
         """Returns number of launches"""
-        return Launch.objects.filter(
-            rocket=self, time__lte=datetime.now(pytz.utc)
-        ).count()
+        return Launch.objects.filter(rocket=self, time__lte=datetime.now(pytz.utc)).count()
 
     @property
     def num_successes(self):
         """Returns number of successful launches"""
-        return Launch.objects.filter(
-            rocket=self, launch_outcome="SUCCESS", time__lte=datetime.now(pytz.utc)
-        ).count()
+        return Launch.objects.filter(rocket=self, launch_outcome="SUCCESS", time__lte=datetime.now(pytz.utc)).count()
 
 
 class Stage(models.Model):
@@ -93,59 +98,39 @@ class Stage(models.Model):
     rocket = models.ForeignKey(Rocket, on_delete=models.CASCADE)
     version = models.CharField(max_length=20)
     type = models.CharField(max_length=20, choices=STAGE_TYPES)
-    image = models.ImageField(
-        upload_to="stage_photos/", default="stage_photos/default_booster.jpg"
-    )
-    status = models.CharField(
-        max_length=20, choices=STAGE_LIFE_OPTIONS, default="ACTIVE"
-    )
+    image = models.ImageField(upload_to="stage_photos/", default="stage_photos/default_booster.jpg")
+    status = models.CharField(max_length=20, choices=STAGE_LIFE_OPTIONS, default="ACTIVE")
 
     def __str__(self):
         return self.name
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["name", "rocket"], name="unique_rocket_stage"
-            )
-        ]
+        constraints = [models.UniqueConstraint(fields=["name", "rocket"], name="unique_rocket_stage")]
 
     @property
     def num_launches(self):
-        return StageAndRecovery.objects.filter(
-            launch__time__lte=datetime.now(pytz.utc), stage=self
-        ).count()
+        return StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc), stage=self).count()
 
     @property
     def fastest_turnaround(self):
         """Function returns fastest turnaround of booster in string form (ex: 12 days, 4 hours, and 3 minutes)"""
         fastest_turnaround = "N/A"
 
-        if launch := Launch.objects.filter(
-            time__lte=datetime.now(pytz.utc), stageandrecovery__stage=self
-        ).first():
-            turnarounds = launch.calculate_turnarounds(
-                turnaround_object=TurnaroundObjects.BOOSTER
-            )
+        if launch := Launch.objects.filter(time__lte=datetime.now(pytz.utc), stageandrecovery__stage=self).first():
+            turnarounds = launch.calculate_turnarounds(turnaround_object=TurnaroundObjects.BOOSTER)
             if turnarounds:
                 specific_pad_turnarounds = [
-                    row
-                    for row in turnarounds["ordered_turnarounds"]
-                    if self == row["turnaround_object"]
+                    row for row in turnarounds["ordered_turnarounds"] if self == row["turnaround_object"]
                 ]
                 if len(specific_pad_turnarounds) > 0:
-                    fastest_turnaround = convert_seconds(
-                        specific_pad_turnarounds[0]["turnaround_time"]
-                    )
+                    fastest_turnaround = convert_seconds(specific_pad_turnarounds[0]["turnaround_time"])
 
         return fastest_turnaround
 
 
 class SpacecraftFamily(models.Model):
     name = models.CharField(max_length=200, unique=True)
-    provider = models.ForeignKey(
-        Operator, on_delete=models.CASCADE, null=True, blank=True
-    )
+    provider = models.ForeignKey(Operator, on_delete=models.CASCADE, null=True, blank=True)
     status = models.CharField(max_length=200, choices=LIFE_OPTIONS)
 
     def __str__(self):
@@ -160,31 +145,19 @@ class Spacecraft(models.Model):
     nickname = models.CharField(max_length=20, blank=True, null=True)
     version = models.CharField(max_length=20, blank=True, null=True)
     type = models.CharField(max_length=20, choices=SPACECRAFT_TYPES)
-    family = models.ForeignKey(
-        SpacecraftFamily, on_delete=models.CASCADE, blank=True, null=True
-    )
-    status = models.CharField(
-        max_length=50, choices=STAGE_LIFE_OPTIONS, default="ACTIVE"
-    )
-    image = models.ImageField(
-        upload_to="spacecraft_photos/", default="spacecraft_photos/default_dragon.jpg"
-    )
+    family = models.ForeignKey(SpacecraftFamily, on_delete=models.CASCADE, blank=True, null=True)
+    status = models.CharField(max_length=50, choices=STAGE_LIFE_OPTIONS, default="ACTIVE")
+    image = models.ImageField(upload_to="spacecraft_photos/", default="spacecraft_photos/default_dragon.jpg")
 
     def __str__(self):
         return self.name
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["name", "family"], name="unique_family_name"
-            )
-        ]
+        constraints = [models.UniqueConstraint(fields=["name", "family"], name="unique_family_name")]
 
     @property
     def num_launches(self):
-        return SpacecraftOnLaunch.objects.filter(
-            launch__time__lte=datetime.now(pytz.utc), spacecraft=self
-        ).count()
+        return SpacecraftOnLaunch.objects.filter(launch__time__lte=datetime.now(pytz.utc), spacecraft=self).count()
 
 
 class Boat(models.Model):
@@ -196,11 +169,7 @@ class Boat(models.Model):
         return self.name
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["name", "type"], name="unique_boat_name_type"
-            )
-        ]
+        constraints = [models.UniqueConstraint(fields=["name", "type"], name="unique_boat_name_type")]
 
 
 class Orbit(models.Model):
@@ -215,9 +184,7 @@ class Pad(models.Model):
     nickname = models.CharField(max_length=25)
     location = models.CharField(max_length=100, null=True, blank=True)
     status = models.CharField(max_length=20, choices=LIFE_OPTIONS, default="ACTIVE")
-    image = models.ImageField(
-        upload_to="pad_photos/", default="media/pad_photos/default.png"
-    )
+    image = models.ImageField(upload_to="pad_photos/", default="media/pad_photos/default.png")
 
     def __str__(self):
         return self.nickname
@@ -231,21 +198,13 @@ class Pad(models.Model):
         """Function returns fastest turnaround of launch pad in string form (ex: 12 days, 4 hours, and 3 minutes)"""
         fastest_turnaround = "N/A"
 
-        if launch := Launch.objects.filter(
-            time__lte=datetime.now(pytz.utc), pad=self
-        ).first():
-            turnarounds = launch.calculate_turnarounds(
-                turnaround_object=TurnaroundObjects.PAD
-            )
+        if launch := Launch.objects.filter(time__lte=datetime.now(pytz.utc), pad=self).first():
+            turnarounds = launch.calculate_turnarounds(turnaround_object=TurnaroundObjects.PAD)
             specific_pad_turnarounds = [
-                row
-                for row in turnarounds["ordered_turnarounds"]
-                if self == row["turnaround_object"]
+                row for row in turnarounds["ordered_turnarounds"] if self == row["turnaround_object"]
             ]
             if len(specific_pad_turnarounds) > 0:
-                fastest_turnaround = convert_seconds(
-                    specific_pad_turnarounds[0]["turnaround_time"]
-                )
+                fastest_turnaround = convert_seconds(specific_pad_turnarounds[0]["turnaround_time"])
 
         return fastest_turnaround
 
@@ -258,9 +217,7 @@ class Launch(models.Model):
     orbit = models.ForeignKey(Orbit, on_delete=models.CASCADE, null=True, blank=True)
     mass = models.CharField(max_length=200)
     customer = models.CharField(max_length=200)
-    launch_outcome = models.CharField(
-        max_length=200, choices=LAUNCH_OUTCOMES, blank=True, null=True
-    )
+    launch_outcome = models.CharField(max_length=200, choices=LAUNCH_OUTCOMES, blank=True, null=True)
 
     class Meta:
         verbose_name_plural = "Launches"
@@ -277,20 +234,14 @@ class Launch(models.Model):
     @property
     def droneship_needed(self) -> bool:
         """Returns bool of if a droneship was needed/used on launch"""
-        return StageAndRecovery.objects.filter(
-            launch=self, method="DRONE_SHIP"
-        ).exists()
+        return StageAndRecovery.objects.filter(launch=self, method="DRONE_SHIP").exists()
 
     @property
     def flight_proven_booster(self) -> bool:
         """Returns bool of if any booster on the launch was flight prover"""
         return (
-            Stage.objects.filter(stageandrecovery__launch__time__lte=self.time)
-            .distinct()
-            .count()
-            - Stage.objects.filter(stageandrecovery__launch__time__lt=self.time)
-            .distinct()
-            .count()
+            Stage.objects.filter(stageandrecovery__launch__time__lte=self.time).distinct().count()
+            - Stage.objects.filter(stageandrecovery__launch__time__lt=self.time).distinct().count()
         ) - Stage.objects.filter(stageandrecovery__launch=self).count() < 0
 
     @property
@@ -298,9 +249,7 @@ class Launch(models.Model):
         """Returns number of successful landings on the launch; all landings are assumed successful if in future"""
         if self.time > datetime.now(pytz.utc):
             return (
-                StageAndRecovery.objects.filter(
-                    launch=self, stage__type="BOOSTER", method_success="SUCCESS"
-                )
+                StageAndRecovery.objects.filter(launch=self, stage__type="BOOSTER", method_success="SUCCESS")
                 .filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD"))
                 .count()
             )
@@ -315,15 +264,11 @@ class Launch(models.Model):
         flights = 0
         time = self.time
         turnaround = turnaround_time(
-            Launch.objects.filter(
-                stageandrecovery__stage=stage, time__lte=time
-            ).order_by("time")
+            Launch.objects.filter(stageandrecovery__stage=stage, time__lte=time).order_by("time")
         )
         if turnaround:
             turnaround = round(turnaround / 86400, 2)
-        flights += Launch.objects.filter(
-            stageandrecovery__stage=stage, time__lte=time
-        ).count()
+        flights += Launch.objects.filter(stageandrecovery__stage=stage, time__lte=time).count()
 
         return (flights, turnaround)
 
@@ -335,11 +280,7 @@ class Launch(models.Model):
         value_added: bool = False
         previous_launch: Launch = None
         for stage_and_recovery in (
-            StageAndRecovery.objects.filter(
-                launch__time__lt=self.time, stage__type="BOOSTER"
-            )
-            .order_by("launch__time")
-            .all()
+            StageAndRecovery.objects.filter(launch__time__lt=self.time).order_by("launch__time").all()
         ):
             if previous_launch != stage_and_recovery.launch:
                 value_added = False
@@ -362,9 +303,7 @@ class Launch(models.Model):
         """Counts total number of booster reflights past the starting date; so this function increments by two if two boosters are flight proven on Falcon Heavy"""
         count_list: list[str] = []
         stages_seen = list(
-            Stage.objects.filter(
-                type="BOOSTER", stageandrecovery__launch__time__lt=start
-            )
+            Stage.objects.filter(type="BOOSTER", stageandrecovery__launch__time__lt=start)
             .filter(rocket__name__icontains="Falcon")
             .values_list("name", flat=True)
         )
@@ -382,9 +321,7 @@ class Launch(models.Model):
             .all()
         )
         num_booster_reflights = (
-            StageAndRecovery.objects.filter(
-                launch__time__lt=self.time, launch__time__gt=start
-            )
+            StageAndRecovery.objects.filter(launch__time__lt=self.time, launch__time__gt=start)
             .filter(launch__rocket__name__icontains="Falcon")
             .count()
             - Stage.objects.filter(
@@ -413,9 +350,7 @@ class Launch(models.Model):
         count_list: list[str] = []
 
         count += (
-            StageAndRecovery.objects.filter(
-                launch__time__lt=self.time, stage__type="BOOSTER"
-            )
+            StageAndRecovery.objects.filter(launch__time__lt=self.time, stage__type="BOOSTER")
             .filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD"))
             .filter(method_success="SUCCESS")
             .count()
@@ -424,10 +359,7 @@ class Launch(models.Model):
         for _ in (
             StageAndRecovery.objects.filter(launch=self, stage__type="BOOSTER")
             .filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD"))
-            .filter(
-                Q(method_success="SUCCESS")
-                | Q(launch__time__gte=datetime.now(pytz.utc))
-            )
+            .filter(Q(method_success="SUCCESS") | Q(launch__time__gte=datetime.now(pytz.utc)))
         ):
             count += 1
             count_list.append(make_ordinal(count))
@@ -446,9 +378,7 @@ class Launch(models.Model):
 
     def get_launches_from_pad(self) -> str:
         """Returns ordinal for number of launches from pad"""
-        return make_ordinal(
-            Launch.objects.filter(pad=self.pad, time__lte=self.time).count()
-        )
+        return make_ordinal(Launch.objects.filter(pad=self.pad, time__lte=self.time).count())
 
     # Returns list of turnaround times for object type
     def calculate_turnarounds(self, turnaround_object: TurnaroundObjects) -> dict:
@@ -460,6 +390,8 @@ class Launch(models.Model):
         # Based on the object calculating turnaround times of, change queriy set and name name_field accordingly; for all, queryset just needs to be a one element set, whose value is not used at all.
         if turnaround_object == TurnaroundObjects.BOOSTER:
             queryset = Stage.objects.filter(type="BOOSTER").distinct()
+        elif turnaround_object == TurnaroundObjects.SECOND_STAGE:
+            queryset = Stage.objects.filter(type="SECOND_STAGE").distinct()
         elif turnaround_object == TurnaroundObjects.PAD:
             queryset = Pad.objects.all()
         elif turnaround_object == TurnaroundObjects.LANDING_ZONE:
@@ -470,34 +402,20 @@ class Launch(models.Model):
             queryset = [""]
 
         for item in queryset:
-            if isinstance(
-                item, Stage
-            ):  # If querying for stage, use stage field for filtering
+            if isinstance(item, Stage):  # If querying for stage, use stage field for filtering
                 launches = (
-                    Launch.objects.filter(
-                        stageandrecovery__stage=item, time__lte=self.time
-                    )
-                    .order_by("time")
-                    .all()
+                    Launch.objects.filter(stageandrecovery__stage=item, time__lte=self.time).order_by("time").all()
                 )
             elif isinstance(item, Pad):
-                launches = (
-                    Launch.objects.filter(pad=item, time__lte=self.time)
-                    .order_by("time")
-                    .all()
-                )
+                launches = Launch.objects.filter(pad=item, time__lte=self.time).order_by("time").all()
             elif isinstance(item, LandingZone):
                 launches = (
-                    Launch.objects.filter(
-                        stageandrecovery__landing_zone=item, time__lte=self.time
-                    )
+                    Launch.objects.filter(stageandrecovery__landing_zone=item, time__lte=self.time)
                     .order_by("time")
                     .all()
                 )
             else:
-                launches = (
-                    Launch.objects.filter(time__lte=self.time).order_by("time").all()
-                )
+                launches = Launch.objects.filter(time__lte=self.time).order_by("time").all()
 
             # Cycle through the launches one at a time to calculate the needed turnaround
             for i in range(0, len(launches) + 1):
@@ -517,11 +435,7 @@ class Launch(models.Model):
             turnarounds,
             key=lambda x: (
                 x["turnaround_time"] is None,
-                (
-                    x["turnaround_time"]
-                    if x["turnaround_time"] is not None
-                    else float("inf")
-                ),
+                (x["turnaround_time"] if x["turnaround_time"] is not None else float("inf")),
             ),
         )
 
@@ -540,9 +454,7 @@ class Launch(models.Model):
 
         # Cycle through all previous launches to check for failures
         for landing in (
-            StageAndRecovery.objects.filter(
-                launch__time__lt=self.time, stage__type="BOOSTER"
-            )
+            StageAndRecovery.objects.filter(launch__time__lt=self.time, stage__type="BOOSTER")
             .filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD"))
             .order_by("-launch__time", "-id")
             .all()
@@ -561,9 +473,7 @@ class Launch(models.Model):
             if landing.method_success == "FAILURE":
                 count = 0
                 count_list = []
-            if landing.method_success == "SUCCESS" or self.time > datetime.now(
-                pytz.utc
-            ):
+            if landing.method_success == "SUCCESS" or self.time > datetime.now(pytz.utc):
                 count += 1
                 count_list.append(make_ordinal(count))
         return concatenated_list(count_list)
@@ -572,21 +482,15 @@ class Launch(models.Model):
     def boosters(self) -> str:
         """Returns concatenated string of boosters on launch; these are ordered by position (so center, MY, PY) for three core launches"""
         boosters = []
-        for stage in Stage.objects.filter(stageandrecovery__launch=self).order_by(
-            "stageandrecovery__stage_position"
-        ):
-            boosters.append(
-                f"{stage}-{self.get_stage_flights_and_turnaround(stage=stage)[0]}"
-            )
+        for stage in Stage.objects.filter(stageandrecovery__launch=self).order_by("stageandrecovery__stage_position"):
+            boosters.append(f"{stage}-{self.get_stage_flights_and_turnaround(stage=stage)[0]}")
         return concatenated_list(boosters).replace("N/A", "Unknown")
 
     @property
     def recoveries(self) -> str:
         """Returns concatenated string of recoveries on launch; these are ordered by position (so center, MY, PY) for three core launches"""
         recoveries = []
-        for stage_and_recovery in StageAndRecovery.objects.filter(launch=self).order_by(
-            "stage_position"
-        ):
+        for stage_and_recovery in StageAndRecovery.objects.filter(launch=self).order_by("stage_position"):
             if stage_and_recovery.landing_zone:
                 recoveries.append(f"{stage_and_recovery.landing_zone.nickname}")
             else:
@@ -599,15 +503,9 @@ class Launch(models.Model):
         turnaround_string = ""
 
         # Create the strings for stages and turnarounds
-        for stage in Stage.objects.filter(stageandrecovery__launch=self).order_by(
-            "stageandrecovery__stage_position"
-        ):
-            stage_flights_and_turnaround = self.get_stage_flights_and_turnaround(
-                stage=stage
-            )
-            stages_string += (
-                stage.name + "-" + f"{stage_flights_and_turnaround[0]}" + ", "
-            )
+        for stage in Stage.objects.filter(stageandrecovery__launch=self).order_by("stageandrecovery__stage_position"):
+            stage_flights_and_turnaround = self.get_stage_flights_and_turnaround(stage=stage)
+            stages_string += stage.name + "-" + f"{stage_flights_and_turnaround[0]}" + ", "
 
             turnaround_string += (
                 f"{stage_flights_and_turnaround[1]:.2f}"
@@ -642,7 +540,9 @@ class Launch(models.Model):
                 if item.method == "EXPENDED":
                     launch_landings += f"{item.stage.name} was expended; "
                 elif item.method == "OCEAN_SURFACE":
-                    launch_landings += f"{item.stage.name} {success(item.method_success)} a soft landing on the ocean surface; "
+                    launch_landings += (
+                        f"{item.stage.name} {success(item.method_success)} a soft landing on the ocean surface; "
+                    )
                 else:
                     if item.landing_zone:
                         launch_landings += f"{item.stage.name} {success(item.method_success)} a landing on {item.landing_zone.name} ({item.landing_zone.nickname}); "
@@ -668,9 +568,7 @@ class Launch(models.Model):
             f"– {make_ordinal(Launch.objects.filter(rocket=self.rocket, time__lte=self.time).count())} {self.rocket.name} mission"
         )
         if self.flight_proven_booster:
-            stats.append(
-                f"– {make_ordinal(booster_reuse)} {self.rocket} flight with a flight-proven booster"
-            )
+            stats.append(f"– {make_ordinal(booster_reuse)} {self.rocket} flight with a flight-proven booster")
             stats.append(
                 f"– {self.get_total_reflights(start=datetime(2000, 1, 1, tzinfo=pytz.utc))} reflight of a booster"
             )
@@ -682,20 +580,12 @@ class Launch(models.Model):
             consec_landings = self.get_consec_landings()
             make_plural = "s" if self.num_successful_landings > 1 else ""
             stats.append(f"– {booster_landings} booster landing{make_plural}")
-            stats.append(
-                f"– {consec_landings} consecutive booster landing{make_plural}"
-            )
-        stats.append(
-            f"– {self.get_year_launch_num()} SpaceX launch of {self.time.year}"
-        )
-        stats.append(
-            f"– {self.get_launches_from_pad()} SpaceX launch from {self.pad.name}"
-        )
+            stats.append(f"– {consec_landings} consecutive booster landing{make_plural}")
+        stats.append(f"– {self.get_year_launch_num()} SpaceX launch of {self.time.year}")
+        stats.append(f"– {self.get_launches_from_pad()} SpaceX launch from {self.pad.name}")
 
         # This section adds quickest turnaround stats. As the names imply, booster, zones, company, and pad. If it is the quickest overall for an object type, the object-specific stat is not given since it follows tautologically
-        booster_turnarounds = self.calculate_turnarounds(
-            turnaround_object=TurnaroundObjects.BOOSTER
-        )
+        booster_turnarounds = self.calculate_turnarounds(turnaround_object=TurnaroundObjects.BOOSTER)
         if booster_turnarounds:
             if booster_turnarounds["is_record"]:
                 booster_string = f"– Qickest turnaround of a booster to date at {convert_seconds(booster_turnarounds['ordered_turnarounds'][0]['turnaround_time'])}"
@@ -718,9 +608,7 @@ class Launch(models.Model):
                             booster_string += f". Previous record: {convert_seconds(specific_booster_turnarounds[1]['turnaround_time'])} between {specific_booster_turnarounds[1]['last_launch_name']} and {specific_booster_turnarounds[1]['launch_name']}"
                         stats.append(booster_string)
 
-        landing_zone_turnarounds = self.calculate_turnarounds(
-            TurnaroundObjects.LANDING_ZONE
-        )
+        landing_zone_turnarounds = self.calculate_turnarounds(TurnaroundObjects.LANDING_ZONE)
         if landing_zone_turnarounds:
             if landing_zone_turnarounds["is_record"]:
                 zone_string = f"– Quickest turnaround time of a landing zone to date at {convert_seconds(landing_zone_turnarounds['ordered_turnarounds'][0]['turnaround_time'])}"
@@ -744,9 +632,7 @@ class Launch(models.Model):
                                 zone_string += f". Previous record: {convert_seconds(specific_zone_turnarounds[1]['turnaround_time'])} between {specific_zone_turnarounds[1]['last_launch_name']} and {specific_zone_turnarounds[1]['launch_name']}"
                             stats.append(zone_string)
 
-        company_turnaround = self.calculate_turnarounds(
-            turnaround_object=TurnaroundObjects.ALL
-        )
+        company_turnaround = self.calculate_turnarounds(turnaround_object=TurnaroundObjects.ALL)
         if company_turnaround:
             if company_turnaround["is_record"]:
                 company_string = f"– Shortest time between any two SpaceX launches at {convert_seconds(company_turnaround['ordered_turnarounds'][0]['turnaround_time'])}"
@@ -754,9 +640,7 @@ class Launch(models.Model):
                     company_string += f". Previous record: {convert_seconds(company_turnaround['ordered_turnarounds'][1]['turnaround_time'])} between {company_turnaround['ordered_turnarounds'][1]['last_launch_name']} and {company_turnaround['ordered_turnarounds'][1]['launch_name']}"
                 stats.append(company_string)
 
-        pad_turnarounds = self.calculate_turnarounds(
-            turnaround_object=TurnaroundObjects.PAD
-        )
+        pad_turnarounds = self.calculate_turnarounds(turnaround_object=TurnaroundObjects.PAD)
         if pad_turnarounds:
             if pad_turnarounds["is_record"]:
                 pad_string = f"– Qickest turnaround of a SpaceX pad to date at {convert_seconds(pad_turnarounds['ordered_turnarounds'][0]['turnaround_time'])}"
@@ -765,14 +649,9 @@ class Launch(models.Model):
                 stats.append(pad_string)
             else:
                 specific_pad_turnarounds = [
-                    row
-                    for row in pad_turnarounds["ordered_turnarounds"]
-                    if self.pad == row["turnaround_object"]
+                    row for row in pad_turnarounds["ordered_turnarounds"] if self.pad == row["turnaround_object"]
                 ]
-                if (
-                    len(specific_pad_turnarounds) > 0
-                    and specific_pad_turnarounds[0]["launch_name"] == self.name
-                ):
+                if len(specific_pad_turnarounds) > 0 and specific_pad_turnarounds[0]["launch_name"] == self.name:
                     pad_string = f"– Qickest turnaround of {self.pad.nickname} to date at {convert_seconds(specific_pad_turnarounds[0]['turnaround_time'])}"
                     if len(specific_pad_turnarounds) > 1:
                         pad_string += f". Previous record: {convert_seconds(specific_pad_turnarounds[1]['turnaround_time'])} between {specific_pad_turnarounds[1]['last_launch_name']} and {specific_pad_turnarounds[1]['launch_name']}"
@@ -793,9 +672,7 @@ class Launch(models.Model):
             "Where are the satellites going?": [],
             "Where will the first stage land?": [],
             "Will they be attempting to recover the fairings?": [],
-            "How's the weather looking?": [
-                "The weather is currently XX% go for launch"
-            ],
+            "How's the weather looking?": ["The weather is currently XX% go for launch"],
             "This will be the": [],
             "Where to watch": ["Official coverage"],
         }
@@ -806,9 +683,7 @@ class Launch(models.Model):
         # Configure timezone for local time conversion. I also change what default weather says based on the location
         if self.pad.nickname == "SLC-4E":
             time_zone = "US/Pacific"
-            data["How's the weather looking?"][
-                0
-            ] = "Space Launch Delta 30 does not release public weather forecasts"
+            data["How's the weather looking?"][0] = "Space Launch Delta 30 does not release public weather forecasts"
         elif self.pad.nickname == "SLC-40":
             time_zone = "US/Eastern"
         elif self.pad.nickname == "LC-39A":
@@ -836,9 +711,7 @@ class Launch(models.Model):
         data["Rocket"] = [f"{self.rocket}{boosters_display}"]
         data["Launch Location"] = [f"{launch_location}"]
         data["Payload mass"] = [self.mass]
-        data["Where are the satellites going?"] = (
-            [self.orbit.name] if self.orbit else ["Unknown"]
-        )
+        data["Where are the satellites going?"] = [self.orbit.name] if self.orbit else ["Unknown"]
         data["Where will the first stage land?"] = [f"{launch_landings}"]
 
         if self.droneship_needed:
@@ -847,22 +720,16 @@ class Launch(models.Model):
                 f"Tug: {concatenated_list(list(set(Boat.objects.filter(tugonlaunch__launch=self).values_list('name', flat=True))))}; Support: {concatenated_list(list(set(Boat.objects.filter(supportonlaunch__launch=self).values_list('name', flat=True))))}"
             )
 
-        if not len(
-            FairingRecovery.objects.filter(launch=self)
-        ) == 0 and self.time > datetime.now(pytz.utc):
+        if not len(FairingRecovery.objects.filter(launch=self)) == 0 and self.time > datetime.now(pytz.utc):
             data["Will they be attempting to recover the fairings?"].append(
                 f"The fairing halves will be recovered from the water by {concatenated_list(list(set(Boat.objects.filter(fairingrecovery__launch=self).values_list('name', flat=True))))}"
             )
-        elif not len(
-            FairingRecovery.objects.filter(launch=self)
-        ) == 0 and self.time < datetime.now(pytz.utc):
+        elif not len(FairingRecovery.objects.filter(launch=self)) == 0 and self.time < datetime.now(pytz.utc):
             data["Will they be attempting to recover the fairings?"].append(
                 f"The fairing halves were recovered by {concatenated_list(list(set(Boat.objects.filter(fairingrecovery__launch=self).values_list('name', flat=True))))}"
             )
         else:
-            data["Will they be attempting to recover the fairings?"].append(
-                "There are no fairings on this flight"
-            )
+            data["Will they be attempting to recover the fairings?"].append("There are no fairings on this flight")
 
         stats = self.make_stats()
 
@@ -886,10 +753,7 @@ class Launch(models.Model):
         ]
 
         if self.time < datetime.now(pytz.utc):
-            ordered_data = {
-                new_key: data.get(old_key, None)
-                for old_key, new_key in zip(data.keys(), post_launch_data)
-            }
+            ordered_data = {new_key: data.get(old_key, None) for old_key, new_key in zip(data.keys(), post_launch_data)}
             ordered_data.pop("How's the weather looking?", None)
 
             data = ordered_data
@@ -913,9 +777,7 @@ class LandingZone(models.Model):
     nickname = models.CharField(max_length=20)
     serial_number = models.CharField(max_length=10, blank=True, null=True)
     status = models.CharField(max_length=20, choices=LIFE_OPTIONS, default="ACTIVE")
-    image = models.ImageField(
-        upload_to="landing_zone_photos/", default="media/pad_photos/default.png"
-    )
+    image = models.ImageField(upload_to="landing_zone_photos/", default="media/pad_photos/default.png")
 
     def __str__(self):
         return self.name
@@ -940,18 +802,12 @@ class LandingZone(models.Model):
         if launch := Launch.objects.filter(
             time__lte=datetime.now(pytz.utc), stageandrecovery__landing_zone=self
         ).first():
-            turnarounds = launch.calculate_turnarounds(
-                turnaround_object=TurnaroundObjects.LANDING_ZONE
-            )
+            turnarounds = launch.calculate_turnarounds(turnaround_object=TurnaroundObjects.LANDING_ZONE)
             specific_zone_turnarounds = [
-                row
-                for row in turnarounds["ordered_turnarounds"]
-                if self == row["turnaround_object"]
+                row for row in turnarounds["ordered_turnarounds"] if self == row["turnaround_object"]
             ]
             if len(specific_zone_turnarounds) > 0:
-                fastest_turnaround = convert_seconds(
-                    specific_zone_turnarounds[0]["turnaround_time"]
-                )
+                fastest_turnaround = convert_seconds(specific_zone_turnarounds[0]["turnaround_time"])
 
         return fastest_turnaround
 
@@ -966,13 +822,9 @@ class StageAndRecovery(models.Model):
         blank=True,
         default="SINGLE_CORE",
     )
-    landing_zone = models.ForeignKey(
-        LandingZone, on_delete=models.CASCADE, null=True, blank=True
-    )
+    landing_zone = models.ForeignKey(LandingZone, on_delete=models.CASCADE, null=True, blank=True)
     method = models.CharField(max_length=200, choices=RECOVERY_METHODS)
-    method_success = models.CharField(
-        max_length=200, choices=LANDING_METHOD_OUTCOMES, null=True, blank=True
-    )
+    method_success = models.CharField(max_length=200, choices=LANDING_METHOD_OUTCOMES, null=True, blank=True)
     recovery_success = models.BooleanField()
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
@@ -984,11 +836,7 @@ class StageAndRecovery(models.Model):
         return "Unknown recovery"
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["launch", "stage"], name="unique_launch_stage"
-            )
-        ]
+        constraints = [models.UniqueConstraint(fields=["launch", "stage"], name="unique_launch_stage")]
 
 
 class FairingRecovery(models.Model):
@@ -1017,15 +865,11 @@ class FairingRecovery(models.Model):
 
 class TugOnLaunch(models.Model):
     launch = models.ForeignKey(Launch, on_delete=models.CASCADE)
-    boat = models.ForeignKey(
-        Boat, on_delete=models.CASCADE, limit_choices_to={"type": "TUG"}
-    )
+    boat = models.ForeignKey(Boat, on_delete=models.CASCADE, limit_choices_to={"type": "TUG"})
 
     class Meta:
         verbose_name_plural = "Tugs on Launch"
-        constraints = [
-            models.UniqueConstraint(fields=["launch", "boat"], name="unique_launch_tug")
-        ]
+        constraints = [models.UniqueConstraint(fields=["launch", "boat"], name="unique_launch_tug")]
 
     def __str__(self):
         if self.boat:
@@ -1035,17 +879,11 @@ class TugOnLaunch(models.Model):
 
 class SupportOnLaunch(models.Model):
     launch = models.ForeignKey(Launch, on_delete=models.CASCADE)
-    boat = models.ForeignKey(
-        Boat, on_delete=models.CASCADE, limit_choices_to={"type": "SUPPORT"}
-    )
+    boat = models.ForeignKey(Boat, on_delete=models.CASCADE, limit_choices_to={"type": "SUPPORT"})
 
     class Meta:
         verbose_name_plural = "Support Ships on Launch"
-        constraints = [
-            models.UniqueConstraint(
-                fields=["launch", "boat"], name="unique_launch_support"
-            )
-        ]
+        constraints = [models.UniqueConstraint(fields=["launch", "boat"], name="unique_launch_support")]
 
     def __str__(self):
         if self.boat:
@@ -1067,11 +905,7 @@ class SpacecraftOnLaunch(models.Model):
 
     class Meta:
         verbose_name_plural = "Dragon on Launch"
-        constraints = [
-            models.UniqueConstraint(
-                fields=["launch", "spacecraft"], name="unique_launch_spacecraft"
-            )
-        ]
+        constraints = [models.UniqueConstraint(fields=["launch", "spacecraft"], name="unique_launch_spacecraft")]
 
     def __str__(self):
         if self.spacecraft:
@@ -1086,11 +920,10 @@ class SpacecraftOnLaunch(models.Model):
             .order_by("splashdown_time")
             .last()
         ):
-            turnaround = (
-                self.launch.time - last_launch.splashdown_time
-            ).total_seconds()
+            turnaround = (self.launch.time - last_launch.splashdown_time).total_seconds()
 
             return round(turnaround / 86400, 2)
+        return None
 
 
 class PadUsed(models.Model):
@@ -1103,9 +936,7 @@ class PadUsed(models.Model):
 
     class Meta:
         verbose_name_plural = "Pads Used"
-        constraints = [
-            models.UniqueConstraint(fields=["rocket", "pad"], name="unique_rocket_pad")
-        ]
+        constraints = [models.UniqueConstraint(fields=["rocket", "pad"], name="unique_rocket_pad")]
 
     def __str__(self):
         if self.pad:

@@ -9,45 +9,52 @@
     <link rel="stylesheet" type="text/css" href="{% static 'css/home.css' %}">
 {% endblock %}
 
-
 {% block content %}
-    <div class="rocket-container">
-        <div class="blue-background"></div>
-        <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ next_launch_photo }}');">
-        </div>
-        <div class="info-wrapper blue-text">
-            <h3>UPCOMING MISSION:</h3>
-            <h1 style="text-align: left">{{ next_launch.name }}</h1>
-            <p> <b>Rocket: </b> {{ next_launch.rocket.name }}</p>
-            <p> <b>Scheduled: </b> {{ next_launch.time|date:"F j, Y H:i" }} UTC</p>
-            <p> <b>Launch Site: </b>{{ next_launch.pad.name }}</p>
-            <p> <b>Booster{% if "and" in next_launch.boosters %}s{% endif %}: </b>{{ next_launch.boosters }}</p>
-            <p> <b>Landing Location{% if "and" in next_launch.recoveries %}s{% endif %}: </b>{{ next_launch.recoveries }}</p>
-            <p> <b>Tug{% if "and" in next_launch_tugs %}s{% endif %}: </b>{{ next_launch_tugs }}</p>
-            <p> <b>Fairing Recovery: </b>{{ next_launch_fairing_recovery }}</p>
-        </div>
-    </div>
+    {% if next_launch %}
+        <a href="{% url 'booster_tracker:launch' next_launch.name %}" style="text-decoration: none !important;">
+    {% endif %}
+            <div class="rocket-container">
+                <div class="blue-background"></div>
+                <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ next_launch_photo }}');">
+                </div>
+                <div class="info-wrapper blue-text">
+                    <h3>UPCOMING MISSION:</h3>
+                    <h1 style="text-align: left">{{ next_launch.name }}</h1>
+                    <p><b>Rocket: </b>{{ next_launch.rocket.name }}</p>
+                    <p><b>Scheduled: </b>{{ next_launch.time|date:"F j, Y H:i" }} UTC</p>
+                    <p><b>Launch Site: </b>{{ next_launch.pad.name }}</p>
+                    <p><b>Booster{% if "and" in next_launch.boosters %}s{% endif %}: </b>{{ next_launch.boosters }}</p>
+                    <p><b>Landing Location{% if "and" in next_launch.recoveries %}s{% endif %}: </b>{{ next_launch.recoveries }}</p>
+                    <p><b>Tug{% if "and" in next_launch_tugs %}s{% endif %}: </b>{{ next_launch_tugs }}</p>
+                    <p><b>Fairing Recovery: </b>{{ next_launch_fairing_recovery }}</p>
+                </div>
+            </div>
+    {% if next_launch %}
+        </a>
+    {% endif %}
 
-    <div class="rocket-container">
-        <div class="yellow-background"></div>
-        <div class="image-background" style="background-image: linear-gradient(95deg, rgba(242, 164, 88, 1) 7.87%, transparent 32.13%), url('{{ last_launch.image }}');"></div>
-        <div class="info-wrapper yellow-text">
-            <h3>PREVIOUS MISSION:</h3>
-            <h1 style="text-align: left">{{ last_launch.name }}</h1>
-            <p> <b>Rocket: </b> {{ last_launch.rocket.name }}</p>
-            <p> <b>Liftoff Time: </b>{{ last_launch.time|date:"F j, Y H:i" }} UTC</p>
-            <p> <b>Launch Site: </b>{{ last_launch.pad.name }}</p>
-            <p> <b>Booster{% if "and" in last_launch_boosters %}s{% endif %}: </b>{{ last_launch_boosters }}</p>
-            <p> <b>Landing Location{% if "and" in last_launch_recoveries %}s{% endif %}: </b>{{ last_launch_recoveries }}</p>
-            <p> <b>Tug{% if "and" in last_launch_tugs %}s{% endif %}: </b>{{ last_launch_tugs }}</p>
-            <p> <b>Fairing Recovery: </b>{{ last_launch_fairing_recovery }}</p>
+    <a href="{% url 'booster_tracker:launch' last_launch.name %}" style="text-decoration: none !important;">
+        <div class="rocket-container" style="margin-top:10px;">
+            <div class="blue-background"></div>
+            <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 7.87%, transparent 32.13%), url('{{ last_launch.image }}');"></div>
+            <div class="info-wrapper blue-text">
+                <h3>PREVIOUS MISSION:</h3>
+                <h1 style="text-align: left">{{ last_launch.name }}</h1>
+                <p><b>Rocket: </b>{{ last_launch.rocket.name }}</p>
+                <p><b>Liftoff Time: </b>{{ last_launch.time|date:"F j, Y H:i" }} UTC</p>
+                <p><b>Launch Site: </b>{{ last_launch.pad.name }}</p>
+                <p><b>Booster{% if "and" in last_launch_boosters %}s{% endif %}: </b>{{ last_launch_boosters }}</p>
+                <p><b>Landing Location{% if "and" in last_launch_recoveries %}s{% endif %}: </b>{{ last_launch_recoveries }}</p>
+                <p><b>Tug{% if "and" in last_launch_tugs %}s{% endif %}: </b>{{ last_launch_tugs }}</p>
+                <p><b>Fairing Recovery: </b>{{ last_launch_fairing_recovery }}</p>
+            </div>
         </div>
-    </div>
+    </a>
 
     <h1 style="font-size: 3em;">Falcon Stats</h1>
-    <p><b>Missions: </b> {{ launches_per_vehicle.0.1|add:launches_per_vehicle.1.1|add:launches_per_vehicle.3.1 }}</p>
-    <p><b>Successful Missions: </b> {{ launches_per_vehicle.0.2|add:launches_per_vehicle.1.2|add:launches_per_vehicle.3.2 }}</p>
-    <p><b>Landing Attempts: </b> {{ num_landings.0 }}</p>
+    <p><b>Missions: </b>{{ launches_per_vehicle.0.1|add:launches_per_vehicle.1.1|add:launches_per_vehicle.3.1 }}</p>
+    <p><b>Successful Missions: </b>{{ launches_per_vehicle.0.2|add:launches_per_vehicle.1.2|add:launches_per_vehicle.3.2 }}</p>
+    <p><b>Landing Attempts: </b>{{ num_landings.0 }}</p>
     <p><b>Landings: </b>{{ num_landings.1 }}</p>
     <p><b>Booster Reuses: </b>{{ num_booster_reflights }}</p>
     <p><b>Booster With Most Flights: </b>{{ most_flown_boosters }}</p>
@@ -57,92 +64,90 @@
     <div class="card" style="background-image: url('/static/images/falcon_9_2.jpg');">
         <h1 class="title">Falcon 9</h1>
         <div class="stats">
-          <div class="stat">
-            <h2>{{ launches_per_vehicle.0.1 }}</h2>
-            <p>Missions</p>
-          </div>
-          <div class="stat">
-            <h2>{{ launches_per_vehicle.0.2 }}</h2>
-            <p>Successes</p>
-          </div>
-          <div class="stat">
-            <h2>{{ falcon_9_reflights }}</h2>
-            <p>Reflights</p>
-          </div>
-        </div>
-      </div>
-      
-      <div class="card" style="background-image: url('/static/images/falcon_heavy.jpg');">
-        <h1 class="title">Falcon Heavy</h1>
-        <div class="stats">
-          <div class="stat">
-            <h2>{{ launches_per_vehicle.1.1 }}</h2>
-            <p>Missions</p>
-          </div>
-          <div class="stat">
-            <h2>{{ launches_per_vehicle.1.2 }}</h2>
-            <p>Successes</p>
-          </div>
-          <div class="stat">
-            <h2>{{ falcon_heavy_reflights }}</h2>
-            <p>Flight-proven Launches</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="card" style="background-image: url('/static/images/Falcon_1_launches_photo.jpg');">
-        <h1 class="title">Falcon 1</h1>
-        <div class="stats" style="width: 50%;">
-          <div class="stat">
-            <h2>5</h2>
-            <p>Missions</p>
-          </div>
-          <div class="stat">
-            <h2>2</h2>
-            <p>Successes</p>
-          </div>
-        </div>
-      </div>
-
-      <h1 style="font-size: 3em;">Launch pads</h1>
-
-    {% if pad_stats %}
-        {% for pad in pad_stats %}
-        <div class="rocket-container" style="border: 1px solid white;">
-            <div style="background-color: #333;"></div>
-            <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ pad.0.image.url }}');"></div>
-            <div class="info-wrapper blue-text">
-                <h1 style="text-align: left">{{ pad.0.name|upper }}</h1>
-                <p> <b>Nickname: </b>{{ pad.0.nickname }}</p>
-                <p> <b>Location: </b>{{ pad.0.location }}</p>
-                <p> <b>Launches: </b>{{ pad_stats|index:forloop.counter0|index:1 }}</p>
-                <p> <b>Fastest Turnaround: </b>{{ pad_stats|index:forloop.counter0|index:2 }}</p>
-                <p> <b>Status: </b>{{ pad.0.status|lower|title }}</p>
+            <div class="stat">
+                <h2>{{ launches_per_vehicle.0.1 }}</h2>
+                <p>Missions</p>
+            </div>
+            <div class="stat">
+                <h2>{{ launches_per_vehicle.0.2 }}</h2>
+                <p>Successes</p>
+            </div>
+            <div class="stat">
+                <h2>{{ falcon_9_reflights }}</h2>
+                <p>Reflights</p>
             </div>
         </div>
+    </div>
+      
+    <div class="card" style="background-image: url('/static/images/falcon_heavy.jpg');">
+        <h1 class="title">Falcon Heavy</h1>
+        <div class="stats">
+            <div class="stat">
+                <h2>{{ launches_per_vehicle.1.1 }}</h2>
+                <p>Missions</p>
+            </div>
+            <div class="stat">
+                <h2>{{ launches_per_vehicle.1.2 }}</h2>
+                <p>Successes</p>
+            </div>
+            <div class="stat">
+                <h2>{{ falcon_heavy_reflights }}</h2>
+                <p>Flight-proven Launches</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="background-image: url('/static/images/Falcon_1_launches_photo.jpg');">
+        <h1 class="title">Falcon 1</h1>
+        <div class="stats" style="width: 50%;">
+            <div class="stat">
+                <h2>5</h2>
+                <p>Missions</p>
+            </div>
+            <div class="stat">
+                <h2>2</h2>
+                <p>Successes</p>
+            </div>
+        </div>
+    </div>
+
+    <h1 style="font-size: 3em;">Launch pads</h1>
+    {% if pad_stats %}
+        {% for pad in pad_stats %}
+            <div class="rocket-container" style="border: 1px solid white;">
+                <div style="background-color: #333;"></div>
+                <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ pad.0.image.url }}');"></div>
+                <div class="info-wrapper blue-text">
+                    <h1 style="text-align: left">{{ pad.0.name|upper }}</h1>
+                    <p><b>Nickname: </b>{{ pad.0.nickname }}</p>
+                    <p><b>Location: </b>{{ pad.0.location }}</p>
+                    <p><b>Launches: </b>{{ pad_stats|index:forloop.counter0|index:1 }}</p>
+                    <p><b>Fastest Turnaround: </b>{{ pad_stats|index:forloop.counter0|index:2 }}</p>
+                    <p><b>Status: </b>{{ pad.0.status|lower|title }}</p>
+                </div>
+            </div>
         {% endfor %}
     {% else %}
         <p>No pads are available.</p>
     {% endif %}
     
     <h1 style="font-size: 3em;">Recovery Zones</h1>
-
     {% if zone_stats %}
         {% for zone in zone_stats %}
-        <div class="rocket-container" style="border: 1px solid white;">
-            <div style="background-color: #333;"></div>
-            <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ zone.0.image.url }}');"></div>
-            <div class="info-wrapper blue-text">
-                <h1 style="text-align: left">{{ zone.0.name|upper }}</h1>
-                <p> <b>Nickname: </b>{{ zone.0.nickname }}</p>
-                {% if zone.0.serial_number %}
-                    <p> <b>Boat ID: </b>{{ zone.0.serial_number }}</p>
-                {% endif %}
-                <p> <b>Successful Landings: </b>{{ zone_stats|index:forloop.counter0|index:1 }}</p>
-                <p> <b>Fastest Turnaround: </b>{{ zone_stats|index:forloop.counter0|index:2 }}</p>
-                <p> <b>Status: </b>{{ zone.0.status|lower|title }}</p>
-            </div>
-        </div>
+            <div class="rocket-container" style="border: 1px solid white;">
+                <div style="background-color: #333;"></div>
+                <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ zone.0.image.url }}');"></div>
+                <div class="info-wrapper blue-text">
+                    <h1 style="text-align: left">{{ zone.0.name|upper }}</h1>
+                    <p><b>Nickname: </b>{{ zone.0.nickname }}</p>
+                    {% if zone.0.serial_number %}
+                        <p><b>Boat ID: </b>{{ zone.0.serial_number }}</p>
+                    {% endif %}
+                    <p><b>Successful Landings: </b>{{ zone_stats|index:forloop.counter0|index:1 }}</p>
+                	<p> <b>Fastest Turnaround: </b>{{ zone_stats|index:forloop.counter0|index:2 }}</p>
+                	<p> <b>Status: </b>{{ zone.0.status|lower|title }}</p>
+            	</div>
+        	</div>
         {% endfor %}
     {% else %}
         <p>No landing zones are available.</p>

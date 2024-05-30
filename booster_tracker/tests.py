@@ -10,6 +10,7 @@ from booster_tracker.models import (
     PadUsed,
     StageAndRecovery,
     Launch,
+    RocketFamily,
 )
 from booster_tracker.utils import (
     format_time,
@@ -32,8 +33,9 @@ class TestCases(TestCase):
     def setUp(self):
         # Set up database with objects that will be perm throughout all tests
         Operator.objects.create(name="SpaceX")
-        Rocket.objects.create(name="Falcon 9", provider=Operator.objects.get(name="SpaceX"))
-        Rocket.objects.create(name="Falcon Heavy", provider=Operator.objects.get(name="SpaceX"))
+        RocketFamily.objects.create(name="Falcon", provider=Operator.objects.get(name="SpaceX"))
+        Rocket.objects.create(name="Falcon 9", family=RocketFamily.objects.get(name="Falcon"))
+        Rocket.objects.create(name="Falcon Heavy", family=RocketFamily.objects.get(name="Falcon"))
 
         Pad.objects.create(
             name="Space Launch Complex 40",

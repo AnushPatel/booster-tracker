@@ -1,0 +1,66 @@
+{% extends "base_generic.html" %}
+{% load static %}
+{% load filters %}
+{% block title %}
+    Booster Tracker
+{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" type="text/css" href="{% static 'css/object_list.css' %}">
+{% endblock %}
+
+{% block content %}
+{% if active_stages %}
+    <h1 style="font-size: 3em; clear: both; padding-top: 0px; margin-top: 0px;">Active {{ rocket_family|title }} {{ stage_type|title|replace:"Second_Stage|Second Stage" }}s</h1>
+{% endif %}
+{% for stage in active_stages %}
+<div class="rocket-container">
+    <a href="{% url 'booster_tracker:stage' stage.rocket.family.name.lower stage.type.lower stage.name %}" class="rocket-link">
+        <div class="blue-background"></div>
+        <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ stage.image.url }}');"></div>
+        <div class="info-wrapper blue-text">
+            <h1 style="text-align: left">{{ stage.name }}</h1>
+            <p> <b>Rocket: </b> {{ stage.rocket.name }}</p>
+            <p> <b>Version: </b> {{ stage.version }}</p>
+            <p> <b>Number of Launches: </b>{{ stage.num_launches }}</p>
+        </div>
+    </a>
+</div>
+{% endfor %}
+
+{% if lost_stages %}
+    <h1>Lost {{ rocket_family|title }} {{ stage_type|title|replace:"Second_Stage|Second Stage" }}s</h1>
+{% endif %}
+{% for stage in lost_stages %}
+<div class="rocket-container">
+    <a href="{% url 'booster_tracker:stage' stage.rocket.family.name.lower stage.type.lower stage.name %}" class="rocket-link">
+        <div class="blue-background"></div>
+        <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ stage.image.url }}');"></div>
+        <div class="info-wrapper blue-text">
+            <h1 style="text-align: left">{{ stage.name }}</h1>
+            <p> <b>Rocket: </b> {{ stage.rocket.name }}</p>
+            <p> <b>Version: </b> {{ stage.version }}</p>
+            <p> <b>Number of Launches: </b>{{ stage.num_launches }}</p>
+        </div>
+    </a>
+</div>
+{% endfor %}
+
+{% if retired_stages %}
+    <h1>Retired {{ rocket_family|title }} {{ stage_type|title|replace:"Second_Stage|Second Stage" }}s</h1>
+{% endif %}
+{% for stage in retired_stages %}
+<div class="rocket-container">
+    <a href="{% url 'booster_tracker:stage' stage.rocket.family.name.lower stage.type.lower stage.name %}" class="rocket-link">
+        <div class="blue-background"></div>
+        <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ stage.image.url }}');"></div>
+        <div class="info-wrapper blue-text">
+            <h1 style="text-align: left">{{ stage.name }}</h1>
+            <p> <b>Rocket: </b> {{ stage.rocket.name }}</p>
+            <p> <b>Version: </b> {{ stage.version }}</p>
+            <p> <b>Number of Launches: </b>{{ stage.num_launches }}</p>
+        </div>
+    </a>
+</div>
+{% endfor %}
+{% endblock %}

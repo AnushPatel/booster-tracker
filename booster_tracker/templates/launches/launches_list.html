@@ -1,6 +1,9 @@
 {% extends "base_generic.html" %}
 {% load static %}
 {% load filters %}
+{% block title %}
+    Booster Tracker
+{% endblock %}
 
 {% block extra_css %}
     <link rel="stylesheet" type="text/css" href="{% static 'css/home.css' %}">
@@ -8,49 +11,49 @@
 {% endblock %}
 
 {% block content %}
-<div class="search-form">
-    <form method="GET" action="{% url 'booster_tracker:launches' %}">
-      <input type="text" name="q" placeholder="Search Launches" value="{{ query|default_if_none:'' }}">
-      <button type="submit">Search</button>
-    </form>
-</div>
-{% if paginated_launches %}
-    {% for launch in paginated_launches %}
-    <a href="{% url 'booster_tracker:launch' launch.name %}" style="text-decoration: none !important; padding: 5px;">
-        <div class="rocket-container">
-            <div class="blue-background"></div>
-            <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ launch.image }}');">
-            </div>
-            <div class="info-wrapper blue-text">
-                <h1 style="text-align: left">{{ launch.name }}</h1>
-                <p> <b>Rocket: </b> {{ launch.rocket.name }}</p>
-                <p> <b>Liftoff Time: </b> {{ launch.time|date:"F j, Y H:i" }} UTC</p>
-                <p> <b>Launch Site: </b>{{ launch.pad.name }}</p>
-                <p> <b>Booster{% if "and" in launch.get_boosters %}s{% endif %}: </b>{{ launch.boosters }}</p>
-                <p> <b>Landing Location{% if "and" in launch.get_recoveries %}s{% endif %}: </b>{{ launch.recoveries }}</p>
-                <p> <b>Outcome: </b>{{ launch.launch_outcome|lower|title|replace:"None|TBD" }}</p>
-            </div>
-        </div>
-    </a>
-    {% endfor %}
-{% else %}
-<p>No launches are available.</p>
-{% endif %}
-<div class="pagination">
-    <span class="step-links">
-        {% if paginated_launches.has_previous %}
-            <a href="?page=1{% if query %}&q={{ query }}{% endif %}" title="First page">&laquo;</a>
-            <a href="?page={{ paginated_launches.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" title="Previous page">&lsaquo;</a>
-        {% endif %}
+    <div class="search-form">
+        <form method="GET" action="{% url 'booster_tracker:launches' %}">
+            <input type="text" name="q" placeholder="Search Launches" value="{{ query|default_if_none:'' }}">
+            <button type="submit">Search</button>
+        </form>
+    </div>
+    {% if paginated_launches %}
+        {% for launch in paginated_launches %}
+            <a href="{% url 'booster_tracker:launch' launch.name %}" style="text-decoration: none !important;">
+                <div class="rocket-container" style="margin: 10px;">
+                    <div class="blue-background"></div>
+                    <div class="image-background" style="background-image: linear-gradient(95deg, rgba(63, 99, 135, 1) 15.74%, transparent 40%), url('{{ launch.image }}');">
+                    </div>
+                    <div class="info-wrapper blue-text">
+                        <h1 style="text-align: left">{{ launch.name }}</h1>
+                        <p> <b>Rocket: </b> {{ launch.rocket.name }}</p>
+                        <p> <b>Liftoff Time: </b> {{ launch.time|date:"F j, Y H:i" }} UTC</p>
+                        <p> <b>Launch Site: </b>{{ launch.pad.name }}</p>
+                        <p> <b>Booster{% if "and" in launch.get_boosters %}s{% endif %}: </b>{{ launch.boosters }}</p>
+                        <p> <b>Landing Location{% if "and" in launch.get_recoveries %}s{% endif %}: </b>{{ launch.recoveries }}</p>
+                        <p> <b>Outcome: </b>{{ launch.launch_outcome|lower|title|replace:"None|TBD" }}</p>
+                    </div>
+                </div>
+            </a>
+        {% endfor %}
+    {% else %}
+        <p>No launches are available.</p>
+    {% endif %}
+    <div class="pagination">
+        <span class="step-links">
+            {% if paginated_launches.has_previous %}
+                <a href="?page=1{% if query %}&q={{ query }}{% endif %}" title="First page">&laquo;</a>
+                <a href="?page={{ paginated_launches.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" title="Previous page">&lsaquo;</a>
+            {% endif %}
 
-        <span class="current">
-            {{ paginated_launches.number }} of {{ paginated_launches.paginator.num_pages }}
+            <span class="current">
+                {{ paginated_launches.number }} of {{ paginated_launches.paginator.num_pages }}
+            </span>
+
+            {% if paginated_launches.has_next %}
+                <a href="?page={{ paginated_launches.next_page_number }}{% if query %}&q={{ query }}{% endif %}" title="Next page">&rsaquo;</a>
+                <a href="?page={{ paginated_launches.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}" title="Last page">&raquo;</a>
+            {% endif %}
         </span>
-
-        {% if paginated_launches.has_next %}
-            <a href="?page={{ paginated_launches.next_page_number }}{% if query %}&q={{ query }}{% endif %}" title="Next page">&rsaquo;</a>
-            <a href="?page={{ paginated_launches.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}" title="Last page">&raquo;</a>
-        {% endif %}
-    </span>
-  </div>
+    </div>
 {% endblock %}

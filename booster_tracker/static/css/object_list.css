@@ -19,7 +19,8 @@
     text-decoration: none; /* Removes underline from text */
     color: inherit; /* Inherits text color */
     position: relative;
-    z-index: 1; /* Ensure it covers other elements */
+    z-index: 300000; /* Ensure it covers other elements */
+    -webkit-tap-highlight-color: transparent;
 }
 
 .image-background {
@@ -47,22 +48,14 @@
     margin-right: 5px;
 }
 
-.blue-background, .yellow-background {
+.blue-background {
     position: absolute;
     top: 0;
     left: 0;
     width: 35%; /* Two-thirds of the container */
     height: 100%;
-}
-
-.blue-background {
     background-color: rgba(63, 99, 135, 1); /* Solid blue */
     color: lightgray !important;
-}
-
-.yellow-background {
-    background-color: rgba(248, 211, 102, 1); /* Yellow background */
-    color: rgba(63, 99, 135, 1) !important;
 }
 
 .image-background {
@@ -98,7 +91,6 @@ h1 {
     clear: both;
 }
 
-
 /* Responsive adjustments */
 @media (max-width: 850px) {
     .rocket-container {
@@ -107,6 +99,7 @@ h1 {
         width: 100%;
         max-width: 850px;
     }
+
     .info-wrapper {
         position: relative;
         top: auto;
@@ -115,9 +108,11 @@ h1 {
         width: auto; 
         text-align: left; 
     }
-    .blue-background, .yellow-background {
+
+    .blue-background {
         width: 100%; 
     }
+
     .image-background {
         left: 40%;
     }

@@ -1,0 +1,133 @@
+{% extends "base_generic.html" %}
+{% load static %}
+{% load filters %}
+{% block title %}
+    Booster Tracker
+{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" type="text/css" href="{% static 'css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="card" style="background-image: url('/static/images/Starship_OLPA_launches_photo.jpg');">
+        <h1 class="title">Starship</h1>
+        <div class="stats">
+            <div class="stat">
+                <h2>{{ launches_per_vehicle.0.1 }}</h2>
+                <p>Missions</p>
+            </div>
+            <div class="stat">
+                <h2>{{ launches_per_vehicle.0.2 }}</h2>
+                <p>Successes</p>
+            </div>
+            <div class="stat">
+                <h2>{{ starship_reflights }}</h2>
+                <p>Flight-proven Launches</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-container">
+        <div class="vertical-card" style="background-image: url('/static/images/super_heavy.jpg');">
+            <h1 class="title">Super Heavy</h1>
+            <div class="stats-vertical">
+                <div class="stat-vertical">
+                    <h2>{{ booster_landing_attempts }}</h2>
+                    <p>Catch Attempts</p>
+                </div>
+                <div class="stat-vertical">
+                    <h2>{{ booster_landing_successes }}</h2>
+                    <p>Catches</p>
+                </div>
+                <div class="stat-vertical">
+                    <h2>{{ num_booster_reflights }}</h2>
+                    <p>Reuses</p>
+                </div>
+                <div class="stat-vertical">
+                    <h2 style="font-size: 2em;">{{ most_flown_boosters }}</h2>
+                    <p>Most Booster Flights</p>
+                </div>
+                <div class="stat-vertical">
+                    <h2 style="font-size: 2em;">{{ quickest_booster_turnaround }}</h2>
+                    <p>Fastest Turnaround</p>
+                </div>
+                <a href="{% url 'booster_tracker:stages' rocket_family='starship' stage_type='booster' %}" style="padding: 20px; text-decoration: none !important;">
+                    <div class="stat-vertical"> 
+                        <div class="arrow"></div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="vertical-card" style="background-image: url('/static/images/ship.jpg');">
+            <h1 class="title">Ship</h1>
+            <div class="stats-vertical">
+                <div class="stat-vertical">
+                    <h2>{{ ship_landing_attempts }}</h2>
+                    <p>Catch Attempts</p>
+                </div>
+                <div class="stat-vertical">
+                    <h2>{{ ship_landing_successes }}</h2>
+                    <p>Catches</p>
+                </div>
+                <div class="stat-vertical">
+                    <h2>{{ num_ship_reflights }}</h2>
+                    <p>Reuses</p>
+                </div>
+                <div class="stat-vertical">
+                    <h2 style="font-size: 2em;">{{ most_flown_ships }}</h2>
+                    <p>Most Booster Flights</p>
+                </div>
+                <div class="stat-vertical">
+                    <h2 style="font-size: 2em;">{{ quickest_ship_turnaround }}</h2>
+                    <p>Fastest Turnaround</p>
+                </div>
+                <a href="{% url 'booster_tracker:stages' rocket_family='starship' stage_type='second_stage' %}" style="padding: 20px; text-decoration: none !important;">
+                    <div class="stat-vertical"> 
+                        <div class="arrow"></div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <h1 style="font-size: 3em;">Launch pads</h1>
+
+    {% if pad_stats %}
+        {% for pad in pad_stats %}
+            <div class="rocket-container" style="border: 1px solid white;">
+                <div style="background-color: #333;"></div>
+                <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ pad.0.image.url }}');"></div>
+                <div class="info-wrapper blue-text">
+                    <h1 style="text-align: left">{{ pad.0.name|upper }}</h1>
+                    <p><b>Nickname: </b>{{ pad.0.nickname }}</p>
+                    <p><b>Location: </b>{{ pad.0.location }}</p>
+                    <p><b>Launches: </b>{{ pad_stats|index:forloop.counter0|index:1 }}</p>
+                    <p><b>Fastest Turnaround: </b>{{ pad_stats|index:forloop.counter0|index:2 }}</p>
+                    <p><b>Status: </b>{{ pad.0.status|lower|title }}</p>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if zone_stats %}
+        <h1 style="font-size: 3em;">Recovery Zones</h1>
+        {% for zone in zone_stats %}
+            <div class="rocket-container" style="border: 1px solid white;">
+                <div style="background-color: #333;"></div>
+                <div class="image-background" style="background-image: linear-gradient(90deg, #333 0%, transparent 25%), url('{{ zone.0.image.url }}');"></div>
+                <div class="info-wrapper blue-text">
+                    <h1 style="text-align: left">{{ zone.0.name|upper }}</h1>
+                    <p><b>Nickname: </b>{{ zone.0.nickname }}</p>
+                    {% if zone.0.serial_number %}
+                        <p><b>Boat ID: </b>{{ zone.0.serial_number }}</p>
+                    {% endif %}
+                    <p><b>Successful Landings: </b>{{ zone_stats|index:forloop.counter0|index:1 }}</p>
+                    <p><b>Fastest Turnaround: </b>{{ zone_stats|index:forloop.counter0|index:2 }}</p>
+                    <p><b>Status: </b>{{ zone.0.status|lower|title }}</p>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endblock %}
