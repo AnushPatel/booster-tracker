@@ -1,18 +1,42 @@
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.3.0
     hooks:
-    -   id: check-yaml
-    -   id: end-of-file-fixer
-    -   id: trailing-whitespace
--   repo: https://github.com/psf/black
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/psf/black
     rev: 22.10.0
     hooks:
-    -   id: black
--   repo: https://github.com/PyCQA/prospector
+      - id: black
+  - repo: https://github.com/PyCQA/prospector
     rev: 1.10.0
     hooks:
-    -   id: prospector
+      - id: prospector
         args:
-        - --summary-only
-        - --max-line-length 1000
+          - --summary-only
+          - --max-line-length 1000
+  - repo: local
+    hooks:
+      - id: run-tests
+        name: Run Tests
+        entry: ./manage.py test
+        language: system
+        types:
+          - python
+      - id: run-tests-pre-commit
+        name: Run Tests on Commit
+        entry: ./manage.py test
+        language: system
+        types:
+          - python
+        stages:
+          - commit
+      - id: run-tests-pre-push
+        name: Run Tests on Push
+        entry: ./manage.py test
+        language: system
+        types:
+          - python
+        stages:
+          - push
