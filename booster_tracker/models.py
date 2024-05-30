@@ -65,7 +65,7 @@ class Operator(models.Model):
 
 class RocketFamily(models.Model):
     name = models.CharField(max_length=100, unique=True)
-    provider = models.ForeignKey(Operator, on_delete=models.CASCADE, null=True, blank=True)
+    provider = models.ForeignKey(Operator, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
@@ -76,7 +76,7 @@ class RocketFamily(models.Model):
 
 class Rocket(models.Model):
     name = models.CharField(max_length=100, unique=True)
-    family = models.ForeignKey(RocketFamily, on_delete=models.CASCADE, null=True, blank=True)
+    family = models.ForeignKey(RocketFamily, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=LIFE_OPTIONS, default="ACTIVE")
 
     def __str__(self):
