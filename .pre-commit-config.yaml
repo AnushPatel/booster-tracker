@@ -15,3 +15,4 @@ repos:
     -   id: prospector
         args:
         - --summary-only
+        - --max-line-length 1000

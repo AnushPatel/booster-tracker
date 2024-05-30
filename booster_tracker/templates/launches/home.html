@@ -78,7 +78,7 @@
             </div>
         </div>
     </div>
-      
+
     <div class="card" style="background-image: url('/static/images/falcon_heavy.jpg');">
         <h1 class="title">Falcon Heavy</h1>
         <div class="stats">
@@ -127,10 +127,8 @@
                 </div>
             </div>
         {% endfor %}
-    {% else %}
-        <p>No pads are available.</p>
     {% endif %}
-    
+
     <h1 style="font-size: 3em;">Recovery Zones</h1>
     {% if zone_stats %}
         {% for zone in zone_stats %}
@@ -149,7 +147,5 @@
             	</div>
         	</div>
         {% endfor %}
-    {% else %}
-        <p>No landing zones are available.</p>
     {% endif %}
 {% endblock %}
