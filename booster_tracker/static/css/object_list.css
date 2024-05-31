@@ -62,7 +62,7 @@
     position: absolute;
     top: 0;
     left: 35%;
-    width: 65%; 
+    width: 65%;
     height: 100%;
     background-size: cover;
     display: block; /* Show image by default */
@@ -94,8 +94,8 @@ h1 {
 /* Responsive adjustments */
 @media (max-width: 850px) {
     .rocket-container {
-        max-height: none; 
-        padding-top: 0; 
+        max-height: none;
+        padding-top: 0;
         width: 100%;
         max-width: 850px;
     }
@@ -105,12 +105,12 @@ h1 {
         top: auto;
         left: auto;
         transform: none;
-        width: auto; 
-        text-align: left; 
+        width: auto;
+        text-align: left;
     }
 
     .blue-background {
-        width: 100%; 
+        width: 100%;
     }
 
     .image-background {

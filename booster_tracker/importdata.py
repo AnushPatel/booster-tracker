@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# pylint: skip-file
+# silence pyflakes
 """
 Created on Mon Feb 26 23:07:03 2024
 
 @author: trevorsesnic
 """
-# pylint: skip-file
 
 import sys
 import os
@@ -22,6 +23,7 @@ from booster_tracker.models import (
     TugOnLaunch,
     Rocket,
     StageAndRecovery,
+    Pad,
 )
 from django.db import transaction
 from dateutil import parser
@@ -93,9 +95,7 @@ class ClassLaunch:
         self.fairing_recovery_boats: list[ClassFairingRecovery] = fairing_recovery_boats
         self.fairing_lat = fairing_lat
         self.fairing_long = fairing_long
-        self.second_stage_recovery_location: ClassLandingZone = (
-            second_stage_recovery_location
-        )
+        self.second_stage_recovery_location: ClassLandingZone = second_stage_recovery_location
 
     def __str__(self):
         return f"{self.payload}"
@@ -156,10 +156,7 @@ class LaunchCalculator:
 
         for index, _ in islice(enumerate(self.launches), num_launches, None):
             turnaround_times.append(
-                (
-                    self.launches[index].time - self.launches[index - num_launches].time
-                ).total_seconds()
-                / 86400
+                (self.launches[index].time - self.launches[index - num_launches].time).total_seconds() / 86400
             )
 
         if len(turnaround_times) == 0:
@@ -170,8 +167,7 @@ class LaunchCalculator:
     def last_turnaround(self, num_launches: int = 1) -> float:
         if not len(self.launches) < 1 + num_launches:
             return (
-                self.launches[len(self.launches) - 1].time
-                - self.launches[len(self.launches) - (num_launches + 1)].time
+                self.launches[len(self.launches) - 1].time - self.launches[len(self.launches) - (num_launches + 1)].time
             ).total_seconds() / 86400
 
 
@@ -261,9 +257,7 @@ class GetSheets(LaunchCalculator):
         )
         launch_boosters.append(booster)
 
-    def __parse_falcon_heavy_row__(
-        self, row: list[str], launch_boosters: list[Booster]
-    ):
+    def __parse_falcon_heavy_row__(self, row: list[str], launch_boosters: list[Booster]):
         booster_name = row[2]
         booster_versions = row[1].split(",")
 
@@ -290,9 +284,7 @@ class GetSheets(LaunchCalculator):
 
             launch_boosters.append(booster)
 
-    def __parse_starship_row__(
-        self, row: list[str], launch_boosters: list[Booster]
-    ) -> SecondStage:
+    def __parse_starship_row__(self, row: list[str], launch_boosters: list[Booster]) -> SecondStage:
         booster_name = row[2].split("-", 1)[0].split("B", 1)[1]
         booster_version = row[1].replace("F9 ", "")
 
@@ -316,11 +308,11 @@ class GetSheets(LaunchCalculator):
             version=secondstage_version,
         )
 
-    def __get_sheet_data__(self):
+    def __get_sheet_data__(self):  # noqa: MC0001
         for row in self.reader:
-            launch_boosters: list[Booster] = (
-                []
-            )  # This array is used to store objects of boosters, which are later added to the launch
+            launch_boosters: list[
+                Booster
+            ] = []  # This array is used to store objects of boosters, which are later added to the launch
             booster_flights: list[int] = []
             launch_pad: ClassPad = self.__get_or_add_object__(
                 row[5], self.launch_pads, ClassPad
@@ -355,9 +347,7 @@ class GetSheets(LaunchCalculator):
 
             if not row[18] == "N/A":  # Get fairing recovery outcomes
                 for fairing_recovery in row[18].split("/"):
-                    fairing_recovery_outcome.append(
-                        fairing_recovery.lstrip(" ").rstrip(" ")
-                    )
+                    fairing_recovery_outcome.append(fairing_recovery.lstrip(" ").rstrip(" "))
 
             if not row[19] == "N/A":  # Get fairing flight numbers
                 for fairing_flight in row[19].split("/"):
@@ -385,30 +375,18 @@ class GetSheets(LaunchCalculator):
 
             if not row[17] == "N/A":  # Creates the tugs
                 for ship in row[17].split("/"):
-                    tugs.append(
-                        self.__get_or_add_object__(
-                            ship.lstrip(" ").rstrip(" "), self.tugs, TugSupport
-                        )
-                    )
+                    tugs.append(self.__get_or_add_object__(ship.lstrip(" ").rstrip(" "), self.tugs, TugSupport))
 
-            for j, zone in enumerate(
-                row[12].replace(" ", "").split("/")
-            ):  # Create the landing zones
+            for j, zone in enumerate(row[12].replace(" ", "").split("/")):  # Create the landing zones
                 if not rocket == "Starship":
-                    landing_zone = self.__get_or_add_object__(
-                        zone, self.landing_zones, ClassLandingZone
-                    )
+                    landing_zone = self.__get_or_add_object__(zone, self.landing_zones, ClassLandingZone)
                     launch_landing_zones.append(landing_zone)
                 else:
                     if j == 0:
-                        landing_zone = self.__get_or_add_object__(
-                            zone, self.landing_zones, ClassLandingZone
-                        )
+                        landing_zone = self.__get_or_add_object__(zone, self.landing_zones, ClassLandingZone)
                         launch_landing_zones.append(landing_zone)
                     if j == 1:
-                        landing_zone = self.__get_or_add_object__(
-                            zone, self.landing_zones, ClassLandingZone
-                        )
+                        landing_zone = self.__get_or_add_object__(zone, self.landing_zones, ClassLandingZone)
                         second_stage_landing_zone = landing_zone
 
             for outcome in row[13].split("/"):  # Create booster landing recovery
@@ -463,22 +441,18 @@ class GetSheets(LaunchCalculator):
                 booster_flights.append(len(booster.launches))
 
             for zone in launch_landing_zones:
-                if not zone is None:
-                    self.__get_or_add_object__(
-                        zone.name, self.landing_zones, ClassLandingZone
-                    ).launches.append(launch)
+                if zone:
+                    self.__get_or_add_object__(zone.name, self.landing_zones, ClassLandingZone).launches.append(launch)
                     launch.zone_turnaround.append(zone.last_turnaround())
 
             for support_ship in support_ships:
-                if not support_ship is None:
-                    self.__get_or_add_object__(
-                        support_ship.name, self.support_ships, SupportShip
-                    ).launches.append(launch)
+                if support_ship:
+                    self.__get_or_add_object__(support_ship.name, self.support_ships, SupportShip).launches.append(
+                        launch
+                    )
 
             for tug in tugs:
-                self.__get_or_add_object__(
-                    tug.name, self.tugs, TugSupport
-                ).launches.append(launch)
+                self.__get_or_add_object__(tug.name, self.tugs, TugSupport).launches.append(launch)
 
             if secondstage:
                 secondstage.launches.append(launch)
@@ -522,9 +496,7 @@ for booster in falcon_data.boosters:
     )
 
 for landing_zone in falcon_data.landing_zones:
-    LandingZone.objects.get_or_create(
-        name=landing_zone.fullname, nickname=landing_zone.name
-    )
+    LandingZone.objects.get_or_create(name=landing_zone.fullname, nickname=landing_zone.name)
 
 for second_stage in falcon_data.secondstages:
     second_stage.name = "S" + second_stage.name
@@ -550,7 +522,7 @@ for pad in falcon_data.launch_pads:
 
     Pad.objects.get_or_create(name=fullname, nickname=pad.name)
 
-for launch in falcon_data.launches:
+for launch in falcon_data.launches:  # noqa: MC001
     Rocket.objects.get_or_create(name=launch.rocket)
     Orbit.objects.get_or_create(name=launch.orbit)
 
@@ -576,14 +548,8 @@ for launch in falcon_data.launches:
         method = "EXPENDED"
         method_success = True
         recovery_success = False
-        latitude = (
-            float(launch.booster_lat) if launch.booster_lat not in ["N/A", ""] else None
-        )
-        longitude = (
-            float(launch.booster_long)
-            if launch.booster_long not in ["N/A", ""]
-            else None
-        )
+        latitude = float(launch.booster_lat) if launch.booster_lat not in ["N/A", ""] else None
+        longitude = float(launch.booster_long) if launch.booster_long not in ["N/A", ""] else None
 
         if (
             launch.landing_zones[index] is not None
@@ -621,9 +587,7 @@ for launch in falcon_data.launches:
             with transaction.atomic():
                 launch_instance, _ = Launch.objects.get_or_create(name=launch.payload)
                 stage_instance, _ = Stage.objects.get_or_create(name=booster.name)
-                landing_zone_instance, _ = LandingZone.objects.get_or_create(
-                    name=launch.landing_zones[index].fullname
-                )
+                landing_zone_instance, _ = LandingZone.objects.get_or_create(name=launch.landing_zones[index].fullname)
 
                 StageAndRecovery.objects.get_or_create(
                     launch=launch_instance,
@@ -659,10 +623,7 @@ for launch in falcon_data.launches:
         if "ocean" in launch.booster_landing_outcomes[1]:
             method = "OCEAN_SURFACE"
 
-        if (
-            "Failure" in launch.booster_landing_outcomes[1]
-            or "Uncontrolled" in launch.booster_landing_outcomes[index]
-        ):
+        if "Failure" in launch.booster_landing_outcomes[1] or "Uncontrolled" in launch.booster_landing_outcomes[index]:
             method_success = False
 
         if "Success" in launch.booster_landing_outcomes[1]:
@@ -672,9 +633,7 @@ for launch in falcon_data.launches:
             with transaction.atomic():
                 launch_instance, _ = Launch.objects.get_or_create(name=launch.payload)
                 stage_instance, _ = Stage.objects.get_or_create(name=booster.name)
-                landing_zone_instance, _ = LandingZone.objects.get_or_create(
-                    name=launch.landing_zones[index].fullname
-                )
+                landing_zone_instance, _ = LandingZone.objects.get_or_create(name=launch.landing_zones[index].fullname)
 
                 StageAndRecovery.objects.get_or_create(
                     launch=launch_instance,
@@ -690,9 +649,7 @@ for launch in falcon_data.launches:
         else:
             with transaction.atomic():
                 launch_instance, _ = Launch.objects.get_or_create(name=launch.payload)
-                stage_instance, _ = Stage.objects.get_or_create(
-                    name=launch.secondstage.name
-                )
+                stage_instance, _ = Stage.objects.get_or_create(name=launch.secondstage.name)
                 StageAndRecovery.objects.get_or_create(
                     launch=launch_instance,
                     stage=stage_instance,
@@ -717,16 +674,8 @@ for launch in falcon_data.launches:
         else:
             recovered = fairing_recovery.replace(" (Catch)", "")
 
-        latitude = (
-            float(launch.fairing_lat)
-            if launch.fairing_lat not in ["N/A", "", "Unknown"]
-            else None
-        )
-        longitude = (
-            float(launch.fairing_long)
-            if launch.fairing_long not in ["N/A", "", "Unknown"]
-            else None
-        )
+        latitude = float(launch.fairing_lat) if launch.fairing_lat not in ["N/A", "", "Unknown"] else None
+        longitude = float(launch.fairing_long) if launch.fairing_long not in ["N/A", "", "Unknown"] else None
 
         if (
             launch.fairings_recovered is not None
@@ -754,12 +703,8 @@ for launch in falcon_data.launches:
     for support in launch.booster_support:
         with transaction.atomic():
             launch_instance, _ = Launch.objects.get_or_create(name=launch.payload)
-            boat_instance, _ = Boat.objects.get_or_create(
-                name=support.name, type="SUPPORT"
-            )
-        SupportOnLaunch.objects.get_or_create(
-            launch=launch_instance, boat=boat_instance
-        )
+            boat_instance, _ = Boat.objects.get_or_create(name=support.name, type="SUPPORT")
+        SupportOnLaunch.objects.get_or_create(launch=launch_instance, boat=boat_instance)
 
     for tug in launch.booster_tug:
         with transaction.atomic():

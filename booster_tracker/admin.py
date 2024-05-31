@@ -1,7 +1,7 @@
 from django.contrib import admin
 from datetime import datetime
 import pytz
-from .models import (
+from booster_tracker.models import (
     StageAndRecovery,
     Stage,
     LandingZone,

@@ -252,7 +252,7 @@ class TestCases(TestCase):
     def test_get_most_flown_boosters(self):
         # Ensure most flown boosters being grabbed successfully
         self.assertEqual(
-            get_most_flown_stages(rocket_name="Falcon", type=StageObjects.BOOSTER),
+            get_most_flown_stages(rocket_name="Falcon", stage_type=StageObjects.BOOSTER),
             (["B1062", "B1080"], 3),
         )
 
@@ -278,7 +278,7 @@ class TestCases(TestCase):
 
         # After adding the launch, ensure the output updates accordingly
         self.assertEqual(
-            get_most_flown_stages(rocket_name="Falcon", type=StageObjects.BOOSTER),
+            get_most_flown_stages(rocket_name="Falcon", stage_type=StageObjects.BOOSTER),
             (["B1080"], 4),
         )
 
@@ -540,6 +540,8 @@ class TestCases(TestCase):
         self.assertEqual(LandingZone.objects.get(nickname="LZ-1").fastest_turnaround, "1 day")
         self.assertEqual(LandingZone.objects.get(nickname="LZ-2").fastest_turnaround, "N/A")
         self.assertEqual(LandingZone.objects.get(nickname="JRtI").fastest_turnaround, "N/A")
+
+        self.assertEqual(Stage.objects.get(name="B1062").fastest_turnaround, "31 days")
 
     # And now test functions in models.py
     def test_droneship_needed(self):
@@ -1894,10 +1896,10 @@ class TestCases(TestCase):
                 "– 2nd consecutive booster landing",
                 "– 2nd SpaceX launch of 2024",
                 "– 2nd SpaceX launch from Space Launch Complex 40",
-                "– Qickest turnaround of a booster to date at 31 days",
+                "– Quickest turnaround of a booster to date at 31 days",
                 "– Quickest turnaround time of a landing zone to date at 31 days",
                 "– Shortest time between any two SpaceX launches at 31 days",
-                "– Qickest turnaround of a SpaceX pad to date at 31 days",
+                "– Quickest turnaround of a SpaceX pad to date at 31 days",
             ],
         )
         self.assertEqual(
@@ -1910,7 +1912,7 @@ class TestCases(TestCase):
                 "– 3rd SpaceX launch from Space Launch Complex 40",
                 "– Quickest turnaround time of a landing zone to date at 29 days. Previous record: LZ-1 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
                 "– Shortest time between any two SpaceX launches at 29 days. Previous record: 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
-                "– Qickest turnaround of a SpaceX pad to date at 29 days. Previous record: SLC-40 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
+                "– Quickest turnaround of a SpaceX pad to date at 29 days. Previous record: SLC-40 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
             ],
         )
         self.assertEqual(
@@ -1936,7 +1938,7 @@ class TestCases(TestCase):
                 "– 4th reflight of a booster in 2024",
                 "– 5th SpaceX launch of 2024",
                 "– 5th SpaceX launch from Space Launch Complex 40",
-                "– Qickest turnaround of a booster to date at 30 days. Previous record: B1062 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
+                "– Quickest turnaround of a booster to date at 30 days. Previous record: B1062 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
             ],
         )
 
@@ -1973,9 +1975,9 @@ class TestCases(TestCase):
                 "– 6th SpaceX launch of 2024",
                 "– 6th SpaceX launch from Space Launch Complex 40",
                 "– Quickest turnaround of B1062 to date at 30 days and 1 minute. Previous record: 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
-                "– Qickest turnaround of JRtI to date at 30 days and 1 minute",
+                "– Quickest turnaround of JRtI to date at 30 days and 1 minute",
                 "– Shortest time between any two SpaceX launches at 1 minute. Previous record: 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
-                "– Qickest turnaround of a SpaceX pad to date at 1 minute. Previous record: SLC-40 at 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
+                "– Quickest turnaround of a SpaceX pad to date at 1 minute. Previous record: SLC-40 at 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
             ],
         )
 
@@ -2031,7 +2033,7 @@ class TestCases(TestCase):
                 "– 8th consecutive booster landing",
                 "– 7th SpaceX launch of 2024",
                 "– 1st SpaceX launch from Launch Complex 39A",
-                "– Qickest turnaround of a booster to date at 23 hours and 59 minutes. Previous record: B1080 at 30 days between Falcon Heavy Launch 1 and Falcon 9 Launch 4",
+                "– Quickest turnaround of a booster to date at 23 hours and 59 minutes. Previous record: B1080 at 30 days between Falcon Heavy Launch 1 and Falcon 9 Launch 4",
                 "– Quickest turnaround time of a landing zone to date at 23 hours and 59 minutes. Previous record: LZ-1 at 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
             ],
         )
@@ -2046,7 +2048,7 @@ class TestCases(TestCase):
                 "– 9th consecutive booster landing",
                 "– 8th SpaceX launch of 2024",
                 "– 2nd SpaceX launch from Launch Complex 39A",
-                "– Qickest turnaround of LC-39A to date at 10 days",
+                "– Quickest turnaround of LC-39A to date at 10 days",
             ],
         )
 
@@ -2103,10 +2105,10 @@ class TestCases(TestCase):
                     "– 2nd consecutive booster landing",
                     "– 2nd SpaceX launch of 2024",
                     "– 2nd SpaceX launch from Space Launch Complex 40",
-                    "– Qickest turnaround of a booster to date at 31 days",
+                    "– Quickest turnaround of a booster to date at 31 days",
                     "– Quickest turnaround time of a landing zone to date at 31 days",
                     "– Shortest time between any two SpaceX launches at 31 days",
-                    "– Qickest turnaround of a SpaceX pad to date at 31 days",
+                    "– Quickest turnaround of a SpaceX pad to date at 31 days",
                 ],
                 "Where to watch": ["Official coverage"],
             },
@@ -2135,7 +2137,7 @@ class TestCases(TestCase):
                     "– 3rd SpaceX launch from Space Launch Complex 40",
                     "– Quickest turnaround time of a landing zone to date at 29 days. Previous record: LZ-1 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
                     "– Shortest time between any two SpaceX launches at 29 days. Previous record: 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
-                    "– Qickest turnaround of a SpaceX pad to date at 29 days. Previous record: SLC-40 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
+                    "– Quickest turnaround of a SpaceX pad to date at 29 days. Previous record: SLC-40 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
                 ],
                 "Where to watch": ["Official coverage"],
             },
@@ -2197,7 +2199,7 @@ class TestCases(TestCase):
                     "– 4th reflight of a booster in 2024",
                     "– 5th SpaceX launch of 2024",
                     "– 5th SpaceX launch from Space Launch Complex 40",
-                    "– Qickest turnaround of a booster to date at 30 days. Previous record: B1062 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
+                    "– Quickest turnaround of a booster to date at 30 days. Previous record: B1062 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
                 ],
                 "Where to watch": ["Official coverage"],
             },
@@ -2300,7 +2302,7 @@ class TestCases(TestCase):
                     "– 6th SpaceX launch of 2024",
                     "– 6th SpaceX launch from Space Launch Complex 40",
                     "– Shortest time between any two SpaceX launches at 9 days. Previous record: 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
-                    "– Qickest turnaround of a SpaceX pad to date at 9 days. Previous record: SLC-40 at 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
+                    "– Quickest turnaround of a SpaceX pad to date at 9 days. Previous record: SLC-40 at 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
                 ],
                 "Where to watch": ["Official coverage"],
             },

@@ -9,6 +9,10 @@ urlpatterns = [
     path("dragons/<str:dragon_name>/", views.dragon_info, name="dragon"),
     path("dragons/", views.dragon_list, name="dragons"),
     path("starship/", views.starship_home, name="starship"),
-    path("<str:rocket_family>/<str:stage_type>/<str:stage_name>/", views.stage_info, name="stage"),
+    path(
+        "<str:rocket_family>/<str:stage_type>/<str:stage_name>/",
+        views.stage_info,
+        name="stage",
+    ),
     path("<str:rocket_family>/<str:stage_type>/", views.stage_list, name="stages"),
 ]

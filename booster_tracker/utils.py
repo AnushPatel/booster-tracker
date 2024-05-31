@@ -78,13 +78,7 @@ def concatenated_list(items):
     return (
         items[0]
         if len(items) == 1
-        else (
-            ", ".join(items[:-1])
-            + (", and " if len(items) > 2 else " and ")
-            + str(items[-1])
-            if items
-            else "N/A"
-        )
+        else (", ".join(items[:-1]) + (", and " if len(items) > 2 else " and ") + str(items[-1]) if items else "N/A")
     )
 
 
@@ -100,7 +94,5 @@ def success(value: str) -> str:
 def turnaround_time(launches: list) -> int:
     """Returns turnaround between last two laucnhes in list; in total seconds"""
     if len(launches) > 1:
-        return (
-            launches[len(launches) - 1].time - launches[len(launches) - 2].time
-        ).total_seconds()
+        return (launches[len(launches) - 1].time - launches[len(launches) - 2].time).total_seconds()
     return None

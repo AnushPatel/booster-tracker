@@ -66,31 +66,31 @@ h1 {
     text-align: center;
     margin-top: 30px;
 }
-  
+
 .stats-container {
     display: flex;
     justify-content: center;
     align-items: center;
     margin-top: 20px;
 }
-  
+
 .stat {
     margin: 0 20px;
     text-align: center;
 }
-  
+
 .stat h2 {
     margin-top: 0;
     font-size: 24px;
 }
-  
+
 .graph-container {
     margin-top: 50px;
     text-align: center;
 }
 
   /* Add more common styling as needed */
-  
+
 .launch-container {
     display: flex;
     justify-content: center; /* Center horizontally */

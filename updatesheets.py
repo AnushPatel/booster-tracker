@@ -3,18 +3,21 @@ import csv
 from oauth2client.service_account import ServiceAccountCredentials
 
 # Replace 'YOUR_SPREADSHEET_ID' with the actual Google Sheets document ID
-spreadsheet_chronological = '136eifqbDBkAym0A6ejxeM6N7FLJShTIiPVflOhfQLFw'
-spreadsheet_cores = '1jH1QgfxM1Hsqi9VbBLioDS18EdagVX2dfyLmxGnOO7Y'
+spreadsheet_chronological = "136eifqbDBkAym0A6ejxeM6N7FLJShTIiPVflOhfQLFw"
+spreadsheet_cores = "1jH1QgfxM1Hsqi9VbBLioDS18EdagVX2dfyLmxGnOO7Y"
 
 # Replace 'YOUR_SHEET_NAME' with the name of the sheet you want to download
-sheet_name1 = 'ChronoligcalOrder'
-sheet_name2 = 'Block 5'
+sheet_name1 = "ChronoligcalOrder"
+sheet_name2 = "Block 5"
 
 # Path to your Google Sheets API credentials JSON file
-credentials_file = 'credentials.json'
+credentials_file = "credentials.json"
 
 # Authenticate with the Google Sheets API
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+scope = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive",
+]
 credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_file, scope)
 client = gspread.authorize(credentials)
 
@@ -32,11 +35,11 @@ data2 = sheet2.get_all_values()
 
 
 with open("ChronologicalOrder.csv", "w", encoding="utf-8") as csv_file:
-    writer = csv.writer(csv_file, delimiter=',')
+    writer = csv.writer(csv_file, delimiter=",")
     for line in data:
         writer.writerow(line)
 
 with open("FalconCores.csv", "w", encoding="utf-8") as csv_file:
-    writer = csv.writer(csv_file, delimiter=',')
+    writer = csv.writer(csv_file, delimiter=",")
     for line in data2:
         writer.writerow(line)

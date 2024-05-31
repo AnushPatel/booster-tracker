@@ -1,0 +1,26 @@
+output-format: text
+
+strictness: medium
+test-warnings: true
+doc-warnings: false
+
+ignore-paths:
+  - docs
+
+ignore-patterns:
+  - (^|/)skip(this)?(/|$)
+
+pycodestyle:
+  disable:
+    - W602
+    - W603
+  enable:
+    - W601
+  options:
+    max-line-length: 1000
+
+dodgy:
+  run: false
+
+mccabe:
+  run: false

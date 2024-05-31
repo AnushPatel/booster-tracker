@@ -1,5 +1,5 @@
 from django.db import models
-from utils import (
+from booster_tracker.utils import (
     turnaround_time,
     make_ordinal,
     concatenated_list,
@@ -381,41 +381,46 @@ class Launch(models.Model):
         return make_ordinal(Launch.objects.filter(pad=self.pad, time__lte=self.time).count())
 
     # Returns list of turnaround times for object type
+    def get_queryset(self, turnaround_object: TurnaroundObjects):
+        if turnaround_object == TurnaroundObjects.BOOSTER:
+            return Stage.objects.filter(type="BOOSTER").distinct()
+        if turnaround_object == TurnaroundObjects.SECOND_STAGE:
+            return Stage.objects.filter(type="SECOND_STAGE").distinct()
+        if turnaround_object == TurnaroundObjects.PAD:
+            return Pad.objects.all()
+        if turnaround_object == TurnaroundObjects.LANDING_ZONE:
+            return LandingZone.objects.all()
+        if turnaround_object == TurnaroundObjects.SPACECRAFT:
+            return Spacecraft.objects.all()
+        if turnaround_object == TurnaroundObjects.ALL:
+            return [""]
+        return None
+
+    def get_launches(self, item):
+        if isinstance(item, Stage):
+            return Launch.objects.filter(stageandrecovery__stage=item, time__lte=self.time).order_by("time").all()
+        if isinstance(item, Pad):
+            return Launch.objects.filter(pad=item, time__lte=self.time).order_by("time").all()
+        if isinstance(item, LandingZone):
+            return (
+                Launch.objects.filter(stageandrecovery__landing_zone=item, time__lte=self.time).order_by("time").all()
+            )
+        return Launch.objects.filter(time__lte=self.time).order_by("time").all()
+
     def calculate_turnarounds(self, turnaround_object: TurnaroundObjects) -> dict:
-        """Takes in an object, returns a list of turnarounds sorted from quickest to longest. Return format style: (Bool (is this a new record), [[Object, Int (num of seconds turnaround), launch, last launch],...])"""
+        """
+        Takes in an object, returns a list of turnarounds sorted from quickest to longest.
+        Return format style: (Bool (is this a new record), [[Object, Int (num of seconds turnaround), launch, last launch],...])
+        """
         turnarounds: list = []
         new_record: bool = False
-        queryset = None
+        queryset = self.get_queryset(turnaround_object)
 
-        # Based on the object calculating turnaround times of, change queriy set and name name_field accordingly; for all, queryset just needs to be a one element set, whose value is not used at all.
-        if turnaround_object == TurnaroundObjects.BOOSTER:
-            queryset = Stage.objects.filter(type="BOOSTER").distinct()
-        elif turnaround_object == TurnaroundObjects.SECOND_STAGE:
-            queryset = Stage.objects.filter(type="SECOND_STAGE").distinct()
-        elif turnaround_object == TurnaroundObjects.PAD:
-            queryset = Pad.objects.all()
-        elif turnaround_object == TurnaroundObjects.LANDING_ZONE:
-            queryset = LandingZone.objects.all()
-        elif turnaround_object == TurnaroundObjects.SPACECRAFT:
-            queryset = Spacecraft.objects.all()
-        elif turnaround_object == TurnaroundObjects.ALL:
-            queryset = [""]
+        if queryset is None:
+            return None
 
         for item in queryset:
-            if isinstance(item, Stage):  # If querying for stage, use stage field for filtering
-                launches = (
-                    Launch.objects.filter(stageandrecovery__stage=item, time__lte=self.time).order_by("time").all()
-                )
-            elif isinstance(item, Pad):
-                launches = Launch.objects.filter(pad=item, time__lte=self.time).order_by("time").all()
-            elif isinstance(item, LandingZone):
-                launches = (
-                    Launch.objects.filter(stageandrecovery__landing_zone=item, time__lte=self.time)
-                    .order_by("time")
-                    .all()
-                )
-            else:
-                launches = Launch.objects.filter(time__lte=self.time).order_by("time").all()
+            launches = self.get_launches(item)
 
             # Cycle through the launches one at a time to calculate the needed turnaround
             for i in range(0, len(launches) + 1):
@@ -443,7 +448,7 @@ class Launch(models.Model):
         if turnarounds and turnarounds[0]["launch_name"] == self.name:
             new_record = True
 
-        if not len(turnarounds) == 0:
+        if turnarounds:
             return {"is_record": new_record, "ordered_turnarounds": turnarounds}
         return None
 
@@ -525,27 +530,32 @@ class Launch(models.Model):
     # Figure out where stages will land or where they landed; change tense based on portion of time. Accounts for soft ocean landings as well
     def make_landing_string(self) -> str:
         """Returns string of where stage will land or landed; accounts for ocean splashdowns and expended vehicles"""
+        # pylint: disable=too-many-branches
         launch_landings = ""
 
         for item in StageAndRecovery.objects.filter(launch=self):
+            if item.stage:
+                name = item.stage.name
+            else:
+                name = "The booster"
             if self.time > datetime.now(pytz.utc):
                 if item.method == "EXPENDED":
-                    launch_landings += f"{item.stage.name} will be expended; "
+                    launch_landings += f"{name} will be expended; "
                 elif item.method == "OCEAN_SURFACE":
-                    launch_landings += f"{item.stage.name} will attempt a soft landing on the ocean surface; "
+                    launch_landings += f"{name} will attempt a soft landing on the ocean surface; "
                 else:
                     if item.landing_zone:
-                        launch_landings += f"{item.stage.name} will be recovered on {item.landing_zone.name} ({item.landing_zone.nickname}); "
+                        launch_landings += (
+                            f"{name} will be recovered on {item.landing_zone.name} ({item.landing_zone.nickname}); "
+                        )
             else:
                 if item.method == "EXPENDED":
-                    launch_landings += f"{item.stage.name} was expended; "
+                    launch_landings += f"{name} was expended; "
                 elif item.method == "OCEAN_SURFACE":
-                    launch_landings += (
-                        f"{item.stage.name} {success(item.method_success)} a soft landing on the ocean surface; "
-                    )
+                    launch_landings += f"{name} {success(item.method_success)} a soft landing on the ocean surface; "
                 else:
                     if item.landing_zone:
-                        launch_landings += f"{item.stage.name} {success(item.method_success)} a landing on {item.landing_zone.name} ({item.landing_zone.nickname}); "
+                        launch_landings += f"{name} {success(item.method_success)} a landing on {item.landing_zone.name} ({item.landing_zone.nickname}); "
 
         # In the event when there are no stage and recovery objects for the launch (such as the booster is not known) the string is set to expended
         if launch_landings == "":
@@ -557,17 +567,9 @@ class Launch(models.Model):
 
         return launch_landings
 
-    def make_stats(self) -> list:
-        """Returns a list of stats for the mission; non-trival stats not returned"""
-        stats: list[str] = []
-
-        booster_reuse = self.get_rocket_flights_reused_vehicle()
-        booster_landings = self.get_num_booster_landings()
-
-        stats.append(
-            f"– {make_ordinal(Launch.objects.filter(rocket=self.rocket, time__lte=self.time).count())} {self.rocket.name} mission"
-        )
+    def get_booster_reuse_stats(self, stats):
         if self.flight_proven_booster:
+            booster_reuse = self.get_rocket_flights_reused_vehicle()
             stats.append(f"– {make_ordinal(booster_reuse)} {self.rocket} flight with a flight-proven booster")
             stats.append(
                 f"– {self.get_total_reflights(start=datetime(2000, 1, 1, tzinfo=pytz.utc))} reflight of a booster"
@@ -576,19 +578,25 @@ class Launch(models.Model):
                 f"– {self.get_total_reflights(start=datetime(self.time.year - 1, 12, 31, 23, 59, 59, 999, tzinfo=pytz.utc))} reflight of a booster in {self.time.year}"
             )
 
+    def get_booster_landing_stats(self, stats):
+        booster_landings = self.get_num_booster_landings()
         if booster_landings:
             consec_landings = self.get_consec_landings()
             make_plural = "s" if self.num_successful_landings > 1 else ""
             stats.append(f"– {booster_landings} booster landing{make_plural}")
             stats.append(f"– {consec_landings} consecutive booster landing{make_plural}")
+
+    def get_launch_year_stats(self, stats):
         stats.append(f"– {self.get_year_launch_num()} SpaceX launch of {self.time.year}")
+
+    def get_launch_pad_stats(self, stats):
         stats.append(f"– {self.get_launches_from_pad()} SpaceX launch from {self.pad.name}")
 
-        # This section adds quickest turnaround stats. As the names imply, booster, zones, company, and pad. If it is the quickest overall for an object type, the object-specific stat is not given since it follows tautologically
+    def add_booster_turnaround_stats(self, stats):
         booster_turnarounds = self.calculate_turnarounds(turnaround_object=TurnaroundObjects.BOOSTER)
         if booster_turnarounds:
             if booster_turnarounds["is_record"]:
-                booster_string = f"– Qickest turnaround of a booster to date at {convert_seconds(booster_turnarounds['ordered_turnarounds'][0]['turnaround_time'])}"
+                booster_string = f"– Quickest turnaround of a booster to date at {convert_seconds(booster_turnarounds['ordered_turnarounds'][0]['turnaround_time'])}"
                 if len(booster_turnarounds["ordered_turnarounds"]) > 1:
                     booster_string += f". Previous record: {booster_turnarounds['ordered_turnarounds'][1]['turnaround_object'].name} at {convert_seconds(booster_turnarounds['ordered_turnarounds'][1]['turnaround_time'])} between {booster_turnarounds['ordered_turnarounds'][1]['last_launch_name']} and {booster_turnarounds['ordered_turnarounds'][1]['launch_name']}"
                 stats.append(booster_string)
@@ -599,15 +607,14 @@ class Launch(models.Model):
                         for row in booster_turnarounds["ordered_turnarounds"]
                         if recovery.stage == row["turnaround_object"]
                     ]
-                    if (
-                        len(specific_booster_turnarounds) > 0
-                        and specific_booster_turnarounds[0]["launch_name"] == self.name
-                    ):
+                    if specific_booster_turnarounds and specific_booster_turnarounds[0]["launch_name"] == self.name:
                         booster_string = f"– Quickest turnaround of {recovery.stage.name} to date at {convert_seconds(specific_booster_turnarounds[0]['turnaround_time'])}"
                         if len(specific_booster_turnarounds) > 1:
                             booster_string += f". Previous record: {convert_seconds(specific_booster_turnarounds[1]['turnaround_time'])} between {specific_booster_turnarounds[1]['last_launch_name']} and {specific_booster_turnarounds[1]['launch_name']}"
                         stats.append(booster_string)
 
+    def add_landing_zone_turnaround_stats(self, stats):
+        # pylint: disable=too-many-nested-blocks
         landing_zone_turnarounds = self.calculate_turnarounds(TurnaroundObjects.LANDING_ZONE)
         if landing_zone_turnarounds:
             if landing_zone_turnarounds["is_record"]:
@@ -623,15 +630,13 @@ class Launch(models.Model):
                             for row in landing_zone_turnarounds["ordered_turnarounds"]
                             if recovery.landing_zone == row["turnaround_object"]
                         ]
-                        if (
-                            len(specific_zone_turnarounds) > 0
-                            and specific_zone_turnarounds[0]["launch_name"] == self.name
-                        ):
-                            zone_string = f"– Qickest turnaround of {recovery.landing_zone.nickname} to date at {convert_seconds(specific_zone_turnarounds[0]['turnaround_time'])}"
+                        if specific_zone_turnarounds and specific_zone_turnarounds[0]["launch_name"] == self.name:
+                            zone_string = f"– Quickest turnaround of {recovery.landing_zone.nickname} to date at {convert_seconds(specific_zone_turnarounds[0]['turnaround_time'])}"
                             if len(specific_zone_turnarounds) > 1:
                                 zone_string += f". Previous record: {convert_seconds(specific_zone_turnarounds[1]['turnaround_time'])} between {specific_zone_turnarounds[1]['last_launch_name']} and {specific_zone_turnarounds[1]['launch_name']}"
                             stats.append(zone_string)
 
+    def add_company_turnaround_stats(self, stats):
         company_turnaround = self.calculate_turnarounds(turnaround_object=TurnaroundObjects.ALL)
         if company_turnaround:
             if company_turnaround["is_record"]:
@@ -640,10 +645,11 @@ class Launch(models.Model):
                     company_string += f". Previous record: {convert_seconds(company_turnaround['ordered_turnarounds'][1]['turnaround_time'])} between {company_turnaround['ordered_turnarounds'][1]['last_launch_name']} and {company_turnaround['ordered_turnarounds'][1]['launch_name']}"
                 stats.append(company_string)
 
+    def add_pad_turnaround_stats(self, stats):
         pad_turnarounds = self.calculate_turnarounds(turnaround_object=TurnaroundObjects.PAD)
         if pad_turnarounds:
             if pad_turnarounds["is_record"]:
-                pad_string = f"– Qickest turnaround of a SpaceX pad to date at {convert_seconds(pad_turnarounds['ordered_turnarounds'][0]['turnaround_time'])}"
+                pad_string = f"– Quickest turnaround of a SpaceX pad to date at {convert_seconds(pad_turnarounds['ordered_turnarounds'][0]['turnaround_time'])}"
                 if len(pad_turnarounds["ordered_turnarounds"]) > 1:
                     pad_string += f". Previous record: {pad_turnarounds['ordered_turnarounds'][1]['turnaround_object'].nickname} at {convert_seconds(pad_turnarounds['ordered_turnarounds'][1]['turnaround_time'])} between {pad_turnarounds['ordered_turnarounds'][1]['last_launch_name']} and {pad_turnarounds['ordered_turnarounds'][1]['launch_name']}"
                 stats.append(pad_string)
@@ -651,12 +657,100 @@ class Launch(models.Model):
                 specific_pad_turnarounds = [
                     row for row in pad_turnarounds["ordered_turnarounds"] if self.pad == row["turnaround_object"]
                 ]
-                if len(specific_pad_turnarounds) > 0 and specific_pad_turnarounds[0]["launch_name"] == self.name:
-                    pad_string = f"– Qickest turnaround of {self.pad.nickname} to date at {convert_seconds(specific_pad_turnarounds[0]['turnaround_time'])}"
+                if specific_pad_turnarounds and specific_pad_turnarounds[0]["launch_name"] == self.name:
+                    pad_string = f"– Quickest turnaround of {self.pad.nickname} to date at {convert_seconds(specific_pad_turnarounds[0]['turnaround_time'])}"
                     if len(specific_pad_turnarounds) > 1:
                         pad_string += f". Previous record: {convert_seconds(specific_pad_turnarounds[1]['turnaround_time'])} between {specific_pad_turnarounds[1]['last_launch_name']} and {specific_pad_turnarounds[1]['launch_name']}"
                     stats.append(pad_string)
+
+    def make_stats(self) -> list:
+        """Returns a list of stats for the mission; non-trivial stats not returned"""
+        stats: list[str] = []
+
+        stats.append(
+            f"– {make_ordinal(Launch.objects.filter(rocket=self.rocket, time__lte=self.time).count())} {self.rocket.name} mission"
+        )
+
+        self.get_booster_reuse_stats(stats)
+        self.get_booster_landing_stats(stats)
+        self.get_launch_year_stats(stats)
+        self.get_launch_pad_stats(stats)
+
+        # Adding turnaround stats
+        self.add_booster_turnaround_stats(stats)
+        self.add_landing_zone_turnaround_stats(stats)
+        self.add_company_turnaround_stats(stats)
+        self.add_pad_turnaround_stats(stats)
+
         return stats
+
+    def set_timezone_and_weather(self, data):
+        if self.pad.nickname == "SLC-4E":
+            time_zone = "US/Pacific"
+            data["How's the weather looking?"][0] = "Space Launch Delta 30 does not release public weather forecasts"
+        elif self.pad.nickname in ("SLC-40", "LC-39A"):
+            time_zone = "US/Eastern"
+        elif self.pad.nickname == "OLP-A":
+            time_zone = "US/Central"
+            data["How's the weather looking?"][0] = "Unknown"
+        elif self.pad.name == "Omelek Island":
+            time_zone = "Etc/GMT+12"
+            data["How's the weather looking?"][0] = "Unknown"
+        else:
+            time_zone = "UTC"
+
+        return pytz.timezone(time_zone)
+
+    def update_data_with_launch_info(self, data, liftoff_time_local):
+        launch_location = f"{self.pad.name} ({self.pad.nickname}), {self.pad.location}"
+        boosters_display = self.make_booster_display()
+        launch_landings = self.make_landing_string()
+
+        data["Lift Off Time"] = [
+            f"{format_time(self.time)}",
+            f"{format_time(liftoff_time_local)}",
+        ]
+        data["Mission Name"] = [self.name]
+        data["Customer <br /> (Who's paying for this?)"] = [self.customer]
+        data["Rocket"] = [f"{self.rocket}{boosters_display}"]
+        data["Launch Location"] = [launch_location]
+        data["Payload mass"] = [self.mass]
+        data["Where are the satellites going?"] = [self.orbit.name] if self.orbit else ["Unknown"]
+        data["Where will the first stage land?"] = [launch_landings]
+
+        if self.droneship_needed:
+            data["Where will the first stage land?"].append("")
+            data["Where will the first stage land?"].append(
+                f"Tug: {concatenated_list(list(set(Boat.objects.filter(tugonlaunch__launch=self).values_list('name', flat=True))))}; Support: {concatenated_list(list(set(Boat.objects.filter(supportonlaunch__launch=self).values_list('name', flat=True))))}"
+            )
+
+    def update_data_with_fairing_recovery(self, data):
+        if FairingRecovery.objects.filter(launch=self).exists():
+            if self.time > datetime.now(pytz.utc):
+                data["Will they be attempting to recover the fairings?"].append(
+                    f"The fairing halves will be recovered from the water by {concatenated_list(list(set(Boat.objects.filter(fairingrecovery__launch=self).values_list('name', flat=True))))}"
+                )
+            else:
+                data["Will they be attempting to recover the fairings?"].append(
+                    f"The fairing halves were recovered by {concatenated_list(list(set(Boat.objects.filter(fairingrecovery__launch=self).values_list('name', flat=True))))}"
+                )
+        else:
+            data["Will they be attempting to recover the fairings?"].append("There are no fairings on this flight")
+
+    def update_data_with_stats(self, data):
+        stats = self.make_stats()
+        data["This will be the"] = stats
+
+    def build_table_html(self, data):
+        table_html = "<table>"
+        for key, values in data.items():
+            table_html += f'<tr><th class="has-text-align-left" data-align="left"><h6><strong>{key}</strong></h6></th>'
+            table_html += "<td>"
+            for value in values:
+                table_html += f"<em>{value}</em><br>"
+            table_html += "</td></tr>"
+        table_html += "</table>"
+        return table_html
 
     def create_launch_table(self) -> str:
         """Returns an EDA-style launch table for the launch"""
@@ -677,98 +771,34 @@ class Launch(models.Model):
             "Where to watch": ["Official coverage"],
         }
 
-        boosters_display = self.make_booster_display()
-        launch_landings = self.make_landing_string()
-
-        # Configure timezone for local time conversion. I also change what default weather says based on the location
-        if self.pad.nickname == "SLC-4E":
-            time_zone = "US/Pacific"
-            data["How's the weather looking?"][0] = "Space Launch Delta 30 does not release public weather forecasts"
-        elif self.pad.nickname == "SLC-40":
-            time_zone = "US/Eastern"
-        elif self.pad.nickname == "LC-39A":
-            time_zone = "US/Eastern"
-        elif self.pad.nickname == "OLP-A":
-            time_zone = "US/Central"
-            data["How's the weather looking?"][0] = "Unknown"
-        elif self.pad.name == "Omelek Island":
-            time_zone = "Etc/GMT+12"
-            data["How's the weather looking?"][0] = "Unknown"
-
-        launch_location = f"{self.pad.name} ({self.pad.nickname}), {self.pad.location}"
-        time_zone = pytz.timezone(time_zone)
+        time_zone = self.set_timezone_and_weather(data)
         liftoff_time_local = self.time.astimezone(time_zone)
-
-        self.make_landing_string()
-
-        # Update data with everything known
-        data["Lift Off Time"] = [
-            f"{format_time(self.time)}",
-            f"{format_time(liftoff_time_local)}",
-        ]
-        data["Mission Name"] = [self.name]
-        data["Customer <br /> (Who's paying for this?)"] = [self.customer]
-        data["Rocket"] = [f"{self.rocket}{boosters_display}"]
-        data["Launch Location"] = [f"{launch_location}"]
-        data["Payload mass"] = [self.mass]
-        data["Where are the satellites going?"] = [self.orbit.name] if self.orbit else ["Unknown"]
-        data["Where will the first stage land?"] = [f"{launch_landings}"]
-
-        if self.droneship_needed:
-            data["Where will the first stage land?"].append("")
-            data["Where will the first stage land?"].append(
-                f"Tug: {concatenated_list(list(set(Boat.objects.filter(tugonlaunch__launch=self).values_list('name', flat=True))))}; Support: {concatenated_list(list(set(Boat.objects.filter(supportonlaunch__launch=self).values_list('name', flat=True))))}"
-            )
-
-        if not len(FairingRecovery.objects.filter(launch=self)) == 0 and self.time > datetime.now(pytz.utc):
-            data["Will they be attempting to recover the fairings?"].append(
-                f"The fairing halves will be recovered from the water by {concatenated_list(list(set(Boat.objects.filter(fairingrecovery__launch=self).values_list('name', flat=True))))}"
-            )
-        elif not len(FairingRecovery.objects.filter(launch=self)) == 0 and self.time < datetime.now(pytz.utc):
-            data["Will they be attempting to recover the fairings?"].append(
-                f"The fairing halves were recovered by {concatenated_list(list(set(Boat.objects.filter(fairingrecovery__launch=self).values_list('name', flat=True))))}"
-            )
-        else:
-            data["Will they be attempting to recover the fairings?"].append("There are no fairings on this flight")
-
-        stats = self.make_stats()
-
-        data["This will be the"] = stats
+        self.update_data_with_launch_info(data, liftoff_time_local)
+        self.update_data_with_fairing_recovery(data)
+        self.update_data_with_stats(data)
 
         # Change title of headings if launch is in the past
-        post_launch_data = [
-            "Lift Off Time",
-            "Mission Name",
-            "Launch Provider <br /> (What rocket company launched it?)",
-            "Customer <br /> (Who paid for this?)",
-            "Rocket",
-            "Launch Location",
-            "Payload mass",
-            "Where did the satellites go?",
-            "Where did the first stage land?",
-            "Did they attempt to recover the fairings?",
-            "How's the weather looking?",
-            "This was the",
-            "Where to watch",
-        ]
-
         if self.time < datetime.now(pytz.utc):
+            post_launch_data = [
+                "Lift Off Time",
+                "Mission Name",
+                "Launch Provider <br /> (What rocket company launched it?)",
+                "Customer <br /> (Who paid for this?)",
+                "Rocket",
+                "Launch Location",
+                "Payload mass",
+                "Where did the satellites go?",
+                "Where did the first stage land?",
+                "Did they attempt to recover the fairings?",
+                "How's the weather looking?",
+                "This was the",
+                "Where to watch",
+            ]
             ordered_data = {new_key: data.get(old_key, None) for old_key, new_key in zip(data.keys(), post_launch_data)}
             ordered_data.pop("How's the weather looking?", None)
-
             data = ordered_data
 
-        table_html = "<table>"
-        for key, values in data.items():
-            table_html += f'<tr><th class="has-text-align-left" data-align="left"><h6><strong>{key}</strong></h6></th>'
-
-            table_html += "<td>"
-            for value in values:
-                table_html += f"<em>{value}</em><br>"
-            table_html += "</td></tr>"
-        table_html += "</table>"
-
-        # print(table_html)
+        # print(self.build_table_html(data))
         return data
 
 
