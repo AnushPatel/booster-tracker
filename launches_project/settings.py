@@ -33,7 +33,10 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-&psk#na5l=p3q8
 # DEBUG = True
 DEBUG = os.environ.get("DJANGO_DEBUG", "") != "False"
 
-ALLOWED_HOSTS = []
+if DEBUG:
+    ALLOWED_HOSTS = []
+else:
+    ALLOWED_HOSTS = ["boostertracker.elasticbeanstalk.com"]
 
 # Application definition
 
