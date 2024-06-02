@@ -36,7 +36,7 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "") != "False"
 if DEBUG:
     ALLOWED_HOSTS = []
 else:
-    ALLOWED_HOSTS = ["booster-tracker.eba-asie3hfx.us-west-2.elasticbeanstalk.com"]
+    ALLOWED_HOSTS = ["*"]
 
 # Application definition
 
