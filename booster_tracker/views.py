@@ -73,13 +73,20 @@ def home(request):
     next_launch, last_launch = get_next_and_last_launches()
 
     # Gather all needed information to create next launch card
-    (
-        next_launch_boosters,
-        next_launch_recoveries,
-        next_launch_tugs,
-        next_launch_fairing_recovery,
-        next_launch_photo,
-    ) = gather_launch_info(next_launch)
+    if next_launch:
+        (
+            next_launch_boosters,
+            next_launch_recoveries,
+            next_launch_tugs,
+            next_launch_fairing_recovery,
+            next_launch_photo,
+        ) = gather_launch_info(next_launch)
+    else:
+        next_launch_boosters = "Unknown"
+        next_launch_recoveries = ""
+        next_launch_tugs = ""
+        next_launch_fairing_recovery = ""
+        next_launch_photo = "static/images/Falcon_SLC40_launches_photo.jpg"
 
     # Gather all needed information to create last launch card
     (
