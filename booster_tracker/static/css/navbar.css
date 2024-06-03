@@ -10,10 +10,13 @@
     background-color: #333;
     color: #fff;
     padding: 0.4em;
-    max-width: 1200px;
+    max-width: 1180px;
     margin: 0 auto;
     box-sizing: border-box;
     z-index: 10000;
+    position: fixed;
+    top: 0;
+    width: 100%;
 }
 
 .navbar-container {
@@ -88,11 +91,17 @@
 }
 
 @media (max-width: 850px) {
+    body {
+        padding-top: 91px;
+    }
     .navbar {
         opacity: 0.95;
-        position: relative;
         z-index: 10;
         padding: 0.4em;
+        position: fixed;
+        top: 0;
+        width: 100%;
+    }
     }
 
     .navbar-container input[type="checkbox"],
