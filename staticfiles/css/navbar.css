@@ -90,6 +90,10 @@
     background: rgb(65, 65, 65);
 }
 
+.nav-icon {
+    content: url("/static/booster-tracker.png")
+}
+
 @media (max-width: 850px) {
     body {
         padding-top: 91px;
@@ -229,5 +233,9 @@
 
     .social-media {
         display: none; /* Hide social media links on mobile */
+    }
+
+    .nav-icon {
+        content: url("/static/booster-trackertext.png")
     }
 }
