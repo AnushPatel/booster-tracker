@@ -36,7 +36,11 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "") != "False"
 if DEBUG:
     ALLOWED_HOSTS = []
 else:
-    ALLOWED_HOSTS = ["boostertracker.com", "booster-tracker.eba-asie3hfx.us-west-2.elasticbeanstalk.com"]
+    ALLOWED_HOSTS = [
+        "boostertracker.com",
+        "booster-tracker.eba-asie3hfx.us-west-2.elasticbeanstalk.com",
+        "www.boostertracker.com",
+    ]
     SECURE_SSL_REDIRECT = True
 
 # Application definition
