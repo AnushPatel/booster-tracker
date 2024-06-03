@@ -1,6 +1,17 @@
 <!-- base_generic.html -->
 
 {% load static %}
+<style>
+    .nav-icon {
+        content: url('{% static "booster-tracker.png" %}');
+    }
+
+    @media (max-width: 850px) {
+        .nav-icon {
+            content: url('{% static "booster-trackertext.png" %}');
+        }
+    }
+</style>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />

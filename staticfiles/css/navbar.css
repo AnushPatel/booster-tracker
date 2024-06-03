@@ -1,5 +1,4 @@
 /* Navbar styling */
-
 /* Desktop mode */
 .navbar input[type="checkbox"],
 .navbar .hamburger-lines {
@@ -90,9 +89,6 @@
     background: rgb(65, 65, 65);
 }
 
-.nav-icon {
-    content: url('{% static "booster_tracker.png" %}');
-}
 
 @media (max-width: 850px) {
     body {
@@ -177,7 +173,7 @@
     }
 
     .nav-items-wrapper .menu-items {
-        margin-top: 15px;
+        margin-top: 10px;
         padding-top: 50px;
         background: #333;
         height: 100vh;
@@ -199,7 +195,7 @@
     .logo {
         display: block;
         margin: 0 auto; /* Center the logo horizontally */
-        height: 100%; /* Adjusted height */
+        max-height: 4.2em; /* Adjusted height */
     }
 
     .mobile-menu {
@@ -235,7 +231,4 @@
         display: none; /* Hide social media links on mobile */
     }
 
-    .nav-icon {
-        content: url('{% static "boostertracker-text.png" %}');
-    }
 }

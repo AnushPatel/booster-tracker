@@ -3,12 +3,11 @@
 body {
     font-family: Arial, sans-serif;
     margin: 0 auto;
-    padding: 0px 10px 10px;
+    padding: 80px 10px 10px;
     background-color: #333;
     max-width: 1200px; /* Set max-width to 100% */
     box-sizing: border-box; /* Include padding in the total width */
     color: lightgray;
-    padding-top: 80px;
 }
 
 h1 {

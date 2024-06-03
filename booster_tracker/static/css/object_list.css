@@ -2,7 +2,7 @@
 .rocket-container {
     position: relative;
     width: calc(50% - 10px); /* Adjust width */
-    max-width: 600px; /* Limit maximum width */
+    max-width: 585px; /* Limit maximum width */
     height: 360px; /* Fixed height */
     margin: 5px;
     border-radius: 0;
@@ -85,8 +85,7 @@
 }
 
 h1 {
-    padding: 20px;
-    margin: 1px;
+    padding: 20px 0;
     font-size: 3em;
     clear: both;
 }
@@ -95,7 +94,8 @@ h1 {
 @media (max-width: 850px) {
     .rocket-container {
         max-height: none;
-        padding-top: 0;
+        padding: 0;
+        margin: 5px 0;
         width: 100%;
         max-width: 850px;
     }

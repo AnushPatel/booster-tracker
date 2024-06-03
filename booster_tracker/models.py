@@ -684,18 +684,15 @@ class Launch(models.Model):
 
         return stats
 
-    def set_timezone_and_weather(self, data):
+    def set_timezone(self):
         if self.pad.nickname == "SLC-4E":
             time_zone = "US/Pacific"
-            data["How's the weather looking?"][0] = "Space Launch Delta 30 does not release public weather forecasts"
         elif self.pad.nickname in ("SLC-40", "LC-39A"):
             time_zone = "US/Eastern"
         elif self.pad.nickname == "OLP-A":
             time_zone = "US/Central"
-            data["How's the weather looking?"][0] = "Unknown"
         elif self.pad.name == "Omelek Island":
             time_zone = "Etc/GMT+12"
-            data["How's the weather looking?"][0] = "Unknown"
         else:
             time_zone = "UTC"
 
@@ -766,12 +763,10 @@ class Launch(models.Model):
             "Where are the satellites going?": [],
             "Where will the first stage land?": [],
             "Will they be attempting to recover the fairings?": [],
-            "How's the weather looking?": ["The weather is currently XX% go for launch"],
             "This will be the": [],
-            "Where to watch": ["Official coverage"],
         }
 
-        time_zone = self.set_timezone_and_weather(data)
+        time_zone = self.set_timezone()
         liftoff_time_local = self.time.astimezone(time_zone)
         self.update_data_with_launch_info(data, liftoff_time_local)
         self.update_data_with_fairing_recovery(data)
@@ -790,12 +785,9 @@ class Launch(models.Model):
                 "Where did the satellites go?",
                 "Where did the first stage land?",
                 "Did they attempt to recover the fairings?",
-                "How's the weather looking?",
                 "This was the",
-                "Where to watch",
             ]
             ordered_data = {new_key: data.get(old_key, None) for old_key, new_key in zip(data.keys(), post_launch_data)}
-            ordered_data.pop("How's the weather looking?", None)
             data = ordered_data
 
         # print(self.build_table_html(data))

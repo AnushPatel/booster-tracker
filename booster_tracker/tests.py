@@ -2077,7 +2077,6 @@ class TestCases(TestCase):
                     "– 1st SpaceX launch of 2024",
                     "– 1st SpaceX launch from Space Launch Complex 40",
                 ],
-                "Where to watch": ["Official coverage"],
             },
         )
         self.assertEqual(
@@ -2110,7 +2109,6 @@ class TestCases(TestCase):
                     "– Shortest time between any two SpaceX launches at 31 days",
                     "– Quickest turnaround of a SpaceX pad to date at 31 days",
                 ],
-                "Where to watch": ["Official coverage"],
             },
         )
         self.assertEqual(
@@ -2139,7 +2137,6 @@ class TestCases(TestCase):
                     "– Shortest time between any two SpaceX launches at 29 days. Previous record: 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
                     "– Quickest turnaround of a SpaceX pad to date at 29 days. Previous record: SLC-40 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
                 ],
-                "Where to watch": ["Official coverage"],
             },
         )
         self.assertEqual(
@@ -2173,7 +2170,6 @@ class TestCases(TestCase):
                     "– 4th SpaceX launch from Space Launch Complex 40",
                     "– Quickest turnaround of B1080 to date at 31 days",
                 ],
-                "Where to watch": ["Official coverage"],
             },
         )
         self.assertEqual(
@@ -2201,7 +2197,6 @@ class TestCases(TestCase):
                     "– 5th SpaceX launch from Space Launch Complex 40",
                     "– Quickest turnaround of a booster to date at 30 days. Previous record: B1062 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
                 ],
-                "Where to watch": ["Official coverage"],
             },
         )
 
@@ -2242,7 +2237,6 @@ class TestCases(TestCase):
                 "Where are the satellites going?": ["low-Earth Orbit"],
                 "Where will the first stage land?": ["B1062 will attempt a soft landing on the ocean surface"],
                 "Will they be attempting to recover the fairings?": ["There are no fairings on this flight"],
-                "How's the weather looking?": ["The weather is currently XX% go for launch"],
                 "This will be the": [
                     "– 5th Falcon 9 mission",
                     "– 3rd Falcon 9 flight with a flight-proven booster",
@@ -2251,7 +2245,6 @@ class TestCases(TestCase):
                     "– 1st SpaceX launch of 2025",
                     "– 6th SpaceX launch from Space Launch Complex 40",
                 ],
-                "Where to watch": ["Official coverage"],
             },
         )
 
@@ -2304,6 +2297,5 @@ class TestCases(TestCase):
                     "– Shortest time between any two SpaceX launches at 9 days. Previous record: 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
                     "– Quickest turnaround of a SpaceX pad to date at 9 days. Previous record: SLC-40 at 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
                 ],
-                "Where to watch": ["Official coverage"],
             },
         )

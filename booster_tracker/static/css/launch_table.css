@@ -61,7 +61,6 @@
     font-size: 12px; /* Increase the font size */
     display: flex;
     align-items: center; /* Center vertically */
-    height: 40px; /* Adjust as needed to match the container height */
     margin: 0; /* Remove default margin */
   }
 
@@ -70,7 +69,4 @@
         font-size: 1.5em;
     }
 
-    h6 {
-        margin: 10px;
-    }
   }
