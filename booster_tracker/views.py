@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Q
+from django.templatetags.static import static
 from booster_tracker.utils import TurnaroundObjects
 from booster_tracker.home_utils import (
     get_next_and_last_launches,
@@ -86,7 +87,7 @@ def home(request):
         next_launch_recoveries = ""
         next_launch_tugs = ""
         next_launch_fairing_recovery = ""
-        next_launch_photo = "static/images/Falcon_SLC40_launches_photo.jpg"
+        next_launch_photo = static("images/falcon_9.jpg")
 
     # Gather all needed information to create last launch card
     (

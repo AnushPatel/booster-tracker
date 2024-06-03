@@ -91,7 +91,7 @@
 }
 
 .nav-icon {
-    content: url("/static/booster-tracker.png")
+    content: url('{% static "booster_tracker.png" %}');
 }
 
 @media (max-width: 850px) {
@@ -236,6 +236,6 @@
     }
 
     .nav-icon {
-        content: url("/static/booster-trackertext.png")
+        content: url('{% static "boostertracker-text.png" %}');
     }
 }

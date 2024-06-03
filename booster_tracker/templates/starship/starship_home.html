@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block content %}
-    <div class="card" style="background-image: url('/static/images/Starship_OLPA_launches_photo.jpg');">
+    <div class="card" style="background-image: url('{% static 'images/starship_OLPA_launches_photo.jpg' %}');">
         <h1 class="title">Starship</h1>
         <div class="stats">
             <div class="stat">
@@ -29,7 +29,7 @@
     </div>
 
     <div class="card-container">
-        <div class="vertical-card" style="background-image: url('/static/images/super_heavy.jpg');">
+        <div class="vertical-card" style="background-image: url('{% static 'images/super_heavy.jpg' %}');">
             <h1 class="title">Super Heavy</h1>
             <div class="stats-vertical">
                 <div class="stat-vertical">
@@ -60,7 +60,7 @@
             </div>
         </div>
 
-        <div class="vertical-card" style="background-image: url('/static/images/ship.jpg');">
+        <div class="vertical-card" style="background-image: url('{% static 'images/ship.jpg' %}');">
             <h1 class="title">Ship</h1>
             <div class="stats-vertical">
                 <div class="stat-vertical">
