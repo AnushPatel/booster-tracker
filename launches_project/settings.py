@@ -39,6 +39,7 @@ else:
         "boostertracker.com",
         "booster-tracker.eba-asie3hfx.us-west-2.elasticbeanstalk.com",
         "www.boostertracker.com",
+        "44.242.39.192",
     ]
     SECURE_SSL_REDIRECT = True
 
