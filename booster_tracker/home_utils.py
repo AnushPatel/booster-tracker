@@ -61,7 +61,7 @@ def get_next_and_last_launches():
 
 
 def gather_launch_info(launch):
-    if launch.time > datetime.now(pytz.utc):
+    if launch and launch.time > datetime.now(pytz.utc):
         boosters = launch.boosters.replace("N/A", "Unknown") if launch else "TBD"
         recoveries = launch.recoveries if launch else "TBD"
         photo = (

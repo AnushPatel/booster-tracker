@@ -122,4 +122,4 @@ yarg==0.1.9
 boto3==1.26.59
 django-storages==1.13.2
 django-ebhealthcheck==2.0.2
-postgres==4.0
+psycopg2-binary==2.9.9
