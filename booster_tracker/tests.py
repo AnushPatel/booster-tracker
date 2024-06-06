@@ -1780,7 +1780,7 @@ class TestCases(TestCase):
         )
         self.assertEqual(
             Launch.objects.get(name="Falcon Heavy Launch 1").make_landing_string(),
-            "B1080 successfully completed a landing on Landing Zone 1 (LZ-1); B1062 successfully completed a landing on Landing Zone 2 (LZ-2); B1084 successfully completed a landing on Just Read the Instructions (JRtI)",
+            "B1084 successfully completed a landing on Just Read the Instructions (JRtI); B1080 successfully completed a landing on Landing Zone 1 (LZ-1); B1062 successfully completed a landing on Landing Zone 2 (LZ-2)",
         )
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 4").make_landing_string(),
@@ -2154,7 +2154,7 @@ class TestCases(TestCase):
                 "Payload mass": ["1000 kg"],
                 "Where did the satellites go?": ["low-Earth Orbit"],
                 "Where did the first stage land?": [
-                    "B1080 successfully completed a landing on Landing Zone 1 (LZ-1); B1062 successfully completed a landing on Landing Zone 2 (LZ-2); B1084 successfully completed a landing on Just Read the Instructions (JRtI)",
+                    "B1084 successfully completed a landing on Just Read the Instructions (JRtI); B1080 successfully completed a landing on Landing Zone 1 (LZ-1); B1062 successfully completed a landing on Landing Zone 2 (LZ-2)",
                     "",
                     "Tug: N/A; Support: N/A",
                 ],

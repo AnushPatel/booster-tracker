@@ -533,7 +533,7 @@ class Launch(models.Model):
         # pylint: disable=too-many-branches
         launch_landings = ""
 
-        for item in StageAndRecovery.objects.filter(launch=self):
+        for item in StageAndRecovery.objects.filter(launch=self).order_by("stage_position"):
             if item.stage:
                 name = item.stage.name
             else:
