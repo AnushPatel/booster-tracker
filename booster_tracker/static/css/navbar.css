@@ -8,8 +8,8 @@
 .navbar {
     background-color: #333;
     color: #fff;
-    padding: 0.4em;
-    max-width: 1180px;
+    padding: 0.4em 0;
+    max-width: 1190px;
     margin: 0 auto;
     box-sizing: border-box;
     z-index: 10000;
@@ -29,7 +29,7 @@
     align-items: center;
     justify-content: space-between;
     flex-grow: 1;
-    z-index: 1; /* Ensure this is not being overridden */
+    z-index: 1;
 }
 
 .menu-items {
@@ -68,7 +68,7 @@
 
 .social-media {
     display: flex;
-    gap: 10px;
+    padding-right: 15px;
 }
 
 .social-media a {
