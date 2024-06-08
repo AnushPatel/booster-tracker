@@ -9,7 +9,7 @@
     background-color: #333;
     color: #fff;
     padding: 0.4em 0;
-    max-width: 1190px;
+    max-width: 1200px;
     margin: 0 auto;
     box-sizing: border-box;
     z-index: 10000;
@@ -68,7 +68,7 @@
 
 .social-media {
     display: flex;
-    padding-right: 15px;
+    padding-right: 25px;
 }
 
 .social-media a {
