@@ -30,7 +30,6 @@ load_dotenv(env_path)
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-&psk#na5l=p3q8_a+-$4w1f^lt3lx1c@d*p4x$ymm_rn7pwb87")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
 DEBUG = os.environ.get("DJANGO_DEBUG", "") != "False"
 TESTING = "test" in sys.argv
 
@@ -62,7 +61,9 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.cache.UpdateCacheMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "django.middleware.cache.FetchFromCacheMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -144,6 +145,8 @@ else:
             "BACKEND": "django.core.cache.backends.dummy.DummyCache",
         }
     }
+
+CACHE_MIDDLEWARE_SECONDS = 60
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
