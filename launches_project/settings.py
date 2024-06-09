@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -31,6 +32,7 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-&psk#na5l=p3q8
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True
 DEBUG = os.environ.get("DJANGO_DEBUG", "") != "False"
+TESTING = "test" in sys.argv
 
 if DEBUG:
     ALLOWED_HOSTS = []
@@ -67,8 +69,19 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "launches_project.urls"
+# Disable debug coolbar for tests:
 
+if not TESTING and DEBUG:
+    INSTALLED_APPS = [
+        *INSTALLED_APPS,
+        "debug_toolbar",
+    ]
+    MIDDLEWARE = [
+        "debug_toolbar.middleware.DebugToolbarMiddleware",
+        *MIDDLEWARE,
+    ]
+
+ROOT_URLCONF = "launches_project.urls"
 
 TIME_INPUT_FORMATS = ["%H:%M:%S", "%H:%M"]
 
@@ -90,7 +103,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "launches_project.wsgi.application"
-
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -151,6 +163,10 @@ USE_TZ = True
 
 APPEND_SLASH = True
 
+INTERNAL_IPS = [
+    "127.0.0.1",
+    # ...
+]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/

@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from booster_tracker import views
 
 app_name = "booster_tracker"

@@ -24,3 +24,9 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("booster_tracker.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+if not settings.TESTING and settings.DEBUG:
+    urlpatterns = [
+        path("__debug__/", include("debug_toolbar.urls")),
+        *urlpatterns,
+    ]
