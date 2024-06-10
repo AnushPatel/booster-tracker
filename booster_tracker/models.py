@@ -200,11 +200,12 @@ class Pad(models.Model):
 
         if launch := Launch.objects.filter(time__lte=datetime.now(pytz.utc), pad=self).first():
             turnarounds = launch.calculate_turnarounds(turnaround_object=TurnaroundObjects.PAD)
-            specific_pad_turnarounds = [
-                row for row in turnarounds["ordered_turnarounds"] if self == row["turnaround_object"]
-            ]
-            if len(specific_pad_turnarounds) > 0:
-                fastest_turnaround = convert_seconds(specific_pad_turnarounds[0]["turnaround_time"])
+            if turnarounds:
+                specific_pad_turnarounds = [
+                    row for row in turnarounds["ordered_turnarounds"] if self == row["turnaround_object"]
+                ]
+                if len(specific_pad_turnarounds) > 0:
+                    fastest_turnaround = convert_seconds(specific_pad_turnarounds[0]["turnaround_time"])
 
         return fastest_turnaround
 
@@ -272,7 +273,7 @@ class Launch(models.Model):
 
         return (flights, turnaround)
 
-    def get_rocket_flights_reused_vehicle(self) -> tuple:
+    def get_rocket_flights_reused_vehicle(self) -> int:
         """Up to and including the launch, counts number of launches of that vehicle that have flown with one or more flight proven boosters; increments by one regardless of if one, two, or three boosters are flight proven"""
         count = 0
         stages_seen: set = set()

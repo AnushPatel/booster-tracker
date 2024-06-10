@@ -62,17 +62,17 @@ def get_next_and_last_launches():
 
 def gather_launch_info(launch):
     if launch and launch.time > datetime.now(pytz.utc):
-        boosters = launch.boosters.replace("N/A", "Unknown") if launch else "TBD"
-        recoveries = launch.recoveries if launch else "TBD"
-        photo = (
-            PadUsed.objects.get(pad=launch.pad, rocket=launch.rocket).image.url
-            if launch
-            else "rocket_pad_photos/rocket_launch_image.jpg"
-        )
-    else:
+        boosters = launch.boosters.replace("N/A", "Unknown")
+        recoveries = launch.recoveries
+        photo = PadUsed.objects.get(pad=launch.pad, rocket=launch.rocket).image.url
+    elif launch:
         boosters = launch.boosters
         recoveries = launch.recoveries
         photo = None  # No photo needed for the last launch
+    else:
+        boosters = "TBD"
+        recoveries = "TBD"
+        photo = "rocket_pad_photos/rocket_launch_image.jpg"
 
     tugs = concatenated_list(
         list(Boat.objects.filter(type="TUG", tugonlaunch__launch=launch).all().values_list("name", flat=True))
@@ -99,16 +99,28 @@ def gather_stats(last_launch):
     most_flown_boosters = get_most_flown_stages(rocket_name="Falcon", stage_type=StageObjects.BOOSTER)
     most_flown_boosters_string = f"{concatenated_list(most_flown_boosters[0])}; {most_flown_boosters[1]} flights"
 
-    booster_turnarounds = last_launch.calculate_turnarounds(turnaround_object=TurnaroundObjects.BOOSTER)
-    falcon_booster_turnarounds = [
-        row for row in booster_turnarounds["ordered_turnarounds"] if "Falcon" in row["turnaround_object"].rocket.name
-    ]
-    quickest_booster_turnaround_string = f"{falcon_booster_turnarounds[0]['turnaround_object']} at {convert_seconds(falcon_booster_turnarounds[0]['turnaround_time'])}"
-    shortest_time_between_launches = convert_seconds(
-        last_launch.calculate_turnarounds(turnaround_object=TurnaroundObjects.ALL)["ordered_turnarounds"][0][
-            "turnaround_time"
-        ]
-    )
+    if last_launch:
+        booster_turnarounds = last_launch.calculate_turnarounds(turnaround_object=TurnaroundObjects.BOOSTER)
+        if booster_turnarounds:
+            falcon_booster_turnarounds = [
+                row
+                for row in booster_turnarounds["ordered_turnarounds"]
+                if "Falcon" in row["turnaround_object"].rocket.name
+            ]
+            quickest_booster_turnaround_string = f"{falcon_booster_turnarounds[0]['turnaround_object']} at {convert_seconds(falcon_booster_turnarounds[0]['turnaround_time'])}"
+            shortest_time_between_launches = convert_seconds(
+                last_launch.calculate_turnarounds(turnaround_object=TurnaroundObjects.ALL)["ordered_turnarounds"][0][
+                    "turnaround_time"
+                ]
+            )
+        else:
+            quickest_booster_turnaround_string = "No data"
+            shortest_time_between_launches = "No data"
+    else:
+        booster_turnarounds = {"ordered_turnarounds": []}
+        falcon_booster_turnarounds = []
+        quickest_booster_turnaround_string = "No data"
+        shortest_time_between_launches = "No data"
 
     num_booster_uses = (
         StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc))
@@ -123,16 +135,15 @@ def gather_stats(last_launch):
     )
     num_booster_reflights = num_booster_uses - num_stages_used
 
-    falcon_9_reflights = (
-        Launch.objects.filter(time__lte=datetime.now(pytz.utc), rocket__name="Falcon 9")
-        .first()
-        .get_rocket_flights_reused_vehicle()
-    )
-    falcon_heavy_reflights = (
-        Launch.objects.filter(time__lte=datetime.now(pytz.utc), rocket__name="Falcon Heavy")
-        .first()
-        .get_rocket_flights_reused_vehicle()
-    )
+    if launch := (Launch.objects.filter(time__lte=datetime.now(pytz.utc), rocket__name="Falcon 9").first()):
+        falcon_9_reflights = launch.get_rocket_flights_reused_vehicle()
+    else:
+        falcon_9_reflights = 0
+
+    if launch := (Launch.objects.filter(time__lte=datetime.now(pytz.utc), rocket__name="Falcon Heavy").first()):
+        falcon_heavy_reflights = launch.get_rocket_flights_reused_vehicle()
+    else:
+        falcon_heavy_reflights = 0
 
     return {
         "num_launches_per_rocket_and_successes": num_launches_per_rocket_and_successes,

@@ -132,7 +132,8 @@ else:
     }
 
 # Caching of database
-if not DEBUG:
+if not DEBUG and not TESTING:
+    print(TESTING)
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",

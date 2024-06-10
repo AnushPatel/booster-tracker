@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.core.cache import cache
 from django.db.models import Q
 from django.templatetags.static import static
 from booster_tracker.utils import TurnaroundObjects
@@ -70,10 +71,37 @@ def launches_list(request):
 
 
 def home(request):
-    # pylint: disable=too-many-locals
+    cache_key = "home_page"
+    cached_content = cache.get(cache_key)
+
+    if cached_content:
+        return cached_content
+
     next_launch, last_launch = get_next_and_last_launches()
 
-    # Gather all needed information to create next launch card
+    if not last_launch:
+        context = {
+            "next_launch": next_launch,
+            "last_launch": None,
+            "next_launch_boosters": "Unknown",
+            "next_launch_recoveries": "",
+            "next_launch_tugs": "",
+            "next_launch_fairing_recovery": "",
+            "next_launch_photo": static("images/falcon_9.jpg"),
+            "last_launch_boosters": None,
+            "last_launch_recoveries": None,
+            "last_launch_tugs": None,
+            "last_launch_fairing_recovery": None,
+            "most_flown_boosters": "N/A",
+            "quickest_booster_turnaround": "N/A",
+            "falcon_heavy_reflights": "N/A",
+            "falcon_9_reflights": "N/A",
+            "pad_stats": [],
+            "zone_stats": [],
+            "shortest_time_between_launches": "N/A",
+        }
+        return render(request, "launches/home.html", context)
+
     if next_launch:
         (
             next_launch_boosters,
@@ -89,7 +117,6 @@ def home(request):
         next_launch_fairing_recovery = ""
         next_launch_photo = static("images/falcon_9.jpg")
 
-    # Gather all needed information to create last launch card
     (
         last_launch_boosters,
         last_launch_recoveries,
@@ -98,10 +125,8 @@ def home(request):
         _,
     ) = gather_launch_info(last_launch)
 
-    # Gather information needed for all of the stats
     stats = gather_stats(last_launch)
     pad_stats = gather_pad_stats(rocket_name="Falcon")
-
     recovery_zone_stats = gather_recovery_zone_stats(rocket_name="Falcon")
 
     context = {
@@ -127,7 +152,11 @@ def home(request):
         "zone_stats": recovery_zone_stats,
         "shortest_time_between_launches": stats["shortest_time_between_launches"],
     }
-    return render(request, "launches/home.html", context=context)
+
+    rendered_content = render(request, "launches/home.html", context)
+    cache.set(cache_key, rendered_content, timeout=None)
+
+    return rendered_content
 
 
 def launch_details(request, launch_name):
