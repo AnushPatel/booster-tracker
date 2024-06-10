@@ -26,7 +26,7 @@
     <body>
         <nav class="navbar">
             <div class="navbar-container">
-                <a href="{% url 'booster_tracker:home' %}" style="-webkit-tap-highlight-color: transparent;">
+                <a href="{% url 'booster_tracker:home' %}" class="{% if request.path == '/' %}active{% endif %}" style="-webkit-tap-highlight-color: transparent;">
                     <img alt="Logo" class="logo nav-icon">
                 </a>
                 <input type="checkbox" id="menu-toggle">

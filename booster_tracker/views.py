@@ -2,12 +2,9 @@ from django.shortcuts import render, get_object_or_404, HttpResponse
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.cache import cache
 from django.db.models import Q
-from django.templatetags.static import static
 from booster_tracker.utils import TurnaroundObjects
 from booster_tracker.home_utils import (
-    get_next_and_last_launches,
-    gather_launch_info,
-    gather_stats,
+    generate_home_page,
     get_last_starship_launch,
     gather_launch_stats,
     gather_landing_stats,
@@ -77,83 +74,7 @@ def home(request):
     if cached_content:
         return HttpResponse(cached_content)
 
-    next_launch, last_launch = get_next_and_last_launches()
-
-    if not last_launch:
-        context = {
-            "next_launch": next_launch,
-            "last_launch": None,
-            "next_launch_boosters": "Unknown",
-            "next_launch_recoveries": "",
-            "next_launch_tugs": "",
-            "next_launch_fairing_recovery": "",
-            "next_launch_photo": static("images/falcon_9.jpg"),
-            "last_launch_boosters": None,
-            "last_launch_recoveries": None,
-            "last_launch_tugs": None,
-            "last_launch_fairing_recovery": None,
-            "most_flown_boosters": "N/A",
-            "quickest_booster_turnaround": "N/A",
-            "falcon_heavy_reflights": "N/A",
-            "falcon_9_reflights": "N/A",
-            "pad_stats": [],
-            "zone_stats": [],
-            "shortest_time_between_launches": "N/A",
-        }
-        rendered_content = render(request, "launches/home.html", context)
-        cache.set(cache_key, rendered_content.content, timeout=None)
-        return rendered_content
-
-    if next_launch:
-        (
-            next_launch_boosters,
-            next_launch_recoveries,
-            next_launch_tugs,
-            next_launch_fairing_recovery,
-            next_launch_photo,
-        ) = gather_launch_info(next_launch)
-    else:
-        next_launch_boosters = "Unknown"
-        next_launch_recoveries = ""
-        next_launch_tugs = ""
-        next_launch_fairing_recovery = ""
-        next_launch_photo = static("images/falcon_9.jpg")
-
-    (
-        last_launch_boosters,
-        last_launch_recoveries,
-        last_launch_tugs,
-        last_launch_fairing_recovery,
-        _,
-    ) = gather_launch_info(last_launch)
-
-    stats = gather_stats(last_launch)
-    pad_stats = gather_pad_stats(rocket_name="Falcon")
-    recovery_zone_stats = gather_recovery_zone_stats(rocket_name="Falcon")
-
-    context = {
-        "launches_per_vehicle": stats["num_launches_per_rocket_and_successes"],
-        "num_landings": stats["num_landings_and_successes"],
-        "num_booster_reflights": stats["num_booster_reflights"],
-        "next_launch": next_launch,
-        "last_launch": last_launch,
-        "next_launch_boosters": next_launch_boosters,
-        "next_launch_recoveries": next_launch_recoveries,
-        "next_launch_tugs": next_launch_tugs,
-        "next_launch_fairing_recovery": next_launch_fairing_recovery,
-        "next_launch_photo": next_launch_photo,
-        "last_launch_boosters": last_launch_boosters,
-        "last_launch_recoveries": last_launch_recoveries,
-        "last_launch_tugs": last_launch_tugs,
-        "last_launch_fairing_recovery": last_launch_fairing_recovery,
-        "most_flown_boosters": stats["most_flown_boosters_string"],
-        "quickest_booster_turnaround": stats["quickest_booster_turnaround_string"],
-        "falcon_heavy_reflights": stats["falcon_heavy_reflights"],
-        "falcon_9_reflights": stats["falcon_9_reflights"],
-        "pad_stats": pad_stats,
-        "zone_stats": recovery_zone_stats,
-        "shortest_time_between_launches": stats["shortest_time_between_launches"],
-    }
+    context = context = generate_home_page()
 
     rendered_content = render(request, "launches/home.html", context)
     cache.set(cache_key, rendered_content.content, timeout=None)
