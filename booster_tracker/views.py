@@ -1,4 +1,4 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, HttpResponse
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.cache import cache
 from django.db.models import Q
@@ -75,7 +75,7 @@ def home(request):
     cached_content = cache.get(cache_key)
 
     if cached_content:
-        return cached_content
+        return HttpResponse(cached_content)
 
     next_launch, last_launch = get_next_and_last_launches()
 
@@ -100,7 +100,9 @@ def home(request):
             "zone_stats": [],
             "shortest_time_between_launches": "N/A",
         }
-        return render(request, "launches/home.html", context)
+        rendered_content = render(request, "launches/home.html", context)
+        cache.set(cache_key, rendered_content.content, timeout=None)
+        return rendered_content
 
     if next_launch:
         (
@@ -154,7 +156,7 @@ def home(request):
     }
 
     rendered_content = render(request, "launches/home.html", context)
-    cache.set(cache_key, rendered_content, timeout=None)
+    cache.set(cache_key, rendered_content.content, timeout=None)
 
     return rendered_content
 
