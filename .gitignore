@@ -4,3 +4,8 @@ credentials.json
 .DS_Store
 .env
 __pycache__/
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
