@@ -136,12 +136,7 @@ if not DEBUG:
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": f"redis://{os.environ['REDIS_HOST']}:6379",
-            "OPTIONS": {
-                "CLIENT_CLASS": "django_redis.client.DefaultClient",
-                "CONNECTION_POOL_KWARGS": {"ssl_cert_reqs": None},
-                "REDIS_CLIENT_KWARGS": {"ssl": True, "ssl_cert_reqs": None},
-            },
+            "LOCATION": f"rediss://{os.environ['REDIS_HOST']}:6379",
         }
     }
 else:
