@@ -133,11 +133,17 @@ else:
 
 # Caching of database
 if not DEBUG and not TESTING:
-    print(TESTING)
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
             "LOCATION": f"rediss://{os.environ['REDIS_HOST']}:6379",
+        }
+    }
+elif DEBUG and not TESTING:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": "redis://127.0.0.1:6379",
         }
     }
 else:
@@ -147,7 +153,7 @@ else:
         }
     }
 
-CACHE_MIDDLEWARE_SECONDS = 60
+CACHE_MIDDLEWARE_SECONDS = 1
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
