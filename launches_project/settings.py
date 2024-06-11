@@ -70,6 +70,21 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# Ensure logs are properly displayed:
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+}
+
 # Disable debug coolbar for tests:
 
 if not TESTING and DEBUG:
@@ -85,7 +100,6 @@ if not TESTING and DEBUG:
 ROOT_URLCONF = "launches_project.urls"
 
 TIME_INPUT_FORMATS = ["%H:%M:%S", "%H:%M"]
-
 
 TEMPLATES = [
     {
@@ -153,7 +167,7 @@ else:
         }
     }
 
-CACHE_MIDDLEWARE_SECONDS = 1
+CACHE_MIDDLEWARE_SECONDS = 300
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
