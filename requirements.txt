@@ -121,7 +121,6 @@ wrapt==1.16.0
 yarg==0.1.9
 boto3==1.26.59
 django-storages==1.13.2
-django-ebhealthcheck==2.0.2
 psycopg2-binary==2.9.9
 redis==5.0.5
 hiredis==2.3.2

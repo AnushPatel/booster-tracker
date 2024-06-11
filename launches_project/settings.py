@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 import sys
 from dotenv import load_dotenv
+from socket import gethostbyname, gethostname
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,8 +41,8 @@ else:
         "boostertracker.com",
         "booster-tracker.eba-asie3hfx.us-west-2.elasticbeanstalk.com",
         "www.boostertracker.com",
-        "44.242.39.192",
     ]
+    ALLOWED_HOSTS.append(gethostbyname(gethostname()))
     SECURE_SSL_REDIRECT = True
 
 # Application definition
@@ -55,7 +56,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "storages",
-    "ebhealthcheck.apps.EBHealthCheckConfig",
 ]
 
 MIDDLEWARE = [
