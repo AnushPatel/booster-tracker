@@ -1,5 +1,17 @@
 from django.db.models import Q, Count, Max
-from booster_tracker.models import Stage, StageAndRecovery, Pad, PadUsed, Boat, Rocket, LandingZone, Launch
+from booster_tracker.models import (
+    Stage,
+    StageAndRecovery,
+    Pad,
+    PadUsed,
+    Boat,
+    Rocket,
+    LandingZone,
+    Launch,
+    RocketFamily,
+    Spacecraft,
+    SpacecraftFamily,
+)
 from booster_tracker.utils import concatenated_list, convert_seconds, TurnaroundObjects
 from datetime import datetime
 from django.templatetags.static import static
@@ -365,6 +377,78 @@ def generate_home_page():
         "pad_stats": pad_stats,
         "zone_stats": recovery_zone_stats,
         "shortest_time_between_launches": stats["shortest_time_between_launches"],
+    }
+
+    return context
+
+
+def generate_boosters_page(rocket_family: RocketFamily, stage_type):
+    stages = Stage.objects.filter(rocket__family__name__icontains=rocket_family, type__icontains=stage_type)
+
+    active_stages = stages.filter(status="ACTIVE").order_by("name")
+    lost_stages = stages.filter(Q(status="LOST") | Q(status="EXPENDED")).order_by("name")
+    retired_stages = stages.filter(status="RETIRED").order_by("name")
+
+    context = {
+        "active_stages": active_stages,
+        "retired_stages": retired_stages,
+        "lost_stages": lost_stages,
+        "stage_type": stage_type,
+        "rocket_family": rocket_family,
+    }
+
+    return context
+
+
+def generate_starship_home():
+    rocket_name = "Starship"
+
+    last_launch = get_last_starship_launch()
+    num_launches_per_rocket_and_successes = gather_launch_stats(rocket_name)
+
+    landing_stats = gather_landing_stats(rocket_name)
+    most_flown_boosters_string, most_flown_ships_string = gather_most_flown_stages(rocket_name)
+
+    quickest_booster_turnaround_string = get_quickest_turnaround(last_launch, TurnaroundObjects.BOOSTER)
+    quickest_ship_turnaround_string = get_quickest_turnaround(last_launch, TurnaroundObjects.SECOND_STAGE)
+
+    num_booster_reflights, num_ship_reflights = gather_reflights_stats(rocket_name)
+    starship_reflights = get_starship_reflights()
+
+    pad_stats = gather_pad_stats(rocket_name)
+    recovery_zone_stats = gather_recovery_zone_stats(rocket_name)
+
+    context = {
+        "launches_per_vehicle": num_launches_per_rocket_and_successes,
+        "booster_landing_attempts": landing_stats["booster_landing_attempts"],
+        "ship_landing_attempts": landing_stats["ship_landing_attempts"],
+        "booster_landing_successes": landing_stats["booster_landing_successes"],
+        "ship_landing_successes": landing_stats["ship_landing_successes"],
+        "most_flown_boosters": most_flown_boosters_string,
+        "most_flown_ships": most_flown_ships_string,
+        "quickest_booster_turnaround": quickest_booster_turnaround_string,
+        "quickest_ship_turnaround": quickest_ship_turnaround_string,
+        "num_booster_reflights": num_booster_reflights,
+        "num_ship_reflights": num_ship_reflights,
+        "starship_reflights": starship_reflights,
+        "pad_stats": pad_stats,
+        "zone_stats": recovery_zone_stats,
+    }
+
+    return context
+
+
+def generate_spacecraft_list(family: Spacecraft):
+    spacecraft = Spacecraft.objects.filter(family__name=family)
+
+    active_spacecraft = spacecraft.filter(status="ACTIVE").order_by("name")
+    lost_spacecraft = spacecraft.filter(Q(status="LOST") | Q(status="EXPENDED")).order_by("name")
+    retired_spacecraft = spacecraft.filter(status="RETIRED").order_by("name")
+
+    context = {
+        "active_spacecraft": active_spacecraft,
+        "retired_spacecraft": retired_spacecraft,
+        "lost_spacecraft": lost_spacecraft,
     }
 
     return context

@@ -2,18 +2,11 @@ from django.shortcuts import render, get_object_or_404, HttpResponse
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.cache import cache
 from django.db.models import Q
-from booster_tracker.utils import TurnaroundObjects
 from booster_tracker.home_utils import (
     generate_home_page,
-    get_last_starship_launch,
-    gather_launch_stats,
-    gather_landing_stats,
-    gather_most_flown_stages,
-    get_quickest_turnaround,
-    gather_reflights_stats,
-    get_starship_reflights,
-    gather_recovery_zone_stats,
-    gather_pad_stats,
+    generate_starship_home,
+    generate_boosters_page,
+    generate_spacecraft_list,
 )
 
 import pytz
@@ -27,6 +20,7 @@ from booster_tracker.models import (
     Spacecraft,
     SpacecraftOnLaunch,
     RocketFamily,
+    SpacecraftFamily,
 )
 
 
@@ -74,7 +68,7 @@ def home(request):
     if cached_content:
         return HttpResponse(cached_content)
 
-    context = context = generate_home_page()
+    context = generate_home_page()
 
     rendered_content = render(request, "launches/home.html", context)
     cache.set(cache_key, rendered_content.content, timeout=None)
@@ -89,21 +83,18 @@ def launch_details(request, launch_name):
 
 
 def stage_list(request, rocket_family: RocketFamily, stage_type):
-    stages = Stage.objects.filter(rocket__family__name__icontains=rocket_family, type__icontains=stage_type)
+    cache_key = f"{rocket_family}_boosters"
+    cached_content = cache.get(cache_key)
 
-    active_stages = stages.filter(status="ACTIVE").order_by("name")
-    lost_stages = stages.filter(Q(status="LOST") | Q(status="EXPENDED")).order_by("name")
-    retired_stages = stages.filter(status="RETIRED").order_by("name")
+    if cached_content:
+        return HttpResponse(cached_content)
 
-    context = {
-        "active_stages": active_stages,
-        "retired_stages": retired_stages,
-        "lost_stages": lost_stages,
-        "stage_type": stage_type,
-        "rocket_family": rocket_family,
-    }
+    context = generate_boosters_page(rocket_family=rocket_family, stage_type=stage_type)
 
-    return render(request, "stages/stage_list.html", context)
+    rendered_content = render(request, "stages/stage_list.html", context)
+    cache.set(cache_key, rendered_content.content, timeout=None)
+
+    return rendered_content
 
 
 def stage_info(request, rocket_family: RocketFamily, stage_type, stage_name):
@@ -151,19 +142,18 @@ def stage_info(request, rocket_family: RocketFamily, stage_type, stage_name):
 
 
 def dragon_list(request):
-    dragons = Spacecraft.objects.filter(family__name="Dragon")
+    cache_key = "Dragons"
+    cached_content = cache.get(cache_key)
 
-    active_dragons = dragons.filter(status="ACTIVE").order_by("name")
-    lost_dragons = dragons.filter(Q(status="LOST") | Q(status="EXPENDED")).order_by("name")
-    retired_dragons = dragons.filter(status="RETIRED").order_by("name")
+    if cached_content:
+        return HttpResponse(cached_content)
 
-    context = {
-        "active_dragons": active_dragons,
-        "retired_dragons": retired_dragons,
-        "lost_dragons": lost_dragons,
-    }
+    context = generate_spacecraft_list(SpacecraftFamily.objects.get(name="Dragon"))
 
-    return render(request, "dragons/dragon_list.html", context)
+    rendered_content = render(request, "dragons/dragon_list.html", context)
+    cache.set(cache_key, rendered_content.content, timeout=None)
+
+    return rendered_content
 
 
 def dragon_info(request, dragon_name):
@@ -201,57 +191,15 @@ def dragon_info(request, dragon_name):
 
 
 def starship_home(request):
-    rocket_name = "Starship"
+    cache_key = "starship_home"
+    cached_content = cache.get(cache_key)
 
-    last_launch = get_last_starship_launch()
-    num_launches_per_rocket_and_successes = gather_launch_stats(rocket_name)
+    if cached_content:
+        return HttpResponse(cached_content)
 
-    landing_stats = gather_landing_stats(rocket_name)
-    most_flown_boosters_string, most_flown_ships_string = gather_most_flown_stages(rocket_name)
+    context = generate_starship_home()
 
-    quickest_booster_turnaround_string = get_quickest_turnaround(last_launch, TurnaroundObjects.BOOSTER)
-    quickest_ship_turnaround_string = get_quickest_turnaround(last_launch, TurnaroundObjects.SECOND_STAGE)
+    rendered_content = render(request, "starship/starship_home.html", context)
+    cache.set(cache_key, rendered_content.content, timeout=None)
 
-    num_booster_reflights, num_ship_reflights = gather_reflights_stats(rocket_name)
-    starship_reflights = get_starship_reflights()
-
-    pad_stats = gather_pad_stats(rocket_name)
-    recovery_zone_stats = gather_recovery_zone_stats(rocket_name)
-
-    context = {
-        "launches_per_vehicle": num_launches_per_rocket_and_successes,
-        "booster_landing_attempts": landing_stats["booster_landing_attempts"],
-        "ship_landing_attempts": landing_stats["ship_landing_attempts"],
-        "booster_landing_successes": landing_stats["booster_landing_successes"],
-        "ship_landing_successes": landing_stats["ship_landing_successes"],
-        "most_flown_boosters": most_flown_boosters_string,
-        "most_flown_ships": most_flown_ships_string,
-        "quickest_booster_turnaround": quickest_booster_turnaround_string,
-        "quickest_ship_turnaround": quickest_ship_turnaround_string,
-        "num_booster_reflights": num_booster_reflights,
-        "num_ship_reflights": num_ship_reflights,
-        "starship_reflights": starship_reflights,
-        "pad_stats": pad_stats,
-        "zone_stats": recovery_zone_stats,
-    }
-    return render(request, "starship/starship_home.html", context=context)
-
-
-def starship_booster_list(request):
-    super_heavies = Stage.objects.filter(
-        rocket__family__provider__name="SpaceX",
-        type="BOOSTER",
-        rocket__name__icontains="Starship",
-    )
-
-    active_boosters = super_heavies.filter(status="ACTIVE").order_by("name")
-    lost_boosters = super_heavies.filter(Q(status="LOST") | Q(status="EXPENDED")).order_by("name")
-    retired_boosters = super_heavies.filter(status="RETIRED").order_by("name")
-
-    context = {
-        "active_boosters": active_boosters,
-        "retired_boosters": retired_boosters,
-        "lost_boosters": lost_boosters,
-    }
-
-    return render(request, "boosters/booster_list.html", context)
+    return rendered_content

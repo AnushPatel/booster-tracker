@@ -3,7 +3,27 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.core.cache import cache
 from django.conf import settings
-from booster_tracker.models import Stage, StageAndRecovery, Pad, Boat, Rocket, LandingZone, Launch
+from booster_tracker.models import (
+    Stage,
+    StageAndRecovery,
+    Pad,
+    Boat,
+    Rocket,
+    LandingZone,
+    Launch,
+    RocketFamily,
+    SpacecraftFamily,
+)
+from django.template.loader import render_to_string
+from booster_tracker.home_utils import (
+    generate_home_page,
+    generate_boosters_page,
+    generate_starship_home,
+    generate_spacecraft_list,
+    StageObjects,
+)
+
+CACHE_KEYS = ["home_page", "starship_home", "Falcon_boosters", "Starship_boosters", "Dragons", "launches"]
 
 
 @receiver(post_save, sender=Stage)
@@ -24,17 +44,38 @@ def invalidate_cache(sender, instance, **kwargs):
     if settings.TESTING:
         return
 
-    cache_key = "home_page"
-    cache.delete(cache_key)
+    for cache_key in CACHE_KEYS:
+        cache.delete(cache_key)
     regenerate_cache()
 
 
 def regenerate_cache():
-    from django.template.loader import render_to_string
-    from booster_tracker.home_utils import generate_home_page
-
+    # Cache home page:
     context = generate_home_page()
 
     rendered_content = render_to_string("launches/home.html", context)
     cache_key = "home_page"
     cache.set(cache_key, rendered_content, timeout=None)
+
+    # Cache boosters page:
+    for rocket_family in RocketFamily.objects.all():
+        context = generate_boosters_page(rocket_family=rocket_family, stage_type=StageObjects.BOOSTER)
+
+        rendered_content = render_to_string("stages/stage_list.html", context)
+        cache_key = f"{rocket_family}_boosters"
+        cache.set(cache_key, rendered_content, timeout=None)
+
+    # Cache Starship home:
+    context = generate_starship_home()
+
+    rendered_content = render_to_string("starship/starship_home.html", context)
+    cache_key = "starship_home"
+    cache.set(cache_key, rendered_content, timeout=None)
+
+    # Cache Dragons list:
+    for spacecraft_family in SpacecraftFamily.objects.all():
+        context = generate_spacecraft_list(family=spacecraft_family)
+
+        rendered_content = render_to_string("dragons/dragon_list.html", context)
+        cache_key = f"{spacecraft_family}s"
+        cache.set(cache_key, rendered_content, timeout=None)
