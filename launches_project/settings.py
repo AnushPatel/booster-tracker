@@ -44,6 +44,7 @@ else:
     ]
     ALLOWED_HOSTS.append(gethostbyname(gethostname()))
     SECURE_SSL_REDIRECT = True
+    SECURE_REDIRECT_EXEMPT = ["health/"]
 
 # Application definition
 

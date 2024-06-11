@@ -4,6 +4,7 @@ from booster_tracker import views
 app_name = "booster_tracker"
 urlpatterns = [
     path("", views.home, name="home"),
+    path("health/", views.health, name="health"),
     path("launches/<str:launch_name>/", views.launch_details, name="launch"),
     path("launches/", views.launches_list, name="launches"),
     path("dragons/<str:dragon_name>/", views.dragon_info, name="dragon"),

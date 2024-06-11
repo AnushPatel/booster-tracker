@@ -203,3 +203,7 @@ def starship_home(request):
     cache.set(cache_key, rendered_content.content, timeout=None)
 
     return rendered_content
+
+
+def health(request):
+    return HttpResponse("Success", status=200)
