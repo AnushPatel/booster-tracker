@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, HttpResponse
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.cache import cache
-from django.db.models import Q
+import urllib.parse
 from booster_tracker.home_utils import (
     generate_home_page,
     generate_starship_home,
@@ -66,35 +66,33 @@ def home(request):
     cached_content = cache.get(cache_key)
 
     if cached_content:
-        return HttpResponse(cached_content)
+        return render(request, "launches/home.html", cached_content)
 
     context = generate_home_page()
+    cache.set(cache_key, context, timeout=None)
 
-    rendered_content = render(request, "launches/home.html", context)
-    cache.set(cache_key, rendered_content.content, timeout=None)
-
-    return rendered_content
+    return render(request, "launches/home.html", context)
 
 
-def launch_details(request, launch_name):
+def launch_details(request, encoded_launch_name):
+    launch_name = urllib.parse.unquote(encoded_launch_name)
     launch = get_object_or_404(Launch, name=launch_name)
     context = {"data": launch.create_launch_table(), "launch": launch}
     return render(request, "launches/launch_table.html", context)
 
 
-def stage_list(request, rocket_family: RocketFamily, stage_type):
-    cache_key = f"{rocket_family}_boosters"
+def stage_list(request, rocket_family_name: str, stage_type):
+    rocket_family = RocketFamily.objects.get(name__icontains=rocket_family_name)
+    cache_key = f"{rocket_family.name.lower()}_boosters"
     cached_content = cache.get(cache_key)
 
     if cached_content:
-        return HttpResponse(cached_content)
+        return render(request, "stages/stage_list.html", cached_content)
 
     context = generate_boosters_page(rocket_family=rocket_family, stage_type=stage_type)
+    cache.set(cache_key, context, timeout=None)
 
-    rendered_content = render(request, "stages/stage_list.html", context)
-    cache.set(cache_key, rendered_content.content, timeout=None)
-
-    return rendered_content
+    return render(request, "stages/stage_list.html", context)
 
 
 def stage_info(request, rocket_family: RocketFamily, stage_type, stage_name):
@@ -146,14 +144,12 @@ def dragon_list(request):
     cached_content = cache.get(cache_key)
 
     if cached_content:
-        return HttpResponse(cached_content)
+        return render(request, "dragons/dragon_list.html", cached_content)
 
     context = generate_spacecraft_list(SpacecraftFamily.objects.get(name="Dragon"))
+    cache.set(cache_key, context, timeout=None)
 
-    rendered_content = render(request, "dragons/dragon_list.html", context)
-    cache.set(cache_key, rendered_content.content, timeout=None)
-
-    return rendered_content
+    return render(request, "dragons/dragon_list.html", context)
 
 
 def dragon_info(request, dragon_name):
@@ -195,14 +191,12 @@ def starship_home(request):
     cached_content = cache.get(cache_key)
 
     if cached_content:
-        return HttpResponse(cached_content)
+        return render(request, "starship/starship_home.html", cached_content)
 
     context = generate_starship_home()
+    cache.set(cache_key, context, timeout=None)
 
-    rendered_content = render(request, "starship/starship_home.html", context)
-    cache.set(cache_key, rendered_content.content, timeout=None)
-
-    return rendered_content
+    return render(request, "starship/starship_home.html", context)
 
 
 def health(request):

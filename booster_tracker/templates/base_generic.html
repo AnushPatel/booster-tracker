@@ -37,8 +37,8 @@
                 </div>
                 <div class="nav-items-wrapper">
                     <ul class="menu-items">
-                        <li class="mobile-menu"><a href="{% url 'booster_tracker:home' %}" class="{% if request.path == '' %}active{% endif %}">Home</a></li>
-                        <li><a href="{% url 'booster_tracker:stages' rocket_family='falcon' stage_type='booster' %}" class="{% if request.path == '/falcon/booster/' %}active{% endif %}">Boosters</a></li>
+                        <li class="mobile-menu"><a href="{% url 'booster_tracker:home' %}" class="{% if request.path == '/' %}active{% endif %}">Home</a></li>
+                        <li><a href="{% url 'booster_tracker:stages' rocket_family_name='falcon' stage_type='booster' %}" class="{% if request.path == '/falcon/booster/' %}active{% endif %}">Boosters</a></li>
                         <li><a href="{% url 'booster_tracker:dragons' %}" class="{% if request.path == '/dragons/' %}active{% endif %}">Dragons</a></li>
                         <li><a href="{% url 'booster_tracker:starship' %}" class="{% if request.path == '/starship/' %}active{% endif %}">Starship</a></li>
                         <li><a href="{% url 'booster_tracker:launches' %}" class="{% if request.path == '/launches/' %}active{% endif %}">Launches</a></li>

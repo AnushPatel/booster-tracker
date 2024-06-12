@@ -54,7 +54,7 @@
         <tbody>
             {% for launch in launches %}
             <tr>
-                <td><a class="link" href="{% url 'booster_tracker:launch' launch.0.name %}">{{ launch.0.name }}</a></td>
+                <td><a class="link" href="{% url 'booster_tracker:launch' launch.0.encoded_name %}">{{ launch.0.name }}</a></td>
                 <td>{{ launch.0.time|date:"F j, Y H:i" }}</td>
                 <td>{{ launch.1 }}</td>
                 <td class="mobile-display">{{ launch.2.method|lower|title|replace:"Ground_Pad|RTLS"|replace:"Drone_Ship|ASDS"|replace:"Ocean_Surface|Ocean Surface" }} ({{ launch.2.method_success|lower|title|replace:"None|TBD" }})</td>

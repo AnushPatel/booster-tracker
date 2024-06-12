@@ -10,7 +10,9 @@ from booster_tracker.utils import (
 )
 from datetime import datetime
 from django.db.models import Q
+from django.urls import reverse
 import pytz
+import urllib.parse
 
 # Choices for fields
 RECOVERY_METHODS = [
@@ -259,6 +261,10 @@ class Launch(models.Model):
             .filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD"))
             .count()
         )
+
+    @property
+    def encoded_name(self):
+        return urllib.parse.quote(self.name, safe="")
 
     def get_stage_flights_and_turnaround(self, stage: Stage) -> tuple:
         """Takes in a stage that is on the launch and returns the number of times it's flown (including this launch) and the turnaround time between this launch and last"""
@@ -860,6 +866,8 @@ class StageAndRecovery(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["launch", "stage"], name="unique_launch_stage")]
+
+        verbose_name_plural = "Stage Recoveries"
 
 
 class FairingRecovery(models.Model):

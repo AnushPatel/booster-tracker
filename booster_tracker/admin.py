@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.db.models import Q
 from datetime import datetime
 import pytz
 from booster_tracker.models import (
@@ -302,7 +303,7 @@ class BoosterLocationMissingFilter(admin.SimpleListFilter):
 
 class FairingLocationMissingFilter(admin.SimpleListFilter):
     title = "Fairing Location Missing"
-    parameter_name = "location_missing"
+    parameter_name = "fairing_location_missing"
 
     def lookups(self, request, model_admin):
         return (
@@ -316,6 +317,7 @@ class FairingLocationMissingFilter(admin.SimpleListFilter):
             return queryset.filter(fairingrecovery__latitude__isnull=True) | queryset.filter(
                 fairingrecovery__longitude__isnull=True
             )
+
         if self.value() == "false":
             # Filter for missions that have both latitude and longitude
             return queryset.exclude(fairingrecovery__latitude__isnull=True) & queryset.exclude(

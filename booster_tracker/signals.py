@@ -53,29 +53,25 @@ def regenerate_cache():
     # Cache home page:
     context = generate_home_page()
 
-    rendered_content = render_to_string("launches/home.html", context)
     cache_key = "home_page"
-    cache.set(cache_key, rendered_content, timeout=None)
+    cache.set(cache_key, context, timeout=None)
 
     # Cache boosters page:
     for rocket_family in RocketFamily.objects.all():
         context = generate_boosters_page(rocket_family=rocket_family, stage_type=StageObjects.BOOSTER)
 
-        rendered_content = render_to_string("stages/stage_list.html", context)
-        cache_key = f"{rocket_family}_boosters"
-        cache.set(cache_key, rendered_content, timeout=None)
+        cache_key = f"{rocket_family.name.lower()}_boosters"
+        cache.set(cache_key, context, timeout=None)
 
     # Cache Starship home:
     context = generate_starship_home()
 
-    rendered_content = render_to_string("starship/starship_home.html", context)
     cache_key = "starship_home"
-    cache.set(cache_key, rendered_content, timeout=None)
+    cache.set(cache_key, context, timeout=None)
 
     # Cache Dragons list:
     for spacecraft_family in SpacecraftFamily.objects.all():
         context = generate_spacecraft_list(family=spacecraft_family)
 
-        rendered_content = render_to_string("dragons/dragon_list.html", context)
         cache_key = f"{spacecraft_family}s"
-        cache.set(cache_key, rendered_content, timeout=None)
+        cache.set(cache_key, context, timeout=None)
