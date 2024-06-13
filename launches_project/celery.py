@@ -1,5 +1,5 @@
 import os
-
+from django.conf import settings
 from celery import Celery
 
 # Set the default Django settings module for the 'celery' program.
@@ -15,3 +15,9 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 
 # Load task modules from all registered Django apps.
 app.autodiscover_tasks()
+
+# this TASK_QUEUE_NAME will contain name of SQS queue and we'll define it later in settings.py
+if not settings.DEBUG:
+    app.conf.task_default_queue = settings.TASK_QUEUE_NAME
+    app.conf.task_default_exchange = settings.TASK_QUEUE_NAME
+    app.conf.task_default_routing_key = settings.TASK_QUEUE_NAME

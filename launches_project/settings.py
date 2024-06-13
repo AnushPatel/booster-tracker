@@ -15,6 +15,7 @@ import os
 import sys
 from dotenv import load_dotenv
 from socket import gethostbyname, gethostname
+import boto3
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -175,11 +176,26 @@ else:
 
 CACHE_MIDDLEWARE_SECONDS = 180
 
-CELERY_RESULT_BACKEND = "django-db"
-
-CELERY_BROKER_URL = REDIS_URL
+CELERY_BROKER_URL = "sqs://"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
 
+AWS_REGION = "us-west-2"
+
+if not DEBUG:
+    CELERY_BROKER_URL = "sqs://"
+    CELERY_BROKER_TRANSPORT_OPTIONS = {
+        "region": AWS_REGION,
+        "polling_interval": 3,
+        "queue_name_prefix": "",
+        "visibility_timeout": 3600,
+    }
+else:
+    CELERY_BROKER_URL = REDIS_URL
+
+CELERY_RESULT_BACKEND = "django-db"
+CELERY_CACHE_BACKEND = "django-cache"
+
+TASK_QUEUE_NAME = "boostertracker_queue"
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
