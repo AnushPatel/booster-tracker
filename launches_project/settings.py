@@ -57,6 +57,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "storages",
+    "django_celery_beat",
+    "django_celery_results",
 ]
 
 MIDDLEWARE = [
@@ -133,7 +135,6 @@ if DEBUG:
             "PORT": "5432",  # Default PostgreSQL port
         }
     }
-
 else:
     DATABASES = {
         "default": {
@@ -148,27 +149,36 @@ else:
 
 # Caching of database
 if not DEBUG and not TESTING:
+    REDIS_HOST = os.environ["REDIS_HOST"]
+    REDIS_URL = f"rediss://{REDIS_HOST}:6379"
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": f"rediss://{os.environ['REDIS_HOST']}:6379",
+            "LOCATION": REDIS_URL,
         }
     }
 elif DEBUG and not TESTING:
+    REDIS_URL = "redis://127.0.0.1:6379"
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": "redis://127.0.0.1:6379",
+            "LOCATION": REDIS_URL,
         }
     }
 else:
+    REDIS_URL = None
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.dummy.DummyCache",
         }
     }
 
-CACHE_MIDDLEWARE_SECONDS = 300
+CACHE_MIDDLEWARE_SECONDS = 180
+
+CELERY_RESULT_BACKEND = "django-db"
+
+CELERY_BROKER_URL = REDIS_URL
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators

@@ -124,3 +124,6 @@ django-storages==1.13.2
 psycopg2-binary==2.9.9
 redis==5.0.5
 hiredis==2.3.2
+django-celery-results==2.5.1
+celery==5.4.0
+django-celery-beat==2.6.0
