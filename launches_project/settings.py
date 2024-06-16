@@ -40,7 +40,7 @@ if DEBUG:
 else:
     ALLOWED_HOSTS = [
         "boostertracker.com",
-        "booster-tracker.eba-asie3hfx.us-west-2.elasticbeanstalk.com",
+        "boostertracker.eba-afvxhcfx.us-west-2.elasticbeanstalk.com",
         "www.boostertracker.com",
     ]
     ALLOWED_HOSTS.append(gethostbyname(gethostname()))

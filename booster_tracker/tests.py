@@ -2057,7 +2057,7 @@ class TestCases(TestCase):
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 1").create_launch_table(),
             {
-                "Lift Off Time": [
+                "Liftoff Time": [
                     "January 01, 2024 - 00:00 UTC",
                     "December 31, 2023 - 19:00 EST",
                 ],
@@ -2082,7 +2082,7 @@ class TestCases(TestCase):
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 2").create_launch_table(),
             {
-                "Lift Off Time": [
+                "Liftoff Time": [
                     "February 01, 2024 - 00:00 UTC",
                     "January 31, 2024 - 19:00 EST",
                 ],
@@ -2114,7 +2114,7 @@ class TestCases(TestCase):
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 3").create_launch_table(),
             {
-                "Lift Off Time": [
+                "Liftoff Time": [
                     "March 01, 2024 - 00:00 UTC",
                     "February 29, 2024 - 19:00 EST",
                 ],
@@ -2142,7 +2142,7 @@ class TestCases(TestCase):
         self.assertEqual(
             Launch.objects.get(name="Falcon Heavy Launch 1").create_launch_table(),
             {
-                "Lift Off Time": [
+                "Liftoff Time": [
                     "April 01, 2024 - 00:00 UTC",
                     "March 31, 2024 - 20:00 EDT",
                 ],
@@ -2175,7 +2175,7 @@ class TestCases(TestCase):
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 4").create_launch_table(),
             {
-                "Lift Off Time": [
+                "Liftoff Time": [
                     "May 01, 2024 - 00:00 UTC",
                     "April 30, 2024 - 20:00 EDT",
                 ],
@@ -2224,7 +2224,7 @@ class TestCases(TestCase):
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Temp Launch 1").create_launch_table(),
             {
-                "Lift Off Time": [
+                "Liftoff Time": [
                     "May 01, 2025 - 00:00 UTC",
                     "April 30, 2025 - 20:00 EDT",
                 ],
@@ -2270,7 +2270,7 @@ class TestCases(TestCase):
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Temp Launch 2").create_launch_table(),
             {
-                "Lift Off Time": [
+                "Liftoff Time": [
                     "May 10, 2024 - 00:00 UTC",
                     "May 09, 2024 - 20:00 EDT",
                 ],

@@ -710,7 +710,7 @@ class Launch(models.Model):
         boosters_display = self.make_booster_display()
         launch_landings = self.make_landing_string()
 
-        data["Lift Off Time"] = [
+        data["Liftoff Time"] = [
             f"{format_time(self.time)}",
             f"{format_time(liftoff_time_local)}",
         ]
@@ -760,7 +760,7 @@ class Launch(models.Model):
         """Returns an EDA-style launch table for the launch"""
         # Data contains table titles
         data = {
-            "Lift Off Time": [],
+            "Liftoff Time": [],
             "Mission Name": [],
             "Launch Provider <br /> (What rocket company is launching it?)": ["SpaceX"],
             "Customer <br /> (Who's paying for this?)": [],
@@ -782,7 +782,7 @@ class Launch(models.Model):
         # Change title of headings if launch is in the past
         if self.time < datetime.now(pytz.utc):
             post_launch_data = [
-                "Lift Off Time",
+                "Liftoff Time",
                 "Mission Name",
                 "Launch Provider <br /> (What rocket company launched it?)",
                 "Customer <br /> (Who paid for this?)",
