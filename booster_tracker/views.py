@@ -21,7 +21,13 @@ from booster_tracker.models import (
     SpacecraftOnLaunch,
     RocketFamily,
     SpacecraftFamily,
+    Operator,
 )
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status, permissions
+from booster_tracker.serializers import RocketFamilySerializer, OperatorSerializer
 
 
 def launches_list(request):
@@ -201,3 +207,24 @@ def starship_home(request):
 
 def health(request):
     return HttpResponse("Success", status=200)
+
+
+# This section handles the API view of the application:
+
+
+class RocketFamilyApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        """List all the RocketFamily items for given requested user"""
+        rocketfamilies = RocketFamily.objects.all()
+        serializer = RocketFamilySerializer(rocketfamilies, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class OperatorApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        """List all the RocketFamily items for given requested user"""
+        operators = Operator.objects.all()
+        serializer = OperatorSerializer(operators, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)

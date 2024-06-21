@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "storages",
     "django_celery_beat",
     "django_celery_results",
+    "rest_framework",
 ]
 
 MIDDLEWARE = [
@@ -174,7 +175,10 @@ else:
         }
     }
 
-CACHE_MIDDLEWARE_SECONDS = 180
+if not DEBUG:
+    CACHE_MIDDLEWARE_SECONDS = 180
+else:
+    CACHE_MIDDLEWARE_SECONDS = 1
 
 CELERY_BROKER_URL = "sqs://"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
@@ -214,6 +218,13 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# API setup and settings
+
+REST_FRAMEWORK = {
+    # other settings...
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_PERMISSION_CLASSES": [],
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
