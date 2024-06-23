@@ -61,9 +61,11 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "django_celery_results",
     "rest_framework",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.cache.UpdateCacheMiddleware",
@@ -90,8 +92,7 @@ LOGGING = {
     },
 }
 
-# Disable debug coolbar for tests:
-
+# Disable debug toolbar for tests:
 if not TESTING and DEBUG:
     INSTALLED_APPS = [
         *INSTALLED_APPS,
@@ -123,6 +124,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "launches_project.wsgi.application"
+
+CORS_ORIGIN_ALLOW_ALL = DEBUG
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases

@@ -471,7 +471,7 @@ class Launch(models.Model):
             .order_by("-launch__time", "-id")
             .all()
         ):
-            if landing.method_success == "SUCCESS":
+            if landing.method_success == "SUCCESS" or landing.launch.time > datetime.now(pytz.utc):
                 count += 1
             else:
                 break

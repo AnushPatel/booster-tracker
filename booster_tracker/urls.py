@@ -1,11 +1,13 @@
 from django.urls import path, include
 from booster_tracker import views
-from booster_tracker.views import RocketFamilyApiView, OperatorApiView
+from booster_tracker.views import LaunchApiView, RocketApiView, RocketFamilyApiView, OperatorApiView
 
 app_name = "booster_tracker"
 urlpatterns = [
     path("", views.home, name="home"),
     path("health/", views.health, name="health"),
+    path("api/launches/", LaunchApiView.as_view()),
+    path("api/rockets/", RocketApiView.as_view()),
     path("api/rocketfamilies/", RocketFamilyApiView.as_view()),
     path("api/operators/", OperatorApiView.as_view()),
     path("launches/<str:encoded_launch_name>/", views.launch_details, name="launch"),
