@@ -33,6 +33,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from booster_tracker.serializers import LaunchSerializer, RocketSerializer, RocketFamilySerializer, OperatorSerializer
+import json
 
 
 def launches_list(request):
@@ -214,9 +215,9 @@ def health(request):
     return HttpResponse("Success", status=200)
 
 
-@api_view(["POST"])
+@api_view(["GET"])
 def filter_launch_days(request):
-    filter = request.data.get("filters", {})
+    filter = json.loads(request.query_params.get("filter"))
     filtered_launches = get_launches_with_filter(filter)
     launches_on_day = launches_per_day(filtered_launches)
 
