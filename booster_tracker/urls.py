@@ -10,6 +10,7 @@ urlpatterns = [
     path("api/rockets/", RocketApiView.as_view()),
     path("api/rocketfamilies/", RocketFamilyApiView.as_view()),
     path("api/operators/", OperatorApiView.as_view()),
+    path("api/calendarstats/", views.filter_launch_days, name="filter_calendar_stats"),
     path("launches/<str:encoded_launch_name>/", views.launch_details, name="launch"),
     path("launches/", views.launches_list, name="launches"),
     path("dragons/<str:dragon_name>/", views.dragon_info, name="dragon"),

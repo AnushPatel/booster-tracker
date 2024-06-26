@@ -17,6 +17,7 @@ from datetime import datetime
 from django.templatetags.static import static
 import pytz
 from enum import StrEnum
+from collections import defaultdict
 
 
 class StageObjects(StrEnum):
@@ -452,3 +453,34 @@ def generate_spacecraft_list(family: Spacecraft):
     }
 
     return context
+
+
+# This section deals with functions that are used by the API
+
+
+def get_launches_with_filter(filter: dict):
+    """Takes in a filter and returns all launch objects that obey one of those filters"""
+    true_values = {}
+    for filter_item in filter.keys():
+        true_values[filter_item] = [int(key) for key, value in filter[filter_item].items() if value]
+
+    q_objects = Q()
+    for key, value in true_values.items():
+        if value:
+            q_objects |= Q(**{f"{key}__id__in": value})
+
+    filtered_launches = Launch.objects.filter(q_objects).distinct()
+
+    return filtered_launches
+
+
+def launches_per_day(launches: list[Launch]):
+    """Takes in a list of launches and gives the number of launches on each day (excluding year)"""
+    launches_per_day = defaultdict(int)
+    for launch in launches:
+        date = f"{launch.time.strftime('%B %d')}"
+        launches_per_day[date] += 1
+
+    launches_per_day = sorted(launches_per_day.items(), key=lambda x: x[1], reverse=True)
+
+    return launches_per_day

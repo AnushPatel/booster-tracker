@@ -7,7 +7,10 @@ from booster_tracker.home_utils import (
     generate_starship_home,
     generate_boosters_page,
     generate_spacecraft_list,
+    get_launches_with_filter,
+    launches_per_day,
 )
+from booster_tracker.utils import concatenated_list
 
 import pytz
 import statistics
@@ -26,8 +29,9 @@ from booster_tracker.models import (
 )
 
 from rest_framework.views import APIView
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status, permissions
+from rest_framework import status
 from booster_tracker.serializers import LaunchSerializer, RocketSerializer, RocketFamilySerializer, OperatorSerializer
 
 
@@ -208,6 +212,34 @@ def starship_home(request):
 
 def health(request):
     return HttpResponse("Success", status=200)
+
+
+@api_view(["POST"])
+def filter_launch_days(request):
+    filter = request.data.get("filters", {})
+    filtered_launches = get_launches_with_filter(filter)
+    launches_on_day = launches_per_day(filtered_launches)
+
+    num_days_with_launches = len(launches_on_day)
+    percentage_days_with_launch = round(num_days_with_launches / 3.66, 2)
+
+    max_launches = list(launches_on_day)[0][1]
+
+    days_with_most_launches = []
+    for day in launches_on_day:
+        if day[1] == max_launches:
+            days_with_most_launches.append(day[0])
+        else:
+            break
+
+    return Response(
+        {
+            "numDaysWithLaunches": num_days_with_launches,
+            "percentageDaysWithLaunches": percentage_days_with_launch,
+            "mostLaunches": max_launches,
+            "daysWithMostLaunches": concatenated_list(days_with_most_launches),
+        }
+    )
 
 
 # This section handles the API view of the application:

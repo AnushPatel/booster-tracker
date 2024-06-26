@@ -11,6 +11,7 @@ from booster_tracker.utils import (
 from datetime import datetime
 from django.db.models import Q
 from django.urls import reverse
+from colorfield.fields import ColorField
 import pytz
 import urllib.parse
 
@@ -80,6 +81,7 @@ class Rocket(models.Model):
     name = models.CharField(max_length=100, unique=True)
     family = models.ForeignKey(RocketFamily, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=LIFE_OPTIONS, default="ACTIVE")
+    color = ColorField(default="#218243")
 
     def __str__(self):
         return self.name

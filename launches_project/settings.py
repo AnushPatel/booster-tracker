@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "django_celery_results",
     "rest_framework",
     "corsheaders",
+    "colorfield",
 ]
 
 MIDDLEWARE = [
