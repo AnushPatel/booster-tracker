@@ -26,13 +26,23 @@ from booster_tracker.models import (
     SpacecraftFamily,
     Operator,
     Rocket,
+    Orbit,
 )
 
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.generics import ListAPIView
 from rest_framework import status
-from booster_tracker.serializers import LaunchSerializer, RocketSerializer, RocketFamilySerializer, OperatorSerializer
+from booster_tracker.serializers import (
+    LaunchSerializer,
+    LaunchOnlySerializer,
+    RocketSerializer,
+    RocketFamilySerializer,
+    OperatorSerializer,
+    OrbitSerializer,
+)
 import json
 
 
@@ -215,6 +225,11 @@ def health(request):
     return HttpResponse("Success", status=200)
 
 
+class StandardPagination(PageNumberPagination):
+    page_size = 25
+    page_size_query_param = "page_size"
+
+
 @api_view(["GET"])
 def filter_launch_days(request):
     filter = json.loads(request.query_params.get("filter"))
@@ -244,11 +259,47 @@ def filter_launch_days(request):
 
 
 # This section handles the API view of the application:
-class LaunchApiView(APIView):
+
+
+class LaunchApiView(ListAPIView):
+    serializer_class = LaunchSerializer
+    pagination_class = StandardPagination
+
+    def get_queryset(self):
+        """Return the list of items for this view."""
+        filter_param = self.request.query_params.get("filter", "{}")
+        filter = json.loads(filter_param)
+        query = self.request.query_params.get("query", "")
+        print(query)
+        filtered_launches = get_launches_with_filter(filter, query)
+        return Launch.objects.filter(id__in=[launch.id for launch in filtered_launches])
+
     def get(self, request, *args, **kwargs):
         """List all the Launch items for given requested user"""
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class OrbitApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        orbits = Orbit.objects.all()
+        serializer = OrbitSerializer(orbits, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class LaunchOnlyApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        """List all the Launch items (without recoveries) for given requested user"""
         launches = Launch.objects.all()
-        serializer = LaunchSerializer(launches, many=True)
+        serializer = LaunchOnlySerializer(launches, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 

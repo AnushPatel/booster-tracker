@@ -458,19 +458,32 @@ def generate_spacecraft_list(family: Spacecraft):
 # This section deals with functions that are used by the API
 
 
-def get_launches_with_filter(filter: dict):
+def get_launches_with_filter(filter: dict, query: str = ""):
     """Takes in a filter and returns all launch objects that obey one of those filters"""
     true_values = {}
+
+    keys_to_remove = set("rocket")  # Use a set to store keys to remove
+
+    if "rocket" in filter:
+        keys_to_remove = [key for key in filter if key.startswith("rocket__")]
+        for key in keys_to_remove:
+            del filter[key]
+
     for filter_item in filter.keys():
-        true_values[filter_item] = [int(key) for key, value in filter[filter_item].items() if value]
+        if filter_item == "launch_outcome":
+            true_values[filter_item] = [key for key, value in filter[filter_item].items() if value]
+        else:
+            true_values[filter_item] = [int(key) for key, value in filter[filter_item].items() if value]
 
     q_objects = Q()
     for key, value in true_values.items():
-        if value:
+        if key == "launch_outcome":
+            q_objects &= Q(**{"launch_outcome__in": value})
+        elif value:
             q_objects |= Q(**{f"{key}__id__in": value})
 
-    filtered_launches = Launch.objects.filter(q_objects).distinct()
-
+    filtered_launches = Launch.objects.filter(q_objects).filter(name__icontains=query).distinct()
+    print(filtered_launches)
     return filtered_launches
 
 
