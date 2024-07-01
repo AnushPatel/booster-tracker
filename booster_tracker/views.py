@@ -270,7 +270,6 @@ class LaunchApiView(ListAPIView):
         filter_param = self.request.query_params.get("filter", "{}")
         filter = json.loads(filter_param)
         query = self.request.query_params.get("query", "")
-        print(query)
         filtered_launches = get_launches_with_filter(filter, query)
         return Launch.objects.filter(id__in=[launch.id for launch in filtered_launches])
 

@@ -456,34 +456,64 @@ def generate_spacecraft_list(family: Spacecraft):
 
 
 # This section deals with functions that are used by the API
+def combine_dicts(dict1, dict2):
+    combined = defaultdict(list)
+
+    for key, value in dict1.items():
+        combined[key].extend(value)
+
+    if dict2:
+        for key, value in dict2.items():
+            combined[key].extend(value)
+
+    for key in combined:
+        combined[key] = list(set(combined[key]))
+
+    return dict(combined)
+
+
+def get_true_filter_values(filter, filter_item):
+    true_values = {}
+
+    for value in filter[filter_item].values():
+        if isinstance(value, dict):
+            # If the value is a dict, need to go one layer further in to get the data. Ex: {"rocket__family": {"rocket": {"1": True, "2": True}}} should look at "rockets" since this contains all information about parent filter
+            for child_filter_item in filter[filter_item].keys():
+                true_values = combine_dicts(true_values, get_true_filter_values(filter[filter_item], child_filter_item))
+        else:
+            # If there is not a dict, then find the values which are true
+            true_values_for_filter_name = []
+            for key, value in filter[filter_item].items():
+                if value:
+                    # If the string is an int, convert it for query purposes. Strings vs int determined by database storage type
+                    formatted_key = lambda key: (int(key) if key.isnumeric() else key)
+                    true_values_for_filter_name.append(formatted_key(key))
+            true_values[filter_item] = true_values_for_filter_name
+
+    return true_values
 
 
 def get_launches_with_filter(filter: dict, query: str = ""):
     """Takes in a filter and returns all launch objects that obey one of those filters"""
     true_values = {}
 
-    keys_to_remove = set("rocket")  # Use a set to store keys to remove
-
-    if "rocket" in filter:
-        keys_to_remove = [key for key in filter if key.startswith("rocket__")]
-        for key in keys_to_remove:
-            del filter[key]
-
     for filter_item in filter.keys():
-        if filter_item == "launch_outcome":
-            true_values[filter_item] = [key for key, value in filter[filter_item].items() if value]
-        else:
-            true_values[filter_item] = [int(key) for key, value in filter[filter_item].items() if value]
+        # Cycles through filter to get all values that are true into a list; ex {"rocket": {"1": True, "2": False, "3": True}} => {"rocket": [1, 2, 3]}
+        true_values_from_item = get_true_filter_values(filter, filter_item)
+        true_values = true_values | true_values_from_item
+
+    non_ids = ["launch_outcome"]
+
+    print(true_values)
 
     q_objects = Q()
     for key, value in true_values.items():
-        if key == "launch_outcome":
-            q_objects &= Q(**{"launch_outcome__in": value})
-        elif value:
-            q_objects |= Q(**{f"{key}__id__in": value})
+        if key in non_ids:
+            q_objects &= Q(**{f"{key}__in": value})
+        else:
+            q_objects &= Q(**{f"{key}__id__in": value})  # Create and kwarg for filtering purposes
 
     filtered_launches = Launch.objects.filter(q_objects).filter(name__icontains=query).distinct()
-    print(filtered_launches)
     return filtered_launches
 
 
