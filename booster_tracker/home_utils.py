@@ -486,7 +486,7 @@ def get_true_filter_values(filter, filter_item):
             for key, value in filter[filter_item].items():
                 if value:
                     # If the string is an int, convert it for query purposes. Strings vs int determined by database storage type
-                    formatted_key = lambda key: (int(key) if key.isnumeric() else key)
+                    formatted_key = lambda key: (int(key) if key.isnumeric() else key.upper())
                     true_values_for_filter_name.append(formatted_key(key))
             true_values[filter_item] = true_values_for_filter_name
 
@@ -504,16 +504,16 @@ def get_launches_with_filter(filter: dict, query: str = ""):
 
     non_ids = ["launch_outcome"]
 
-    print(true_values)
-
     q_objects = Q()
     for key, value in true_values.items():
         if key in non_ids:
-            q_objects &= Q(**{f"{key}__in": value})
+            q_objects &= Q(**{f"{str(key).replace('hide__', '')}__in": value})
         else:
-            q_objects &= Q(**{f"{key}__id__in": value})  # Create and kwarg for filtering purposes
+            q_objects &= Q(**{f"{str(key).replace('hide__', '')}__id__in": value})
+            # Create and kwarg for filtering purposes
 
     filtered_launches = Launch.objects.filter(q_objects).filter(name__icontains=query).distinct()
+
     return filtered_launches
 
 
