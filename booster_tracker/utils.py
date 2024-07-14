@@ -96,3 +96,11 @@ def turnaround_time(launches: list) -> int:
     if len(launches) > 1:
         return (launches[len(launches) - 1].time - launches[len(launches) - 2].time).total_seconds()
     return None
+
+
+def all_values_true(dictionary):
+    if isinstance(dictionary, bool):
+        return dictionary
+    if isinstance(dictionary, dict):
+        return all(all_values_true(value) for value in dictionary.values())
+    return False

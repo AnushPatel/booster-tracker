@@ -12,7 +12,7 @@ from booster_tracker.models import (
     Spacecraft,
     SpacecraftFamily,
 )
-from booster_tracker.utils import concatenated_list, convert_seconds, TurnaroundObjects
+from booster_tracker.utils import concatenated_list, convert_seconds, TurnaroundObjects, all_values_true
 from datetime import datetime
 from django.templatetags.static import static
 import pytz
@@ -494,6 +494,8 @@ def get_true_filter_values(filter, filter_item):
 
 def get_launches_with_filter(filter: dict, search_query: str = ""):
     """Takes in a filter and returns all launch objects that obey one of those filters"""
+    if not filter or all_values_true(filter):
+        return Launch.objects.all()
 
     true_values = {}
 
@@ -517,20 +519,19 @@ def get_launches_with_filter(filter: dict, search_query: str = ""):
     or_queries = []
 
     for or_list in objects_or:
-        or_query = Q()
-        for field in or_list:
-            if field in non_ids:
-                or_query |= Q(**{f"{field.replace('hide__', '')}__in": true_values.get(field, [])})
-            else:
-                or_query |= Q(**{f"{field.replace('hide__', '')}__id__in": true_values.get(field, [])})
+        if any(field in true_values for field in or_list):
+            or_query = Q()
+            for field in or_list:
+                if field in non_ids:
+                    or_query |= Q(**{f"{field.replace('hide__', '')}__in": true_values.get(field, [])})
+                else:
+                    or_query |= Q(**{f"{field.replace('hide__', '')}__id__in": true_values.get(field, [])})
 
-        or_queries.append(or_query)
+            or_queries.append(or_query)
 
     if or_queries:
         for query in or_queries:
             q_objects &= query
-
-    print(q_objects)
 
     filtered_launches = Launch.objects.filter(q_objects).filter(name__icontains=search_query).distinct().all()
 
