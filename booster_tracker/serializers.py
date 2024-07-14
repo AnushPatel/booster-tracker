@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Orbit, StageAndRecovery, Launch, Rocket, RocketFamily, Operator
+from .models import Orbit, StageAndRecovery, Launch, Rocket, RocketFamily, Operator, Pad, LandingZone
 
 
 class OrbitSerializer(serializers.ModelSerializer):
@@ -9,30 +9,27 @@ class OrbitSerializer(serializers.ModelSerializer):
 
 
 class StageAndRecoverySerializer(serializers.ModelSerializer):
-    booster_name = serializers.SerializerMethodField()
-    zone_name = serializers.SerializerMethodField()
-
     class Meta:
         model = StageAndRecovery
-        fields = ["booster_name", "zone_name"]
-
-    def get_booster_name(self, obj):
-        if obj.stage:
-            return obj.stage.name
-        return None
-
-    def get_zone_name(self, obj):
-        if obj.landing_zone:
-            return obj.landing_zone.name
-        return None
+        fields = "__all__"
 
 
 class LaunchSerializer(serializers.ModelSerializer):
-    # recoveries = StageAndRecoverySerializer(many=True, read_only=True, source="stageandrecovery_set")
+    recoveries = StageAndRecoverySerializer(many=True, read_only=True, source="stageandrecovery_set")
 
     class Meta:
         model = Launch
-        fields = ["time", "pad", "rocket", "name", "launch_outcome", "id", "image", "recoveries", "boosters"]
+        fields = [
+            "time",
+            "pad",
+            "rocket",
+            "name",
+            "launch_outcome",
+            "id",
+            "image",
+            "recoveries",
+            "boosters",
+        ]
 
 
 class LaunchOnlySerializer(serializers.ModelSerializer):
@@ -60,4 +57,16 @@ class RocketFamilySerializer(serializers.ModelSerializer):
 class OperatorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Operator
+        fields = "__all__"
+
+
+class PadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Pad
+        fields = "__all__"
+
+
+class LandingZoneSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LandingZone
         fields = "__all__"

@@ -7,6 +7,9 @@ from booster_tracker.views import (
     RocketFamilyApiView,
     OperatorApiView,
     OrbitApiView,
+    PadApiView,
+    LandingZoneApiView,
+    StageAndRecoveryApiView,
 )
 
 app_name = "booster_tracker"
@@ -19,6 +22,9 @@ urlpatterns = [
     path("api/rocketfamilies/", RocketFamilyApiView.as_view()),
     path("api/operators/", OperatorApiView.as_view()),
     path("api/orbit/", OrbitApiView.as_view()),
+    path("api/pads/", PadApiView.as_view()),
+    path("api/landingzones/", LandingZoneApiView.as_view()),
+    path("api/stageandrecoveries/", StageAndRecoveryApiView.as_view()),
     path("api/calendarstats/", views.filter_launch_days, name="filter_calendar_stats"),
     path("launches/<str:encoded_launch_name>/", views.launch_details, name="launch"),
     path("launches/", views.launches_list, name="launches"),

@@ -807,6 +807,7 @@ class Launch(models.Model):
 class LandingZone(models.Model):
     name = models.CharField(max_length=100, unique=True)
     nickname = models.CharField(max_length=20)
+    type = models.CharField(max_length=100, choices=RECOVERY_METHODS)
     serial_number = models.CharField(max_length=10, blank=True, null=True)
     status = models.CharField(max_length=20, choices=LIFE_OPTIONS, default="ACTIVE")
     image = models.ImageField(upload_to="landing_zone_photos/", default="media/pad_photos/default.png")

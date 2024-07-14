@@ -474,7 +474,6 @@ def combine_dicts(dict1, dict2):
 
 def get_true_filter_values(filter, filter_item):
     true_values = {}
-
     for value in filter[filter_item].values():
         if isinstance(value, dict):
             # If the value is a dict, need to go one layer further in to get the data. Ex: {"rocket__family": {"rocket": {"1": True, "2": True}}} should look at "rockets" since this contains all information about parent filter
@@ -493,8 +492,9 @@ def get_true_filter_values(filter, filter_item):
     return true_values
 
 
-def get_launches_with_filter(filter: dict, query: str = ""):
+def get_launches_with_filter(filter: dict, search_query: str = ""):
     """Takes in a filter and returns all launch objects that obey one of those filters"""
+
     true_values = {}
 
     for filter_item in filter.keys():
@@ -502,17 +502,37 @@ def get_launches_with_filter(filter: dict, query: str = ""):
         true_values_from_item = get_true_filter_values(filter, filter_item)
         true_values = true_values | true_values_from_item
 
-    non_ids = ["launch_outcome"]
+    non_ids = ["launch_outcome", "hide__stageandrecovery__method", "stageandrecovery__method_success"]
+    objects_or = [["hide__stageandrecovery__method", "hide__stageandrecovery__landing_zone"]]
 
     q_objects = Q()
-    for key, value in true_values.items():
-        if key in non_ids:
-            q_objects &= Q(**{f"{str(key).replace('hide__', '')}__in": value})
-        else:
-            q_objects &= Q(**{f"{str(key).replace('hide__', '')}__id__in": value})
-            # Create and kwarg for filtering purposes
 
-    filtered_launches = Launch.objects.filter(q_objects).filter(name__icontains=query).distinct()
+    for key, value in true_values.items():
+        if key not in sum(objects_or, []):  # Check if key is not in any list in objects_or
+            if key in non_ids:
+                q_objects &= Q(**{f"{key.replace('hide__', '')}__in": value})
+            else:
+                q_objects &= Q(**{f"{key.replace('hide__', '')}__id__in": value})
+
+    or_queries = []
+
+    for or_list in objects_or:
+        or_query = Q()
+        for field in or_list:
+            if field in non_ids:
+                or_query |= Q(**{f"{field.replace('hide__', '')}__in": true_values.get(field, [])})
+            else:
+                or_query |= Q(**{f"{field.replace('hide__', '')}__id__in": true_values.get(field, [])})
+
+        or_queries.append(or_query)
+
+    if or_queries:
+        for query in or_queries:
+            q_objects &= query
+
+    print(q_objects)
+
+    filtered_launches = Launch.objects.filter(q_objects).filter(name__icontains=search_query).distinct().all()
 
     return filtered_launches
 

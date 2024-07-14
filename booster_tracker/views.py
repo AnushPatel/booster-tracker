@@ -27,6 +27,8 @@ from booster_tracker.models import (
     Operator,
     Rocket,
     Orbit,
+    Pad,
+    LandingZone,
 )
 
 from rest_framework.views import APIView
@@ -42,6 +44,9 @@ from booster_tracker.serializers import (
     RocketFamilySerializer,
     OperatorSerializer,
     OrbitSerializer,
+    PadSerializer,
+    LandingZoneSerializer,
+    StageAndRecoverySerializer,
 )
 import json
 
@@ -271,7 +276,7 @@ class LaunchApiView(ListAPIView):
         filter = json.loads(filter_param)
         query = self.request.query_params.get("query", "")
         filtered_launches = get_launches_with_filter(filter, query)
-        return Launch.objects.filter(id__in=[launch.id for launch in filtered_launches])
+        return filtered_launches
 
     def get(self, request, *args, **kwargs):
         """List all the Launch items for given requested user"""
@@ -326,5 +331,32 @@ class OperatorApiView(APIView):
         """List all the Operator items for given requested user"""
         operators = Operator.objects.all()
         serializer = OperatorSerializer(operators, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PadApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        """List of all pads"""
+        pads = Pad.objects.all()
+        serializer = PadSerializer(pads, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class LandingZoneApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        """List of all landing zones"""
+        zones = LandingZone.objects.all()
+        serializer = LandingZoneSerializer(zones, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class StageAndRecoveryApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        """List of all stage and recoveries"""
+        stage_and_recoveries = StageAndRecovery.objects.all()
+        serializer = StageAndRecoverySerializer(stage_and_recoveries, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
