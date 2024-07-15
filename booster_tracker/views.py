@@ -35,18 +35,19 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework import status
 from booster_tracker.serializers import (
     LaunchSerializer,
     LaunchOnlySerializer,
-    RocketSerializer,
+    RocketOnlySerializer,
     RocketFamilySerializer,
     OperatorSerializer,
     OrbitSerializer,
     PadSerializer,
     LandingZoneSerializer,
     StageAndRecoverySerializer,
+    LaunchInformationSerializer,
 )
 import json
 
@@ -312,7 +313,7 @@ class RocketApiView(APIView):
     def get(self, request, *args, **kwargs):
         """List all the Rocket items for given requested user"""
         rockets = Rocket.objects.all()
-        serializer = RocketSerializer(rockets, many=True)
+        serializer = RocketOnlySerializer(rockets, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -360,3 +361,12 @@ class StageAndRecoveryApiView(APIView):
         serializer = StageAndRecoverySerializer(stage_and_recoveries, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class LaunchInformationApiView(RetrieveAPIView):
+    serializer_class = LaunchInformationSerializer
+
+    def get_object(self):
+        """Get launch by ID"""
+        id = self.request.query_params.get("id", "")
+        return Launch.objects.get(id=id)

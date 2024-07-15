@@ -46,6 +46,12 @@ class RocketSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class RocketOnlySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rocket
+        fields = "__all__"
+
+
 class RocketFamilySerializer(serializers.ModelSerializer):
     rockets = RocketSerializer(many=True, read_only=True, source="rocket_set")
 
@@ -70,3 +76,14 @@ class LandingZoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = LandingZone
         fields = "__all__"
+
+
+class LaunchInformationSerializer(serializers.ModelSerializer):
+    create_launch_table = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Launch
+        fields = ["name", "rocket", "image", "create_launch_table"]
+
+    def get_create_launch_table(self, obj):
+        return obj.create_launch_table()

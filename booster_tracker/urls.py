@@ -10,6 +10,7 @@ from booster_tracker.views import (
     PadApiView,
     LandingZoneApiView,
     StageAndRecoveryApiView,
+    LaunchInformationApiView,
 )
 
 app_name = "booster_tracker"
@@ -18,6 +19,7 @@ urlpatterns = [
     path("health/", views.health, name="health"),
     path("api/launchesonly/", LaunchOnlyApiView.as_view()),
     path("api/launches/", LaunchApiView.as_view()),
+    path("api/launchinformation/", LaunchInformationApiView.as_view()),
     path("api/rockets/", RocketApiView.as_view()),
     path("api/rocketfamilies/", RocketFamilyApiView.as_view()),
     path("api/operators/", OperatorApiView.as_view()),
