@@ -1,4 +1,5 @@
 from enum import StrEnum
+import re
 
 # This section we create StrEnums to limit options in functions. While not used in this document, these are often used in models.py
 
@@ -104,3 +105,10 @@ def all_values_true(dictionary):
     if isinstance(dictionary, dict):
         return all(all_values_true(value) for value in dictionary.values())
     return False
+
+
+def version_format(string):
+    regex = r"^V\d"
+    if re.match(regex, string):
+        return "v" + string[1:]
+    return string

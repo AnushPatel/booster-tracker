@@ -7,7 +7,7 @@ from booster_tracker.home_utils import (
     generate_starship_home,
     generate_boosters_page,
     generate_spacecraft_list,
-    get_launches_with_filter,
+    get_model_objects_with_filter,
     launches_per_day,
 )
 from booster_tracker.utils import concatenated_list
@@ -29,6 +29,7 @@ from booster_tracker.models import (
     Orbit,
     Pad,
     LandingZone,
+    Boat,
 )
 
 from rest_framework.views import APIView
@@ -48,6 +49,11 @@ from booster_tracker.serializers import (
     LandingZoneSerializer,
     StageAndRecoverySerializer,
     LaunchInformationSerializer,
+    StageSerializer,
+    StageInformationSerializer,
+    SpacecraftSerializer,
+    SpacecraftInformationSerializer,
+    BoatSerializer,
 )
 import json
 
@@ -239,7 +245,7 @@ class StandardPagination(PageNumberPagination):
 @api_view(["GET"])
 def filter_launch_days(request):
     filter = json.loads(request.query_params.get("filter"))
-    filtered_launches = get_launches_with_filter(filter)
+    filtered_launches = get_model_objects_with_filter(Launch, filter)
     launches_on_day = launches_per_day(filtered_launches)
 
     num_days_with_launches = len(launches_on_day)
@@ -276,7 +282,7 @@ class LaunchApiView(ListAPIView):
         filter_param = self.request.query_params.get("filter", "{}")
         filter = json.loads(filter_param)
         query = self.request.query_params.get("query", "")
-        filtered_launches = get_launches_with_filter(filter, query)
+        filtered_launches = get_model_objects_with_filter(Launch, filter, query)
         return filtered_launches
 
     def get(self, request, *args, **kwargs):
@@ -354,6 +360,15 @@ class LandingZoneApiView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class BoatApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        """List of all boats"""
+        boats = Boat.objects.all()
+        serializer = BoatSerializer(boats, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class StageAndRecoveryApiView(APIView):
     def get(self, request, *args, **kwargs):
         """List of all stage and recoveries"""
@@ -370,3 +385,59 @@ class LaunchInformationApiView(RetrieveAPIView):
         """Get launch by ID"""
         id = self.request.query_params.get("id", "")
         return Launch.objects.get(id=id)
+
+
+class StageApiView(ListAPIView):
+    serializer_class = StageSerializer
+
+    def get_queryset(self):
+        """Return the list of items for this view."""
+        filter_param = self.request.query_params.get("filter", "{}")
+        filter = json.loads(filter_param)
+        query = self.request.query_params.get("query", "")
+        filtered_stages = get_model_objects_with_filter(Stage, filter, query).order_by("-name")
+        return filtered_stages
+
+    def get(self, request, *args, **kwargs):
+        """List all the stage items for given requested user"""
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SpacecraftApiView(ListAPIView):
+    serializer_class = SpacecraftSerializer
+
+    def get_queryset(self):
+        """Return the list of items for this view."""
+        filter_param = self.request.query_params.get("filter", "{}")
+        filter = json.loads(filter_param)
+        query = self.request.query_params.get("query", "")
+        filtered_spacecraft = get_model_objects_with_filter(Spacecraft, filter, query).order_by("-name")
+        return filtered_spacecraft
+
+    def get(self, request, *args, **kwargs):
+        """List all the spacecraft items for given requested user"""
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class StageInformationApiView(RetrieveAPIView):
+    serializer_class = StageInformationSerializer
+
+    def get_object(self):
+        """Get stage by ID"""
+        id = self.request.query_params.get("id", "")
+        return Stage.objects.get(id=id)
+
+
+class SpacecraftInformationApiView(RetrieveAPIView):
+    serializer_class = SpacecraftInformationSerializer
+
+    def get_object(self):
+        """Get spacecraft by ID"""
+        id = self.request.query_params.get("id", "")
+        return Spacecraft.objects.get(id=id)

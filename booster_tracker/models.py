@@ -873,6 +873,18 @@ class StageAndRecovery(models.Model):
 
         verbose_name_plural = "Stage Recoveries"
 
+    @property
+    def get_turnaround(self):
+        if (
+            last_launch := StageAndRecovery.objects.filter(stage=self.stage, launch__time__lt=self.launch.time)
+            .order_by("launch__time")
+            .last()
+        ):
+            turnaround = (self.launch.time - last_launch.launch.time).total_seconds()
+
+            return round(turnaround / 86400, 2)
+        return None
+
 
 class FairingRecovery(models.Model):
     launch = models.ForeignKey(Launch, on_delete=models.CASCADE)

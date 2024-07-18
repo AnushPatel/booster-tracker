@@ -1,4 +1,6 @@
 from django.db.models import Q, Count, Max
+from django.db import models
+from django.apps import apps
 from booster_tracker.models import (
     Stage,
     StageAndRecovery,
@@ -12,7 +14,7 @@ from booster_tracker.models import (
     Spacecraft,
     SpacecraftFamily,
 )
-from booster_tracker.utils import concatenated_list, convert_seconds, TurnaroundObjects, all_values_true
+from booster_tracker.utils import concatenated_list, convert_seconds, TurnaroundObjects, all_values_true, version_format
 from datetime import datetime
 from django.templatetags.static import static
 import pytz
@@ -485,17 +487,18 @@ def get_true_filter_values(filter, filter_item):
             for key, value in filter[filter_item].items():
                 if value:
                     # If the string is an int, convert it for query purposes. Strings vs int determined by database storage type
-                    formatted_key = lambda key: (int(key) if key.isnumeric() else key.upper())
+                    formatted_key = lambda key: (int(key) if key.isnumeric() else version_format(key.upper()))
                     true_values_for_filter_name.append(formatted_key(key))
             true_values[filter_item] = true_values_for_filter_name
 
     return true_values
 
 
-def get_launches_with_filter(filter: dict, search_query: str = ""):
+def get_model_objects_with_filter(model: models.Model, filter: dict, search_query: str = ""):
     """Takes in a filter and returns all launch objects that obey one of those filters"""
-    if not filter or all_values_true(filter):
-        return Launch.objects.all()
+
+    if (not filter and not search_query) or all_values_true(filter):
+        return model.objects.all()
 
     true_values = {}
 
@@ -504,7 +507,13 @@ def get_launches_with_filter(filter: dict, search_query: str = ""):
         true_values_from_item = get_true_filter_values(filter, filter_item)
         true_values = true_values | true_values_from_item
 
-    non_ids = ["launch_outcome", "hide__stageandrecovery__method", "stageandrecovery__method_success"]
+    non_ids = [
+        "launch_outcome",
+        "hide__stageandrecovery__method",
+        "stageandrecovery__method_success",
+        "status",
+        "version",
+    ]
     objects_or = [["hide__stageandrecovery__method", "hide__stageandrecovery__landing_zone"]]
 
     q_objects = Q()
@@ -533,9 +542,9 @@ def get_launches_with_filter(filter: dict, search_query: str = ""):
         for query in or_queries:
             q_objects &= query
 
-    filtered_launches = Launch.objects.filter(q_objects).filter(name__icontains=search_query).distinct().all()
+    filtered_objects = model.objects.filter(q_objects).filter(name__icontains=search_query).distinct().all()
 
-    return filtered_launches
+    return filtered_objects
 
 
 def launches_per_day(launches: list[Launch]):

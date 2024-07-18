@@ -1,5 +1,18 @@
 from rest_framework import serializers
-from .models import Orbit, StageAndRecovery, Launch, Rocket, RocketFamily, Operator, Pad, LandingZone
+from .models import (
+    Orbit,
+    StageAndRecovery,
+    Launch,
+    Rocket,
+    RocketFamily,
+    Operator,
+    Pad,
+    LandingZone,
+    Stage,
+    Spacecraft,
+    SpacecraftOnLaunch,
+    Boat,
+)
 
 
 class OrbitSerializer(serializers.ModelSerializer):
@@ -8,10 +21,29 @@ class OrbitSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class LaunchOnlySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Launch
+        fields = ["id", "time", "name", "mass", "customer", "launch_outcome", "pad", "rocket", "orbit", "image"]
+
+
 class StageAndRecoverySerializer(serializers.ModelSerializer):
+    launch = LaunchOnlySerializer(read_only=True)
+
     class Meta:
         model = StageAndRecovery
-        fields = "__all__"
+        fields = [
+            "launch",
+            "stage_position",
+            "method",
+            "method_success",
+            "recovery_success",
+            "latitude",
+            "longitude",
+            "stage",
+            "landing_zone",
+            "get_turnaround",
+        ]
 
 
 class LaunchSerializer(serializers.ModelSerializer):
@@ -30,12 +62,6 @@ class LaunchSerializer(serializers.ModelSerializer):
             "recoveries",
             "boosters",
         ]
-
-
-class LaunchOnlySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Launch
-        fields = "__all__"
 
 
 class RocketSerializer(serializers.ModelSerializer):
@@ -87,3 +113,55 @@ class LaunchInformationSerializer(serializers.ModelSerializer):
 
     def get_create_launch_table(self, obj):
         return obj.create_launch_table()
+
+
+class StageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Stage
+        fields = ["id", "name", "version", "type", "image", "status", "rocket", "num_launches"]
+
+
+class StageInformationSerializer(serializers.ModelSerializer):
+    stage_and_recovery = StageAndRecoverySerializer(many=True, read_only=True, source="stageandrecovery_set")
+
+    class Meta:
+        model = Stage
+        fields = ["id", "name", "version", "type", "image", "status", "rocket", "stage_and_recovery"]
+
+
+class SpacecraftSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Spacecraft
+        fields = ["id", "name", "nickname", "version", "type", "status", "image", "family", "num_launches"]
+
+
+class SpacecraftOnLaunchSerializer(serializers.ModelSerializer):
+    launch = LaunchOnlySerializer(read_only=True)
+
+    class Meta:
+        model = SpacecraftOnLaunch
+        fields = ["get_spacecraft_turnaround", "id", "splashdown_time", "launch", "recovery_boat"]
+
+
+class SpacecraftInformationSerializer(serializers.ModelSerializer):
+    spacecraft_on_launch = SpacecraftOnLaunchSerializer(many=True, read_only=True, source="spacecraftonlaunch_set")
+
+    class Meta:
+        model = Spacecraft
+        fields = [
+            "id",
+            "name",
+            "nickname",
+            "version",
+            "type",
+            "image",
+            "status",
+            "family",
+            "spacecraft_on_launch",
+        ]
+
+
+class BoatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Boat
+        fields = "__all__"
