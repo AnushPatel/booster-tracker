@@ -12,6 +12,7 @@ from .models import (
     Spacecraft,
     SpacecraftOnLaunch,
     Boat,
+    SpacecraftFamily,
 )
 
 
@@ -129,6 +130,12 @@ class StageInformationSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "version", "type", "image", "status", "rocket", "stage_and_recovery"]
 
 
+class SpacecraftFamilySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SpacecraftFamily
+        fields = "__all__"
+
+
 class SpacecraftSerializer(serializers.ModelSerializer):
     class Meta:
         model = Spacecraft
@@ -140,7 +147,7 @@ class SpacecraftOnLaunchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SpacecraftOnLaunch
-        fields = ["get_spacecraft_turnaround", "id", "splashdown_time", "launch", "recovery_boat"]
+        fields = ["get_turnaround", "id", "splashdown_time", "launch", "recovery_boat"]
 
 
 class SpacecraftInformationSerializer(serializers.ModelSerializer):

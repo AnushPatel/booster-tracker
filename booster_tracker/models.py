@@ -959,7 +959,7 @@ class SpacecraftOnLaunch(models.Model):
             return f"{self.spacecraft.name} on launch"
         return "Spacecraft"
 
-    def get_spacecraft_turnaround(self):
+    def get_turnaround(self):
         if (
             last_launch := SpacecraftOnLaunch.objects.filter(
                 spacecraft=self.spacecraft, launch__time__lt=self.launch.time

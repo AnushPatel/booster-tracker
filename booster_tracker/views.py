@@ -54,6 +54,7 @@ from booster_tracker.serializers import (
     SpacecraftSerializer,
     SpacecraftInformationSerializer,
     BoatSerializer,
+    SpacecraftFamilySerializer,
 )
 import json
 
@@ -194,7 +195,7 @@ def dragon_info(request, dragon_name):
 
     for launch in launches:
         spacecraft_on_launch = SpacecraftOnLaunch.objects.get(launch=launch)
-        turnaround = spacecraft_on_launch.get_spacecraft_turnaround()
+        turnaround = spacecraft_on_launch.get_turnaround()
         launches_information.append([launch, turnaround, spacecraft_on_launch])
         if turnaround and launch.time < datetime.now(pytz.utc):
             turnarounds.append(turnaround)
@@ -402,6 +403,15 @@ class StageApiView(ListAPIView):
         """List all the stage items for given requested user"""
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SpacecraftFamilyApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        """List of all spacecraft families"""
+        spacecraft_families = SpacecraftFamily.objects.all()
+        serializer = SpacecraftFamilySerializer(spacecraft_families, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
