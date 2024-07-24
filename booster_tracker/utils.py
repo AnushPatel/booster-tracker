@@ -93,13 +93,14 @@ def success(value: str) -> str:
 
 
 def turnaround_time(launches: list) -> int:
-    """Returns turnaround between last two laucnhes in list; in total seconds"""
+    """Returns turnaround between last two launches in list; in total seconds"""
     if len(launches) > 1:
         return (launches[len(launches) - 1].time - launches[len(launches) - 2].time).total_seconds()
     return None
 
 
 def all_values_true(dictionary):
+    """Returns if all values in a tree are true"""
     if isinstance(dictionary, bool):
         return dictionary
     if isinstance(dictionary, dict):
@@ -108,6 +109,7 @@ def all_values_true(dictionary):
 
 
 def version_format(string):
+    """Returns custom formatting for versions (V1.0 -> v1.0)"""
     regex = r"^V\d"
     if re.match(regex, string):
         return "v" + string[1:]

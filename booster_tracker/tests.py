@@ -19,10 +19,17 @@ from booster_tracker.utils import (
     concatenated_list,
     TurnaroundObjects,
     turnaround_time,
+    all_values_true,
+    version_format,
 )
 from booster_tracker.home_utils import (
-    get_landings_and_successes,
     get_most_flown_stages,
+    get_landings_and_successes,
+    get_next_and_last_launches,
+    combine_dicts,
+    get_true_filter_values,
+    get_model_objects_with_filter,
+    launches_per_day,
     StageObjects,
 )
 from datetime import datetime
@@ -249,39 +256,6 @@ class TestCases(TestCase):
         self.assertEqual(concatenated_list(["Bob"]), "Bob")
         self.assertEqual(concatenated_list([]), "N/A")
 
-    def test_get_most_flown_boosters(self):
-        # Ensure most flown boosters being grabbed successfully
-        self.assertEqual(
-            get_most_flown_stages(rocket_name="Falcon", stage_type=StageObjects.BOOSTER),
-            (["B1062", "B1080"], 3),
-        )
-
-        Launch.objects.create(
-            time=datetime(2024, 1, 1, 0, 0, tzinfo=pytz.utc),
-            pad=Pad.objects.get(name="Space Launch Complex 40"),
-            rocket=Rocket.objects.get(name="Falcon 9"),
-            name="Falcon 9 Temp Launch 1",
-            orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
-            customer="SpaceX",
-            launch_outcome="SUCCESS",
-        )
-
-        StageAndRecovery.objects.create(
-            launch=Launch.objects.get(name="Falcon 9 Temp Launch 1"),
-            stage=Stage.objects.get(name="B1080"),
-            landing_zone=LandingZone.objects.get(name="Landing Zone 1"),
-            method="DRONE_SHIP",
-            method_success="SUCCESS",
-            recovery_success=True,
-        )
-
-        # After adding the launch, ensure the output updates accordingly
-        self.assertEqual(
-            get_most_flown_stages(rocket_name="Falcon", stage_type=StageObjects.BOOSTER),
-            (["B1080"], 4),
-        )
-
     def test_turnaround_time(self):
         self.assertIsNone(turnaround_time([]))
         self.assertEqual(turnaround_time(Launch.objects.all().order_by("time")), 2592000)
@@ -299,6 +273,26 @@ class TestCases(TestCase):
 
         # Ensure function responds according to launch addition
         self.assertEqual(turnaround_time(Launch.objects.all().order_by("time")), 86400)
+
+    def test_all_values_true(self):
+        test1 = {1: True, 2: {3: True, 4: {5: {6: True}, 7: True}}}
+        test2 = {1: True}
+        test3 = {1: False}
+        test4 = {1: True, 2: {3: False}}
+
+        self.assertEqual(all_values_true(test1), True)
+        self.assertEqual(all_values_true(test2), True)
+        self.assertEqual(all_values_true(test3), False)
+        self.assertEqual(all_values_true(test4), False)
+
+    def test_version_format(self):
+        str1 = "V1.0"
+        str2 = "v1.0"
+        str3 = "Version"
+
+        self.assertEqual(version_format(str1), "v1.0")
+        self.assertEqual(version_format(str2), "v1.0")
+        self.assertEqual(version_format(str3), "Version")
 
     def test_num_launches_rocket(self):
         # Test function on perm objects
@@ -362,6 +356,41 @@ class TestCases(TestCase):
         self.assertEqual(Rocket.objects.get(name="Falcon 9").num_successes, 4)
         self.assertEqual(Rocket.objects.get(name="Falcon Heavy").num_successes, 2)
 
+    # home_utils.py tests:
+
+    def test_get_most_flown_stages(self):
+        # Ensure most flown boosters being grabbed successfully
+        self.assertEqual(
+            get_most_flown_stages(rocket_name="Falcon", stage_type=StageObjects.BOOSTER),
+            (["B1062", "B1080"], 3),
+        )
+
+        Launch.objects.create(
+            time=datetime(2024, 1, 1, 0, 0, tzinfo=pytz.utc),
+            pad=Pad.objects.get(name="Space Launch Complex 40"),
+            rocket=Rocket.objects.get(name="Falcon 9"),
+            name="Falcon 9 Temp Launch 1",
+            orbit=Orbit.objects.get(name="low-Earth Orbit"),
+            mass="1000 kg",
+            customer="SpaceX",
+            launch_outcome="SUCCESS",
+        )
+
+        StageAndRecovery.objects.create(
+            launch=Launch.objects.get(name="Falcon 9 Temp Launch 1"),
+            stage=Stage.objects.get(name="B1080"),
+            landing_zone=LandingZone.objects.get(name="Landing Zone 1"),
+            method="DRONE_SHIP",
+            method_success="SUCCESS",
+            recovery_success=True,
+        )
+
+        # After adding the launch, ensure the output updates accordingly
+        self.assertEqual(
+            get_most_flown_stages(rocket_name="Falcon", stage_type=StageObjects.BOOSTER),
+            (["B1080"], 4),
+        )
+
     def test_get_landings_and_successes(self):
         # Test function on perm objects
         self.assertEqual(get_landings_and_successes(rocket_name="Falcon"), (6, 6))
@@ -409,6 +438,216 @@ class TestCases(TestCase):
 
         # following the addition of three landing attempts (two successful), ensure function responds accordingly
         self.assertEqual(get_landings_and_successes(rocket_name="Falcon"), (9, 7))
+
+    # Test get_next_and_last_launch() function
+    def test_get_next_and_last_launches(self):
+        # Ensure next launch does not exist and launch launch is correctly being found
+        self.assertEqual(get_next_and_last_launches()[0], None)
+        self.assertEqual(get_next_and_last_launches()[1].name, "Falcon 9 Launch 4")
+
+        Launch.objects.create(
+            time=datetime.now(pytz.utc),
+            pad=Pad.objects.get(name="Space Launch Complex 40"),
+            rocket=Rocket.objects.get(name="Falcon 9"),
+            name="Falcon 9 Temp Launch 1",
+            orbit=Orbit.objects.get(name="low-Earth Orbit"),
+            mass="1000 kg",
+            customer="SpaceX",
+            launch_outcome="SUCCESS",
+        )
+
+        Launch.objects.create(
+            time=datetime(datetime.now().year + 1, 8, 1, 0, 0, tzinfo=pytz.utc),
+            pad=Pad.objects.get(name="Space Launch Complex 40"),
+            rocket=Rocket.objects.get(name="Falcon 9"),
+            name="Falcon 9 Temp Launch 2",
+            orbit=Orbit.objects.get(name="low-Earth Orbit"),
+            mass="1000 kg",
+            customer="SpaceX",
+            launch_outcome="SUCCESS",
+        )
+
+        # Ensure that the function updates correctly when a next launch is added
+        self.assertEqual(get_next_and_last_launches()[1].name, "Falcon 9 Temp Launch 1")
+        self.assertEqual(get_next_and_last_launches()[0].name, "Falcon 9 Temp Launch 2")
+
+    def test_combine_dicts(self):
+        # both dicts empty
+        dict1 = {}
+        dict2 = {}
+        expected = {}
+        result = combine_dicts(dict1, dict2)
+        self.assertEqual(result, expected)
+
+        # 1 dict empty
+        dict1 = {}
+        dict2 = {"a": [1, 2], "b": [3]}
+        expected = {"a": [1, 2], "b": [3]}
+        result = combine_dicts(dict1, dict2)
+        self.assertEqual(result, expected)
+
+        # other dict empty
+        dict1 = {"a": [1, 2], "b": [3]}
+        dict2 = {}
+        expected = {"a": [1, 2], "b": [3]}
+        result = combine_dicts(dict1, dict2)
+        self.assertEqual(result, expected)
+
+        # no shared keys
+        dict1 = {"a": [1, 2]}
+        dict2 = {"b": [3, 4]}
+        expected = {"a": [1, 2], "b": [3, 4]}
+        result = combine_dicts(dict1, dict2)
+        self.assertEqual(result, expected)
+
+        # shared key
+        dict1 = {"a": [1, 2]}
+        dict2 = {"a": [3, 4]}
+        expected = {"a": [1, 2, 3, 4]}
+        result = combine_dicts(dict1, dict2)
+        self.assertEqual(result, expected)
+
+        # shared key and value
+        dict1 = {"a": [1, 2]}
+        dict2 = {"a": [2, 3]}
+        expected = {"a": [1, 2, 3]}
+        result = combine_dicts(dict1, dict2)
+        self.assertEqual(result, expected)
+
+        dict1 = {"a": [1, 2], "b": [4, 5]}
+        dict2 = {"a": [2, 3], "c": [6]}
+        expected = {"a": [1, 2, 3], "b": [4, 5], "c": [6]}
+        result = combine_dicts(dict1, dict2)
+        self.assertEqual(result, expected)
+
+        dict1 = {"a": [1, 2], "A": [3, 4]}
+        dict2 = {"a": [2, 5], "b": [6]}
+        expected = {"a": [1, 2, 5], "A": [3, 4], "b": [6]}
+        result = combine_dicts(dict1, dict2)
+        self.assertEqual(result, expected)
+
+    def test_get_true_filter_values(self):
+        filter = {"rocket": {"1": True, "2": False, "3": True}}
+        filter_item = "rocket"
+        expected = {"rocket": [1, 3]}
+        result = get_true_filter_values(filter, filter_item)
+        self.assertEqual(result, expected)
+
+        filter = {
+            "rocket__family": {"rocket": {"1": True, "2": False, "3": True}, "rocket__type": {"4": True, "5": False}}
+        }
+        filter_item = "rocket__family"
+        expected = {"rocket": [1, 3], "rocket__type": [4]}
+        result = get_true_filter_values(filter, filter_item)
+        self.assertEqual(result, expected)
+
+        filter = {"rocket__family": {"rocket": {"rocket__type": {"1": True, "2": False, "3": True}}}}
+        filter_item = "rocket__family"
+        expected = {"rocket__type": [1, 3]}
+        result = get_true_filter_values(filter, filter_item)
+        self.assertEqual(result, expected)
+
+        filter = {"rocket": {"1": False, "2": False}}
+        filter_item = "rocket"
+        expected = {"rocket": []}
+        result = get_true_filter_values(filter, filter_item)
+        self.assertEqual(result, expected)
+
+        filter = {"rocket": {"1": True, "A": True, "B": False}}
+        filter_item = "rocket"
+        expected = {"rocket": [1, "A"]}
+        result = get_true_filter_values(filter, filter_item)
+        self.assertEqual(result, expected)
+
+        filter = {"rocket": {"1": True, "a": True, "2": False, "b": True}}
+        filter_item = "rocket"
+        expected = {"rocket": [1, "A", "B"]}
+        result = get_true_filter_values(filter, filter_item)
+        self.assertEqual(result, expected)
+
+    def test_get_model_objects_with_filter(self):
+        # create temp objects for test purposes
+        Launch.objects.create(
+            time=datetime(2024, 6, 1, tzinfo=pytz.utc),
+            pad=Pad.objects.get(nickname="LC-39A"),
+            rocket=Rocket.objects.get(name="Falcon 9"),
+            name="Falcon 9 Temp Launch 1",
+            orbit=Orbit.objects.get(name="low-Earth Orbit"),
+            mass="1000 kg",
+            customer="SpaceX",
+            launch_outcome="SUCCESS",
+        )
+
+        Launch.objects.create(
+            time=datetime(2024, 7, 1, tzinfo=pytz.utc),
+            pad=Pad.objects.get(nickname="SLC-40"),
+            rocket=Rocket.objects.get(name="Falcon 9"),
+            name="Falcon 9 Temp Launch 2",
+            orbit=Orbit.objects.get(name="low-Earth Orbit"),
+            mass="1000 kg",
+            customer="SpaceX",
+            launch_outcome="FAILURE",
+        )
+
+        # test everything empty
+        result = get_model_objects_with_filter(Launch, {}, "")
+        self.assertEqual(result.count(), 7)
+
+        result = get_model_objects_with_filter(Launch, {}, "Falcon 9")
+        self.assertEqual(result.count(), 6)
+
+        f9 = Rocket.objects.get(name="Falcon 9")
+        fh = Rocket.objects.get(name="Falcon Heavy")
+        slc40 = Pad.objects.get(name="Space Launch Complex 40")
+        lc39a = Pad.objects.get(name="Launch Complex 39A")
+
+        filter = {"rocket": {str(f9.id): True, str(fh.id): False}}
+        result = get_model_objects_with_filter(Launch, filter)
+        self.assertEqual(result.count(), 6)
+
+        filter = {"pad": {str(slc40.id): True, str(lc39a.id): False}}
+        result = get_model_objects_with_filter(Launch, filter)
+        self.assertEqual(result.count(), 6)
+
+        filter = {"launch_outcome": {"SUCCESS": True, "FAILURE": False}}
+        result = get_model_objects_with_filter(Launch, filter)
+        self.assertEqual(result.count(), 6)
+
+        filter = {
+            "rocket": {str(f9.id): True, str(fh.id): True},
+            "pad": {str(slc40.id): True},
+        }
+        result = get_model_objects_with_filter(Launch, filter)
+        self.assertEqual(result.count(), 7)
+
+        filter = {"rocket": {str(f9.id): False, str(fh.id): False}}
+        result = get_model_objects_with_filter(Launch, filter)
+        self.assertEqual(result.count(), 0)
+
+        filter = {"rocket": {"1": False, "2": False, "3": False, "4": False}}
+        result = get_model_objects_with_filter(Launch, filter)
+        self.assertEqual(result.count(), 0)
+
+    def test_launches_per_day(self):
+        # Test get laucnhes with current list
+        result = launches_per_day(Launch.objects.all())
+        expected = [("May 01", 1), ("April 01", 1), ("March 01", 1), ("February 01", 1), ("January 01", 1)]
+        self.assertEqual(result, expected)
+
+        # Add a second launch on another day, make sure it updates accordingly:
+        Launch.objects.create(
+            time=datetime(2024, 1, 1, tzinfo=pytz.utc),
+            pad=Pad.objects.get(nickname="SLC-40"),
+            rocket=Rocket.objects.get(name="Falcon 9"),
+            name="Falcon 9 Temp Launch 1",
+            orbit=Orbit.objects.get(name="low-Earth Orbit"),
+            mass="1000 kg",
+            customer="SpaceX",
+            launch_outcome="FAILURE",
+        )
+        result = launches_per_day(Launch.objects.all())
+        expected = [("January 01", 2), ("May 01", 1), ("April 01", 1), ("March 01", 1), ("February 01", 1)]
+        self.assertEqual(result, expected)
 
     # Test the methods for pads and landing zones
     def test_num_launches(self):
@@ -505,7 +744,7 @@ class TestCases(TestCase):
             recovery_success=True,
         )
 
-        # Ensure after adding launch that is not new quickest does not update stats
+        # Ensure after adding launch that is not new quickest does not update
         self.assertEqual(Pad.objects.get(nickname="SLC-40").fastest_turnaround, "29 days")
         self.assertEqual(Pad.objects.get(nickname="LC-39A").fastest_turnaround, "N/A")
 
