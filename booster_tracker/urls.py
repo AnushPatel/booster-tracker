@@ -17,12 +17,14 @@ from booster_tracker.views import (
     SpacecraftInformationApiView,
     BoatApiView,
     SpacecraftFamilyApiView,
+    HomeDataApiView,
 )
 
 app_name = "booster_tracker"
 urlpatterns = [
     path("", views.home, name="home"),
     path("health/", views.health, name="health"),
+    path("api/homedata/", views.HomeDataApiView.as_view()),
     path("api/launchesonly/", LaunchOnlyApiView.as_view()),
     path("api/launches/", LaunchApiView.as_view()),
     path("api/stages/", StageApiView.as_view()),

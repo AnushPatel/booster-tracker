@@ -20,6 +20,8 @@ from django.templatetags.static import static
 import pytz
 from enum import StrEnum
 from collections import defaultdict
+import numpy as np
+from scipy.optimize import curve_fit
 
 
 class StageObjects(StrEnum):
@@ -557,3 +559,49 @@ def launches_per_day(launches: list[Launch]):
     launches_per_day = sorted(launches_per_day.items(), key=lambda x: x[1], reverse=True)
 
     return launches_per_day
+
+
+def launch_turnaround_times(filtered_launches: list[Launch], remove_anomalies: bool):
+
+    turnaround_times = {}
+    for launch in filtered_launches:
+        if remove_anomalies and launch.after_anamoly:
+            continue
+        if time := (launch.time_since_last_company_launch):
+            turnaround_times[launch.name] = time
+
+    return turnaround_times
+
+
+def line_of_best_fit(x: list, y: list, fit_type="exponential", weights=None):
+    # Linear fit
+    if fit_type == "linear":
+        coeffs = np.polyfit(x, y, 1)
+        fit_func = np.poly1d(coeffs)
+
+    # Quadratic fit
+    elif fit_type == "quadratic":
+        coeffs = np.polyfit(x, y, 2)
+        fit_func = np.poly1d(coeffs)
+
+    # Cubic fit
+    elif fit_type == "cubic":
+        coeffs = np.polyfit(x, y, 3)
+        fit_func = np.poly1d(coeffs)
+
+    # Exponential fit
+    elif fit_type == "exponential":
+
+        def exp_func(x, a, b, c):
+            return a * np.exp(b * x) + c
+
+        # Better initial guess for exponential decay
+        initial_guess = (y[0], -0.1, y[-1])
+
+        if weights is None:
+            weights = np.ones_like(x)
+
+        coeffs, _ = curve_fit(exp_func, x, y, p0=initial_guess, maxfev=10000, sigma=weights)
+        fit_func = lambda x: exp_func(x, *coeffs)
+
+    return fit_func

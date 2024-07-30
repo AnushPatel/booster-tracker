@@ -114,3 +114,12 @@ def version_format(string):
     if re.match(regex, string):
         return "v" + string[1:]
     return string
+
+
+def get_averages(values, chunk_size):
+    averages = []
+    for i in range(0, len(values), chunk_size):
+        chunk = values[i : i + chunk_size]
+        avg = sum(chunk) / len(chunk) if chunk else 0
+        averages.append(avg)
+    return averages

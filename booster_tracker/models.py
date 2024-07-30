@@ -269,6 +269,35 @@ class Launch(models.Model):
     def encoded_name(self):
         return urllib.parse.quote(self.name, safe="")
 
+    @property
+    def time_since_last_company_launch(self):
+        if (
+            last_launch := Launch.objects.filter(rocket__family=self.rocket.family, time__lt=self.time)
+            .order_by("time")
+            .last()
+        ):
+            turnaround = (self.time - last_launch.time).total_seconds()
+
+            return turnaround / 86400
+        return None
+
+    @property
+    def after_anamoly(self):
+        if (
+            last_launch := Launch.objects.filter(
+                rocket__family__provider=self.rocket.family.provider, time__lt=self.time
+            )
+            .order_by("time")
+            .last()
+        ):
+
+            if (
+                last_launch.launch_outcome in ["FAILURE", "PARTIAL_FAILURE"]
+                and last_launch.rocket.family == self.rocket.family
+            ):
+                return True
+        return False
+
     def get_stage_flights_and_turnaround(self, stage: Stage) -> tuple:
         """Takes in a stage that is on the launch and returns the number of times it's flown (including this launch) and the turnaround time between this launch and last"""
         flights = 0

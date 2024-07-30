@@ -172,3 +172,10 @@ class BoatSerializer(serializers.ModelSerializer):
     class Meta:
         model = Boat
         fields = "__all__"
+
+
+class HomePageSerializer(serializers.Serializer):
+    turnaround_x_values = serializers.ListField(child=serializers.FloatField())
+    turnaround_data = serializers.ListField(child=serializers.FloatField())
+    best_fit_turnaround_values = serializers.ListField(child=serializers.FloatField())
+    # launch_names = serializers.ListField(child=serializers.CharField())
