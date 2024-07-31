@@ -460,10 +460,11 @@ class SpacecraftInformationApiView(RetrieveAPIView):
 
 class HomeDataApiView(APIView):
     def get(self, request):
-        start_time = datetime(2018, 1, 1, tzinfo=pytz.utc)  # temp, this will be sent from API
+        date_str = self.request.query_params.get("startdate", "").strip('"').replace("Z", "")
+        start_time = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=pytz.utc)
         today = datetime.now(pytz.utc)
         received_filter = {}  # temp, this will be sent from API
-        remove_anomalies = True  # temp, this will e sent from API
+        function_type = self.request.query_params.get("functiontype", "")
         min_value = 0.3  # Minimum value for the integral
 
         # Get filtered launches, filtering by time
@@ -472,9 +473,7 @@ class HomeDataApiView(APIView):
             .filter(time__gte=start_time, time__lte=today)
             .order_by("time")
         )
-        turnaround_data = launch_turnaround_times(
-            filtered_launches=filtered_launches, remove_anomalies=remove_anomalies
-        )
+        turnaround_data = launch_turnaround_times(filtered_launches=filtered_launches, remove_anomalies=True)
 
         turnaround_values = list(turnaround_data.values())
         chunk_size = 10
@@ -485,7 +484,7 @@ class HomeDataApiView(APIView):
         # Calculate the best fit line for all x values
         weights = np.linspace(1, 4, len(turnaround_values))  # Increasing weights
         all_x_values = list(range(len(turnaround_values)))
-        best_fit_line = line_of_best_fit(all_x_values, turnaround_values, "exponential", weights=weights)
+        best_fit_line = line_of_best_fit(all_x_values, turnaround_values, function_type, weights=weights)
 
         # Calculate the best fit values for all x values
         best_fit_turnaround_values = [best_fit_line(x) for x in x_values]
