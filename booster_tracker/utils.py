@@ -62,8 +62,6 @@ def convert_seconds(x):
 
 
 # Makes an ordinal; 1 -> 1st
-
-
 def make_ordinal(n: int):
     if n is None:
         return "None"

@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, HttpResponse
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.cache import cache
 import urllib.parse
-from scipy.integrate import quad
+from django.db.models import Q
 from booster_tracker.home_utils import (
     generate_home_page,
     generate_starship_home,
@@ -12,8 +12,10 @@ from booster_tracker.home_utils import (
     launches_per_day,
     launch_turnaround_times,
     line_of_best_fit,
+    launches_in_time_interval,
+    get_next_and_last_launches,
 )
-from booster_tracker.utils import concatenated_list, get_averages
+from booster_tracker.utils import concatenated_list, convert_seconds, TurnaroundObjects
 
 import pytz
 import statistics
@@ -463,9 +465,10 @@ class HomeDataApiView(APIView):
         date_str = self.request.query_params.get("startdate", "").strip('"').replace("Z", "")
         start_time = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=pytz.utc)
         today = datetime.now(pytz.utc)
-        received_filter = {}  # temp, this will be sent from API
         function_type = self.request.query_params.get("functiontype", "")
-        min_value = 0.3  # Minimum value for the integral
+
+        # Temporary filter, will be sent from API
+        received_filter = {}
 
         # Get filtered launches, filtering by time
         filtered_launches = (
@@ -473,8 +476,8 @@ class HomeDataApiView(APIView):
             .filter(time__gte=start_time, time__lte=today)
             .order_by("time")
         )
-        turnaround_data = launch_turnaround_times(filtered_launches=filtered_launches, remove_anomalies=True)
 
+        turnaround_data = launch_turnaround_times(filtered_launches=filtered_launches, remove_anomalies=True)
         turnaround_values = list(turnaround_data.values())
         chunk_size = 10
 
@@ -484,61 +487,79 @@ class HomeDataApiView(APIView):
         # Calculate the best fit line for all x values
         weights = np.linspace(1, 4, len(turnaround_values))  # Increasing weights
         all_x_values = list(range(len(turnaround_values)))
-        best_fit_line = line_of_best_fit(all_x_values, turnaround_values, function_type, weights=weights)
+        best_fit_line = line_of_best_fit(x=all_x_values, y=turnaround_values, fit_type=function_type, weights=weights)
 
         # Calculate the best fit values for all x values
         best_fit_turnaround_values = [best_fit_line(x) for x in x_values]
 
-        # Insert null values at every other x value in turnaround_values
-        averaged_values = []
-        for i, x in enumerate(x_values):
-            if i % 2 == 0:
-                averaged_values.append(turnaround_values[x])
-            else:
-                averaged_values.append(None)
+        # Insert null values at every other x value in turnaround_values; this is to break values up on line chart
+        averaged_values = [(turnaround_values[x] if i % 2 == 0 else None) for i, x in enumerate(x_values)]
 
         # Calculate current launch number (the last one in the list)
         current_launch_number = len(filtered_launches)
-
-        # Define a function to find the cumulative days for a given range of launch numbers
-        def integrate_launches(start_launch, end_launch):
-            integral, _ = quad(best_fit_line, start_launch, end_launch)
-            if integral <= 0:
-                additional_days = min_value
-            else:
-                additional_days = integral
-            return additional_days
 
         # Calculate remaining launches for the current year
         days_in_current_year = 366 if today.year % 4 == 0 else 365
         days_passed_current_year = (today - datetime(today.year, 1, 1, tzinfo=pytz.utc)).days
         remaining_days_current_year = days_in_current_year - days_passed_current_year
 
-        def launches_in_time_interval(start_launch, remaining_days):
-            end_launch = start_launch
-            days_integrated = 0
-            while days_integrated < remaining_days:
-                days_integrated += integrate_launches(end_launch, end_launch + 1)
-                end_launch += 1
-            return end_launch
-
-        launches_this_year = filtered_launches.filter(
-            time__gte=(datetime(datetime.now().year, 1, 1, tzinfo=pytz.utc))
-        ).count()
+        launches_this_year = filtered_launches.filter(time__gte=(datetime(today.year, 1, 1, tzinfo=pytz.utc))).count()
 
         remaining_launches_current_year = (
-            launches_in_time_interval(current_launch_number, remaining_days_current_year) - current_launch_number
+            launches_in_time_interval(
+                line_of_best_fit=best_fit_line,
+                start_launch_num=current_launch_number,
+                remaining_days=remaining_days_current_year,
+                min_value=0.33,
+            )
+            - current_launch_number
         )
 
         # Calculate total launches for the next year
         next_year_days = 366 if (today.year + 1) % 4 == 0 else 365
         next_year_launches = launches_in_time_interval(
-            current_launch_number + remaining_launches_current_year, next_year_days
+            line_of_best_fit=best_fit_line,
+            start_launch_num=current_launch_number + remaining_launches_current_year,
+            remaining_days=next_year_days,
+            min_value=0.33,
         )
 
         # Calculate total launches for the year after next
         year_after_next_days = 366 if (today.year + 2) % 4 == 0 else 365
-        year_after_next_launches = launches_in_time_interval(next_year_launches, year_after_next_days)
+        year_after_next_launches = launches_in_time_interval(
+            line_of_best_fit=best_fit_line,
+            start_launch_num=next_year_launches,
+            remaining_days=year_after_next_days,
+            min_value=0.33,
+        )
+
+        # Get homepage stats
+        next_launch, last_launch = get_next_and_last_launches()
+        num_missions = Launch.objects.filter(rocket__family__provider__name="SpaceX").count()
+        num_successes = Launch.objects.filter(rocket__family__provider__name="SpaceX", launch_outcome="SUCCESS").count()
+        num_landings = (
+            StageAndRecovery.objects.filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD"))
+            .filter(method_success="SUCCESS")
+            .count()
+        )
+        shortest_time_between_launches = convert_seconds(
+            last_launch.calculate_turnarounds(turnaround_object=TurnaroundObjects.ALL)["ordered_turnarounds"][0][
+                "turnaround_time"
+            ]
+        )
+
+        num_stage_uses = (
+            StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc))
+            .filter(launch__rocket__name__icontains="Falcon")
+            .count()
+        )
+        num_stages_used = (
+            Stage.objects.filter(stageandrecovery__launch__time__lte=datetime.now(pytz.utc))
+            .filter(rocket__family__provider__name="SpaceX")
+            .distinct()
+            .count()
+        )
+        num_stage_reflights = num_stage_uses - num_stages_used
 
         # Prepare data for serialization
         data = {
@@ -549,6 +570,13 @@ class HomeDataApiView(APIView):
             "total_launches_current_year": launches_this_year + remaining_launches_current_year,
             "total_launches_next_year": next_year_launches - (current_launch_number + remaining_launches_current_year),
             "total_launches_year_after_next": year_after_next_launches - next_year_launches,
+            "next_launch": next_launch,
+            "last_launch": last_launch,
+            "num_missions": num_missions,
+            "num_successes": num_successes,
+            "num_landings": num_landings,
+            "shortest_time_between_launches": shortest_time_between_launches,
+            "num_stage_reflights": num_stage_reflights,
         }
 
         print(data)

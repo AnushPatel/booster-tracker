@@ -22,6 +22,7 @@ from enum import StrEnum
 from collections import defaultdict
 import numpy as np
 from scipy.optimize import curve_fit
+from scipy.integrate import quad
 
 
 class StageObjects(StrEnum):
@@ -605,3 +606,27 @@ def line_of_best_fit(x: list, y: list, fit_type="exponential", weights=None):
         fit_func = lambda x: exp_func(x, *coeffs)
 
     return fit_func
+
+
+# Define a function to find the cumulative days for a given range of launch numbers
+def time_between_launches(line_of_best_fit, start_launch: Launch, end_launch: Launch, min_value: float):
+    """Using a line of best fit (launches (x) vs time/launch (y)), calculates the time between two launches; if the integral is less than or equal to 0, it returns min value"""
+    integral, _ = quad(line_of_best_fit, start_launch, end_launch)
+    if integral <= 0:
+        return min_value
+    return integral
+
+
+def launches_in_time_interval(line_of_best_fit, start_launch_num: int, remaining_days: int, min_value: float):
+    """with a line of best fit, figures out the number of launches left in the remaining time interval. start_launch_num x-axis int of integration starting point"""
+    end_launch_num = start_launch_num
+    days_integrated = 0
+    while days_integrated < remaining_days:
+        days_integrated += time_between_launches(
+            line_of_best_fit=line_of_best_fit,
+            start_launch=end_launch_num,
+            end_launch=end_launch_num + 1,
+            min_value=min_value,
+        )
+        end_launch_num += 1
+    return end_launch_num
