@@ -1,4 +1,4 @@
-from django.db.models import Q, Count, Max
+from django.db.models import Q, Count, Max, Avg
 from django.db import models
 from django.apps import apps
 from booster_tracker.models import (
@@ -30,21 +30,22 @@ class StageObjects(StrEnum):
     SECOND_STAGE = "SECOND_STAGE"
 
 
-def get_most_flown_stages(rocket_name: str, stage_type: StageObjects):
+def get_most_flown_stages(family: RocketFamily, stage_type: StageObjects, before_date: datetime):
     """Returns the booster(s) with the highest number of flights, and how many flights that is"""
-    booster_and_launch_count = Stage.objects.filter(
-        stageandrecovery__launch__time__lte=datetime.now(pytz.utc),
+    stage_and_launch_count = Stage.objects.filter(
+        stageandrecovery__launch__time__lte=before_date,
         type=stage_type,
-        rocket__name__icontains=rocket_name,
+        rocket__family=family,
     ).annotate(launch_count=Count("stageandrecovery__launch", distinct=True))
 
-    max_launch_count = booster_and_launch_count.aggregate(Max("launch_count"))["launch_count__max"]
+    max_launch_count = stage_and_launch_count.aggregate(Max("launch_count"))["launch_count__max"]
 
-    most_flown_boosters = list(
-        booster_and_launch_count.filter(launch_count=max_launch_count).values_list("name", flat=True)
-    )
+    most_flown_stages = list(stage_and_launch_count.filter(launch_count=max_launch_count))
 
-    return (most_flown_boosters, max_launch_count)
+    return {
+        "stages": most_flown_stages,
+        "num_launches": max_launch_count if max_launch_count else 0,
+    }
 
 
 def get_landings_and_successes(rocket_name: str) -> tuple:
@@ -115,8 +116,12 @@ def gather_stats(last_launch):
         num_launches_per_rocket_and_successes.append([rocket.name, rocket.num_launches, rocket.num_successes])
 
     num_landings_and_successes = get_landings_and_successes(rocket_name="Falcon")
-    most_flown_boosters = get_most_flown_stages(rocket_name="Falcon", stage_type=StageObjects.BOOSTER)
-    most_flown_boosters_string = f"{concatenated_list(most_flown_boosters[0])}; {most_flown_boosters[1]} flights"
+    most_flown_boosters = get_most_flown_stages(
+        family=RocketFamily.objects.get(name="Falcon"),
+        stage_type=StageObjects.BOOSTER,
+        before_date=datetime.now(pytz.utc),
+    )
+    most_flown_boosters_string = f"{concatenated_list([stage.name for stage in most_flown_boosters['stages']])}; {most_flown_boosters['num_launches']} flights"
 
     if last_launch:
         booster_turnarounds = last_launch.calculate_turnarounds(turnaround_object=TurnaroundObjects.BOOSTER)
@@ -260,12 +265,20 @@ def gather_landing_stats(rocket_name):
     }
 
 
-def gather_most_flown_stages(rocket_name):
-    most_flown_boosters = get_most_flown_stages(rocket_name=rocket_name, stage_type=StageObjects.BOOSTER)
-    most_flown_ships = get_most_flown_stages(rocket_name=rocket_name, stage_type=StageObjects.SECOND_STAGE)
+def gather_most_flown_stages(family: RocketFamily):
+    most_flown_boosters = get_most_flown_stages(
+        family=family,
+        stage_type=StageObjects.BOOSTER,
+        before_date=datetime.now(pytz.utc),
+    )
+    most_flown_ships = get_most_flown_stages(
+        rocket_name=family,
+        stage_type=StageObjects.SECOND_STAGE,
+        before_date=datetime.now(pytz.utc),
+    )
 
-    most_flown_boosters_string = f"{concatenated_list(most_flown_boosters[0])}; {most_flown_boosters[1]} flights"
-    most_flown_ships_string = f"{concatenated_list(most_flown_ships[0])}; {most_flown_ships[1]} flights"
+    most_flown_boosters_string = f"{concatenated_list([stage.name for stage in most_flown_boosters['stages']])}; {most_flown_boosters['num_launches']} flights"
+    most_flown_ships_string = f"{concatenated_list([stage.name for stage in most_flown_ships['stages']])}; {most_flown_ships['num_launches']} flights"
 
     return most_flown_boosters_string, most_flown_ships_string
 
@@ -413,7 +426,9 @@ def generate_starship_home():
     num_launches_per_rocket_and_successes = gather_launch_stats(rocket_name)
 
     landing_stats = gather_landing_stats(rocket_name)
-    most_flown_boosters_string, most_flown_ships_string = gather_most_flown_stages(rocket_name)
+    most_flown_boosters_string, most_flown_ships_string = gather_most_flown_stages(
+        family=RocketFamily.objects.get(name="Starship"),
+    )
 
     quickest_booster_turnaround_string = get_quickest_turnaround(last_launch, TurnaroundObjects.BOOSTER)
     quickest_ship_turnaround_string = get_quickest_turnaround(last_launch, TurnaroundObjects.SECOND_STAGE)
@@ -562,14 +577,11 @@ def launches_per_day(launches: list[Launch]):
     return launches_per_day
 
 
-def launch_turnaround_times(filtered_launches: list[Launch], remove_anomalies: bool):
-
+def launch_turnaround_times(filtered_launches: list[Launch]):
     turnaround_times = {}
     for launch in filtered_launches:
-        if remove_anomalies and launch.after_anamoly:
-            continue
-        if time := (launch.time_since_last_company_launch):
-            turnaround_times[launch.name] = time
+        if time := (launch.company_turnaround):
+            turnaround_times[launch.name] = round(time / 86400)
 
     return turnaround_times
 

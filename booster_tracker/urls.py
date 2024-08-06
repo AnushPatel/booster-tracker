@@ -18,6 +18,7 @@ from booster_tracker.views import (
     BoatApiView,
     SpacecraftFamilyApiView,
     HomeDataApiView,
+    FamilyInformationApiView,
 )
 
 app_name = "booster_tracker"
@@ -35,6 +36,7 @@ urlpatterns = [
     path("api/launchinfo/", LaunchInformationApiView.as_view()),
     path("api/rockets/", RocketApiView.as_view()),
     path("api/rocketfamilies/", RocketFamilyApiView.as_view()),
+    path("api/familyinformation/", FamilyInformationApiView.as_view()),
     path("api/operators/", OperatorApiView.as_view()),
     path("api/orbit/", OrbitApiView.as_view()),
     path("api/pads/", PadApiView.as_view()),

@@ -13,6 +13,11 @@ class TurnaroundObjects(StrEnum):
     SPACECRAFT = "spacecraft"
 
 
+class MonotonicDirections(StrEnum):
+    INCREASING = "increasing"
+    DECREASING = "decreasing"
+
+
 # First several functions will be defined that are commonly used.
 # As the name implies, this formats the time to be in the following format: March 25, 2024 04:38 UTC
 
@@ -31,6 +36,8 @@ def format_time(time_obj):
 
 
 def convert_seconds(x):
+    if x is None:
+        return None
     d = int(x / 86400)
     x -= d * 86400
     h = int(x / 3600)
@@ -121,3 +128,19 @@ def get_averages(values, chunk_size):
         avg = sum(chunk) / len(chunk) if chunk else 0
         averages.append(avg)
     return averages
+
+
+def make_monotonic(list: list, order: MonotonicDirections):
+    for index, value in enumerate(list):
+        if order == MonotonicDirections.INCREASING:
+            if index == 0:
+                continue
+            if value < list[index - 1]:
+                list[index] = list[index - 1]
+        if order == MonotonicDirections.DECREASING:
+            if index == len(list) - 1:
+                continue
+            if value < list[index + 1]:
+                list[index] = list[index + 1]
+
+    return list

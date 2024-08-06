@@ -21,6 +21,8 @@ from booster_tracker.utils import (
     turnaround_time,
     all_values_true,
     version_format,
+    make_monotonic,
+    MonotonicDirections,
 )
 from booster_tracker.home_utils import (
     get_most_flown_stages,
@@ -294,6 +296,25 @@ class TestCases(TestCase):
         self.assertEqual(version_format(str2), "v1.0")
         self.assertEqual(version_format(str3), "Version")
 
+    def test_make_monotonic(self):
+        list0 = []
+        list1 = [1]
+        list2 = [1, 2, 3, 4]
+        list3 = [1, 2, 3, 4, 3, 6, 6, 3]
+
+        self.assertEqual(make_monotonic(list0, MonotonicDirections.INCREASING), [])
+        self.assertEqual(make_monotonic(list1, MonotonicDirections.INCREASING), [1])
+        self.assertEqual(make_monotonic(list2, MonotonicDirections.INCREASING), [1, 2, 3, 4])
+        self.assertEqual(make_monotonic(list3, MonotonicDirections.INCREASING), [1, 2, 3, 4, 4, 6, 6, 6])
+
+        list4 = [1]
+        list5 = [4, 3, 2, 1]
+        list6 = [3, 6, 6, 3, 4, 3, 2, 1]
+
+        self.assertEqual(make_monotonic(list4, MonotonicDirections.DECREASING), [1])
+        self.assertEqual(make_monotonic(list5, MonotonicDirections.DECREASING), [4, 3, 2, 1])
+        self.assertEqual(make_monotonic(list6, MonotonicDirections.DECREASING), [6, 6, 6, 4, 4, 3, 2, 1])
+
     def test_num_launches_rocket(self):
         # Test function on perm objects
         self.assertEqual(Rocket.objects.get(name="Falcon 9").num_launches, 4)
@@ -360,9 +381,15 @@ class TestCases(TestCase):
 
     def test_get_most_flown_stages(self):
         # Ensure most flown boosters being grabbed successfully
+        B1062 = Stage.objects.get(name="B1062")
+        B1080 = Stage.objects.get(name="B1080")
         self.assertEqual(
-            get_most_flown_stages(rocket_name="Falcon", stage_type=StageObjects.BOOSTER),
-            (["B1062", "B1080"], 3),
+            get_most_flown_stages(
+                family=RocketFamily.objects.get(name="Falcon"),
+                stage_type=StageObjects.BOOSTER,
+                before_date=datetime.now(pytz.utc),
+            ),
+            ({"stages": [B1062, B1080], "num_launches": 3}),
         )
 
         Launch.objects.create(
@@ -387,8 +414,12 @@ class TestCases(TestCase):
 
         # After adding the launch, ensure the output updates accordingly
         self.assertEqual(
-            get_most_flown_stages(rocket_name="Falcon", stage_type=StageObjects.BOOSTER),
-            (["B1080"], 4),
+            get_most_flown_stages(
+                family=RocketFamily.objects.get(name="Falcon"),
+                stage_type=StageObjects.BOOSTER,
+                before_date=datetime.now(pytz.utc),
+            ),
+            ({"stages": [B1080], "num_launches": 4}),
         )
 
     def test_get_landings_and_successes(self):
