@@ -25,7 +25,20 @@ class OrbitSerializer(serializers.ModelSerializer):
 class LaunchOnlySerializer(serializers.ModelSerializer):
     class Meta:
         model = Launch
-        fields = ["id", "time", "name", "mass", "customer", "launch_outcome", "pad", "rocket", "orbit", "image"]
+        fields = [
+            "id",
+            "time",
+            "name",
+            "mass",
+            "customer",
+            "launch_outcome",
+            "pad_turnaround",
+            "company_turnaround",
+            "pad",
+            "rocket",
+            "orbit",
+            "image",
+        ]
 
 
 class StageAndRecoverySerializer(serializers.ModelSerializer):
@@ -42,15 +55,20 @@ class LaunchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Launch
         fields = [
+            "id",
             "time",
+            "name",
+            "mass",
+            "customer",
+            "launch_outcome",
+            "pad_turnaround",
+            "company_turnaround",
             "pad",
             "rocket",
-            "name",
-            "launch_outcome",
-            "id",
-            "image",
-            "recoveries",
+            "orbit",
             "boosters",
+            "recoveries",
+            "image",
         ]
 
 
@@ -85,13 +103,58 @@ class OperatorSerializer(serializers.ModelSerializer):
 class PadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Pad
-        fields = "__all__"
+        fields = [
+            "id",
+            "name",
+            "nickname",
+            "location",
+            "status",
+            "image",
+            "num_launches",
+            "fastest_turnaround",
+        ]
+
+
+class PadInformationSerializer(serializers.Serializer):
+    launches = serializers.ListField(child=LaunchOnlySerializer())
+    display_launches = serializers.ListField(child=LaunchOnlySerializer())
+    pad = PadSerializer()
+    start_date = serializers.DateTimeField()
 
 
 class LandingZoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = LandingZone
-        fields = "__all__"
+        fields = [
+            "id",
+            "name",
+            "nickname",
+            "type",
+            "serial_number",
+            "status",
+            "image",
+            "num_landings",
+            "fastest_turnaround",
+        ]
+
+
+class LandingZoneInformationSerializer(serializers.ModelSerializer):
+    stage_and_recovery = StageAndRecoverySerializer(many=True, read_only=True, source="stageandrecovery_set")
+
+    class Meta:
+        model = LandingZone
+        fields = [
+            "id",
+            "name",
+            "nickname",
+            "type",
+            "serial_number",
+            "status",
+            "image",
+            "num_landings",
+            "fastest_turnaround",
+            "stage_and_recovery",
+        ]
 
 
 class LaunchInformationSerializer(serializers.ModelSerializer):
@@ -111,12 +174,11 @@ class StageSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "version", "type", "image", "status", "rocket", "num_launches"]
 
 
-class StageInformationSerializer(serializers.ModelSerializer):
-    stage_and_recovery = StageAndRecoverySerializer(many=True, read_only=True, source="stageandrecovery_set")
-
-    class Meta:
-        model = Stage
-        fields = ["id", "name", "version", "type", "image", "status", "rocket", "stage_and_recovery", "num_launches"]
+class StageInformationSerializer(serializers.Serializer):
+    stage_and_recoveries = serializers.ListField(child=StageAndRecoverySerializer())
+    display_stage_and_recoveries = serializers.ListField(child=StageAndRecoverySerializer())
+    stage = StageSerializer()
+    start_date = serializers.DateTimeField()
 
 
 class SpacecraftFamilySerializer(serializers.ModelSerializer):
@@ -139,22 +201,11 @@ class SpacecraftOnLaunchSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class SpacecraftInformationSerializer(serializers.ModelSerializer):
-    spacecraft_on_launch = SpacecraftOnLaunchSerializer(many=True, read_only=True, source="spacecraftonlaunch_set")
-
-    class Meta:
-        model = Spacecraft
-        fields = [
-            "id",
-            "name",
-            "nickname",
-            "version",
-            "type",
-            "image",
-            "status",
-            "family",
-            "spacecraft_on_launch",
-        ]
+class SpacecraftInformationSerializer(serializers.Serializer):
+    spacecraft = SpacecraftSerializer()
+    spacecraft_on_launches = serializers.ListField(child=SpacecraftOnLaunchSerializer())
+    display_spacecraft_on_launches = serializers.ListField(child=SpacecraftOnLaunchSerializer())
+    start_date = serializers.DateTimeField()
 
 
 class BoatSerializer(serializers.ModelSerializer):
@@ -181,16 +232,21 @@ class HomePageSerializer(serializers.Serializer):
 
 
 class FamilyInformationSerializer(serializers.Serializer):
-    max_reflight_num = serializers.DictField(child=serializers.IntegerField())
-    avg_reflight_num = serializers.ListField(child=serializers.FloatField())
-    max_fairing_flights = serializers.ListField(child=serializers.FloatField())
-    stats = serializers.DictField(child=serializers.CharField())
-    children_stats = serializers.DictField(child=serializers.CharField())
-    boosters_with_most_flights = serializers.ListField(child=StageInformationSerializer())
-    booster_max_num_flights = serializers.IntegerField()
-    stage_two_with_most_flights = serializers.ListField(child=StageInformationSerializer())
-    stage_two_max_num_flights = serializers.IntegerField()
-    booster_with_quickest_turnaround = StageInformationSerializer()
-    booster_turnaround_time = serializers.CharField()
-    stage_two_with_quickest_turnaround = StageInformationSerializer()
-    stage_two_turnaround_time = serializers.CharField()
+    launch_years = serializers.ListField(child=serializers.IntegerField())
+    series_data = serializers.DictField(child=serializers.ListField(child=serializers.IntegerField()), required=False)
+    stats = serializers.DictField(child=serializers.CharField(), required=True)
+    children_stats = serializers.DictField(child=serializers.CharField(), required=True)
+    boosters_with_most_flights = serializers.ListField(child=StageInformationSerializer(), required=True)
+    booster_max_num_flights = serializers.IntegerField(required=True)
+    stage_two_with_most_flights = serializers.ListField(child=StageInformationSerializer(), required=True)
+    stage_two_max_num_flights = serializers.IntegerField(required=True)
+    booster_with_quickest_turnaround = StageInformationSerializer(required=False, allow_null=True)
+    booster_turnaround_time = serializers.CharField(required=False, allow_null=True)
+    stage_two_with_quickest_turnaround = StageInformationSerializer(required=False, allow_null=True)
+    stage_two_turnaround_time = serializers.CharField(required=False, allow_null=True)
+
+    max_booster_flights = serializers.ListField(child=serializers.IntegerField(), required=False)
+    max_stage_two_flights = serializers.ListField(child=serializers.IntegerField(), required=False)
+    avg_booster_flights = serializers.ListField(child=serializers.FloatField(), required=False)
+    avg_stage_two_flights = serializers.ListField(child=serializers.FloatField(), required=False)
+    max_fairing_flights = serializers.ListField(child=serializers.FloatField(), required=False)

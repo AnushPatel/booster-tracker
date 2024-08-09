@@ -144,3 +144,7 @@ def make_monotonic(list: list, order: MonotonicDirections):
                 list[index] = list[index + 1]
 
     return list
+
+
+def all_zeros(list: list):
+    return all(v == 0 for v in list)

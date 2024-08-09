@@ -23,6 +23,7 @@ from booster_tracker.utils import (
     version_format,
     make_monotonic,
     MonotonicDirections,
+    all_zeros,
 )
 from booster_tracker.home_utils import (
     get_most_flown_stages,
@@ -314,6 +315,11 @@ class TestCases(TestCase):
         self.assertEqual(make_monotonic(list4, MonotonicDirections.DECREASING), [1])
         self.assertEqual(make_monotonic(list5, MonotonicDirections.DECREASING), [4, 3, 2, 1])
         self.assertEqual(make_monotonic(list6, MonotonicDirections.DECREASING), [6, 6, 6, 4, 4, 3, 2, 1])
+
+    def test_all_zeros(self):
+        self.assertEqual(all_zeros([0, 0, 0]), True)
+        self.assertEqual(all_zeros([0, 0, 1]), False)
+        self.assertEqual(all_zeros([]), True)
 
     def test_num_launches_rocket(self):
         # Test function on perm objects
