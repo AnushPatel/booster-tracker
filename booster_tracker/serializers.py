@@ -138,23 +138,11 @@ class LandingZoneSerializer(serializers.ModelSerializer):
         ]
 
 
-class LandingZoneInformationSerializer(serializers.ModelSerializer):
-    stage_and_recovery = StageAndRecoverySerializer(many=True, read_only=True, source="stageandrecovery_set")
-
-    class Meta:
-        model = LandingZone
-        fields = [
-            "id",
-            "name",
-            "nickname",
-            "type",
-            "serial_number",
-            "status",
-            "image",
-            "num_landings",
-            "fastest_turnaround",
-            "stage_and_recovery",
-        ]
+class LandingZoneInformationSerializer(serializers.Serializer):
+    stage_and_recoveries = serializers.ListField(child=StageAndRecoverySerializer())
+    display_stage_and_recoveries = serializers.ListField(child=StageAndRecoverySerializer())
+    landing_zone = LandingZoneSerializer()
+    start_date = serializers.DateTimeField()
 
 
 class LaunchInformationSerializer(serializers.ModelSerializer):
@@ -236,13 +224,13 @@ class FamilyInformationSerializer(serializers.Serializer):
     series_data = serializers.DictField(child=serializers.ListField(child=serializers.IntegerField()), required=False)
     stats = serializers.DictField(child=serializers.CharField(), required=True)
     children_stats = serializers.DictField(child=serializers.CharField(), required=True)
-    boosters_with_most_flights = serializers.ListField(child=StageInformationSerializer(), required=True)
+    boosters_with_most_flights = serializers.ListField(child=StageSerializer(), required=True)
     booster_max_num_flights = serializers.IntegerField(required=True)
-    stage_two_with_most_flights = serializers.ListField(child=StageInformationSerializer(), required=True)
+    stage_two_with_most_flights = serializers.ListField(child=StageSerializer(), required=True)
     stage_two_max_num_flights = serializers.IntegerField(required=True)
-    booster_with_quickest_turnaround = StageInformationSerializer(required=False, allow_null=True)
+    booster_with_quickest_turnaround = StageSerializer(required=False, allow_null=True)
     booster_turnaround_time = serializers.CharField(required=False, allow_null=True)
-    stage_two_with_quickest_turnaround = StageInformationSerializer(required=False, allow_null=True)
+    stage_two_with_quickest_turnaround = StageSerializer(required=False, allow_null=True)
     stage_two_turnaround_time = serializers.CharField(required=False, allow_null=True)
 
     max_booster_flights = serializers.ListField(child=serializers.IntegerField(), required=False)
@@ -250,3 +238,5 @@ class FamilyInformationSerializer(serializers.Serializer):
     avg_booster_flights = serializers.ListField(child=serializers.FloatField(), required=False)
     avg_stage_two_flights = serializers.ListField(child=serializers.FloatField(), required=False)
     max_fairing_flights = serializers.ListField(child=serializers.FloatField(), required=False)
+
+    start_date = serializers.DateTimeField()

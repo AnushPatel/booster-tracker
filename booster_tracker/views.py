@@ -408,12 +408,35 @@ class LandingZoneApiView(APIView):
 
 
 class LandingZoneInformationApiView(RetrieveAPIView):
-    serializer_class = PadInformationSerializer
-
-    def get_object(self):
-        """Get launch by ID"""
+    def get(self, request, *args, **kwargs):
+        """Get stage by ID"""
         id = self.request.query_params.get("id", "")
-        return LandingZone.objects.get(id=id)
+        landing_zone = LandingZone.objects.get(id=id)
+        filtered_stage_and_recoveries = StageAndRecovery.objects.filter(landing_zone=landing_zone).order_by(
+            "launch__time"
+        )
+        display_items = filtered_stage_and_recoveries.filter(launch__time__lte=datetime.now(pytz.utc)).reverse()[:25]
+
+        start_date = filtered_stage_and_recoveries.first().launch.time
+
+        date_str = self.request.query_params.get("startdate", "").strip('"').replace("Z", "")
+        if not date_str == "undefined":
+            start_time = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=pytz.utc)
+        else:
+            start_time = start_date
+
+        stage_and_recoveries = filtered_stage_and_recoveries.filter(launch__time__gte=start_time)
+
+        data = {
+            "landing_zone": landing_zone,
+            "stage_and_recoveries": stage_and_recoveries,
+            "display_stage_and_recoveries": display_items,
+            "start_date": start_date,
+        }
+
+        serializer = LandingZoneInformationSerializer(data)
+
+        return Response(serializer.data)
 
 
 class BoatApiView(APIView):
@@ -704,20 +727,26 @@ class HomeDataApiView(APIView):
 class FamilyInformationApiView(APIView):
     def get(self, request):
         family = RocketFamily.objects.get(name__icontains=self.request.query_params.get("family", ""))
+        date_str = self.request.query_params.get("startdate", "").strip('"').replace("Z", "")
 
         # Determine the first launch year and the current year
         first_launch_year = Launch.objects.filter(rocket__family=family).order_by("time").first().time.year
         current_year = datetime.now(pytz.utc).year
 
+        if not date_str == "undefined":
+            start_year = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=pytz.utc).year
+        else:
+            start_year = first_launch_year
+
         # Initialize dictionaries and lists to store flight data
-        x_axis = [i for i in range(first_launch_year, current_year + 1)]
+        x_axis = [i for i in range(start_year, current_year + 1)]
         max_booster_flights = []
         avg_booster_flights = []
         max_fairing_flights = []
         max_stage_two_flights = []
         avg_stage_two_flights = []
         # Loop through each year from the first launch to the current year
-        for year in range(first_launch_year, current_year + 1):
+        for year in range(start_year, current_year + 1):
             if year == current_year:
                 before_date = datetime.now(pytz.utc)
             else:
@@ -881,6 +910,7 @@ class FamilyInformationApiView(APIView):
             "booster_turnaround_time": booster_turnaround_time,
             "stage_two_with_quickest_turnaround": stage_two_with_quickest_turnaround,
             "stage_two_turnaround_time": stage_two_turnaround_time,
+            "start_date": datetime(first_launch_year, 1, 1, tzinfo=pytz.utc),
         }
 
         # Serialize the data
