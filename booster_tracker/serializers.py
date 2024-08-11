@@ -240,3 +240,10 @@ class FamilyInformationSerializer(serializers.Serializer):
     max_fairing_flights = serializers.ListField(child=serializers.FloatField(), required=False)
 
     start_date = serializers.DateTimeField()
+
+
+class CalendarStatsSerializer(serializers.Serializer):
+    numDaysWithLaunches = serializers.IntegerField()
+    percentageDaysWithLaunches = serializers.FloatField()
+    mostLaunches = serializers.IntegerField()
+    daysWithMostLaunches = serializers.CharField()

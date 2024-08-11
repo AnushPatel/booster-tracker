@@ -1,6 +1,6 @@
-from django.urls import path, include
+from django.urls import path
 from booster_tracker import views
-from booster_tracker.views import (
+from booster_tracker.api_views import (
     LaunchOnlyApiView,
     LaunchApiView,
     RocketApiView,
@@ -21,13 +21,13 @@ from booster_tracker.views import (
     SpacecraftFamilyApiView,
     HomeDataApiView,
     FamilyInformationApiView,
+    FilteredLaunchDaysApiView,
 )
 
 app_name = "booster_tracker"
 urlpatterns = [
-    path("", views.home, name="home"),
-    path("health/", views.health, name="health"),
-    path("api/homedata/", views.HomeDataApiView.as_view()),
+    # API Endpoints
+    path("api/homedata/", HomeDataApiView.as_view()),
     path("api/launchesonly/", LaunchOnlyApiView.as_view()),
     path("api/launches/", LaunchApiView.as_view()),
     path("api/stages/", StageApiView.as_view()),
@@ -47,7 +47,10 @@ urlpatterns = [
     path("api/landingzones/", LandingZoneApiView.as_view()),
     path("api/landingzoneinformation/", LandingZoneInformationApiView.as_view()),
     path("api/stageandrecoveries/", StageAndRecoveryApiView.as_view()),
-    path("api/calendarstats/", views.filter_launch_days, name="filter_calendar_stats"),
+    path("api/calendarstats/", FilteredLaunchDaysApiView.as_view(), name="filter_calendar_stats"),
+    # v1 views
+    path("", views.home, name="home"),
+    path("health/", views.health, name="health"),
     path("launches/<str:encoded_launch_name>/", views.launch_details, name="launch"),
     path("launches/", views.launches_list, name="launches"),
     path("dragons/<str:dragon_name>/", views.dragon_info, name="dragon"),
