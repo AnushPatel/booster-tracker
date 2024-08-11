@@ -31,7 +31,7 @@ urlpatterns = [
     path("api/launchesonly/", LaunchOnlyApiView.as_view()),
     path("api/launches/", LaunchApiView.as_view()),
     path("api/stages/", StageApiView.as_view()),
-    path("api/stageinfo/", StageInformationApiView.as_view()),
+    path("api/stageinformation/", StageInformationApiView.as_view()),
     path("api/spacecraft/", SpacecraftApiView.as_view()),
     path("api/spacecraftfamilies/", SpacecraftFamilyApiView.as_view()),
     path("api/spacecraftinformation/", SpacecraftInformationApiView.as_view()),
@@ -49,17 +49,5 @@ urlpatterns = [
     path("api/stageandrecoveries/", StageAndRecoveryApiView.as_view()),
     path("api/calendarstats/", FilteredLaunchDaysApiView.as_view(), name="filter_calendar_stats"),
     # v1 views
-    path("", views.home, name="home"),
     path("health/", views.health, name="health"),
-    path("launches/<str:encoded_launch_name>/", views.launch_details, name="launch"),
-    path("launches/", views.launches_list, name="launches"),
-    path("dragons/<str:dragon_name>/", views.dragon_info, name="dragon"),
-    path("dragons/", views.dragon_list, name="dragons"),
-    path("starship/", views.starship_home, name="starship"),
-    path(
-        "<str:rocket_family>/<str:stage_type>/<str:stage_name>/",
-        views.stage_info,
-        name="stage",
-    ),
-    path("<str:rocket_family_name>/<str:stage_type>/", views.stage_list, name="stages"),
 ]

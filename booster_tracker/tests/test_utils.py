@@ -3,7 +3,6 @@ from booster_tracker.utils import (
     convert_seconds,
     make_ordinal,
     concatenated_list,
-    turnaround_time,
     all_values_true,
     version_format,
     get_averages,
@@ -11,6 +10,7 @@ from booster_tracker.utils import (
     MonotonicDirections,
     all_zeros,
     combine_dicts,
+    turnaround_time,
 )
 
 from booster_tracker.models import (
@@ -93,6 +93,7 @@ class TestCases(TestCase):
         self.assertEqual(all_values_true(test2), True)
         self.assertEqual(all_values_true(test3), False)
         self.assertEqual(all_values_true(test4), False)
+        self.assertEqual(all_values_true(None), False)
 
     def test_version_format(self):
         str1 = "V1.0"

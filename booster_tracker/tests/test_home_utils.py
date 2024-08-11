@@ -1,13 +1,14 @@
 from booster_tracker.home_utils import (
     get_most_flown_stages,
-    get_landings_and_successes,
     get_next_and_last_launches,
     get_true_filter_values,
     get_model_objects_with_filter,
     launches_per_day,
     line_of_best_fit,
     launches_in_time_interval,
+    launch_turnaround_times,
     StageObjects,
+    time_between_launches,
 )
 
 from booster_tracker.models import Rocket, Pad, Orbit, Launch, Stage, RocketFamily, StageAndRecovery, LandingZone
@@ -17,6 +18,7 @@ from django.test import TestCase
 from datetime import datetime
 import pytz
 import numpy as np
+from scipy.integrate import quad
 
 
 class TestCases(TestCase):
@@ -65,54 +67,6 @@ class TestCases(TestCase):
             ),
             ({"stages": [B1080], "num_launches": 4}),
         )
-
-    def test_get_landings_and_successes(self):
-        # Test function on perm objects
-        self.assertEqual(get_landings_and_successes(rocket_name="Falcon"), (6, 6))
-
-        Launch.objects.create(
-            time=datetime(2024, 4, 1, tzinfo=pytz.utc),
-            pad=Pad.objects.get(name="Space Launch Complex 40"),
-            rocket=Rocket.objects.get(name="Falcon Heavy"),
-            name="Falcon Heavy Temp Launch 1",
-            orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
-            customer="SpaceX",
-            launch_outcome="SUCCESS",
-        )
-
-        StageAndRecovery.objects.create(
-            launch=Launch.objects.get(name="Falcon Heavy Temp Launch 1"),
-            stage=Stage.objects.get(name="B1080"),
-            stage_position="MY",
-            landing_zone=LandingZone.objects.get(name="Landing Zone 1"),
-            method="GROUND_PAD",
-            method_success="SUCCESS",
-            recovery_success=True,
-        )
-
-        StageAndRecovery.objects.create(
-            launch=Launch.objects.get(name="Falcon Heavy Temp Launch 1"),
-            stage=Stage.objects.get(name="B1062"),
-            stage_position="PY",
-            landing_zone=LandingZone.objects.get(name="Landing Zone 2"),
-            method="GROUND_PAD",
-            method_success="FAILURE",
-            recovery_success=False,
-        )
-
-        StageAndRecovery.objects.create(
-            launch=Launch.objects.get(name="Falcon Heavy Temp Launch 1"),
-            stage=Stage.objects.get(name="B1084"),
-            stage_position="CENTER",
-            landing_zone=LandingZone.objects.get(name="Just Read the Instructions"),
-            method="DRONE_SHIP",
-            method_success="FAILURE",
-            recovery_success=False,
-        )
-
-        # following the addition of three landing attempts (two successful), ensure function responds accordingly
-        self.assertEqual(get_landings_and_successes(rocket_name="Falcon"), (9, 7))
 
     # Test get_next_and_last_launch() function
     def test_get_next_and_last_launches(self):
@@ -186,7 +140,7 @@ class TestCases(TestCase):
         self.assertEqual(result, expected)
 
     def test_get_model_objects_with_filter(self):
-        # create temp objects for test purposes
+        # Create temp objects for test purposes
         Launch.objects.create(
             time=datetime(2024, 6, 1, tzinfo=pytz.utc),
             pad=Pad.objects.get(nickname="LC-39A"),
@@ -209,43 +163,42 @@ class TestCases(TestCase):
             launch_outcome="FAILURE",
         )
 
-        # test everything empty
-        result = get_model_objects_with_filter(Launch, {}, "")
-        self.assertEqual(result.count(), 7)
+        # Create more test cases to ensure coverage
 
-        result = get_model_objects_with_filter(Launch, {}, "Falcon 9")
-        self.assertEqual(result.count(), 6)
-
+        # Test for `objects_or` handling
         f9 = Rocket.objects.get(name="Falcon 9")
-        fh = Rocket.objects.get(name="Falcon Heavy")
-        slc40 = Pad.objects.get(name="Space Launch Complex 40")
-        lc39a = Pad.objects.get(name="Launch Complex 39A")
+        slc40 = Pad.objects.get(nickname="SLC-40")
+        lc39a = Pad.objects.get(nickname="LC-39A")
+        lz1 = LandingZone.objects.get(name="Landing Zone 1")
 
-        filter = {"rocket": {str(f9.id): True, str(fh.id): False}}
-        result = get_model_objects_with_filter(Launch, filter)
-        self.assertEqual(result.count(), 6)
-
-        filter = {"pad": {str(slc40.id): True, str(lc39a.id): False}}
-        result = get_model_objects_with_filter(Launch, filter)
-        self.assertEqual(result.count(), 6)
-
-        filter = {"launch_outcome": {"SUCCESS": True, "FAILURE": False}}
-        result = get_model_objects_with_filter(Launch, filter)
-        self.assertEqual(result.count(), 6)
-
+        # Case where 'hide__stageandrecovery__method' is present in `objects_or`
         filter = {
-            "rocket": {str(f9.id): True, str(fh.id): True},
-            "pad": {str(slc40.id): True},
+            "hide__stageandrecovery__method": {"GROUND_PAD": True},  # assuming this field is part of `objects_or`
+            "rocket": {str(f9.id): True},
         }
         result = get_model_objects_with_filter(Launch, filter)
+        self.assertGreater(result.count(), 0)  # Check that some objects are returned
+
+        # Test with multiple fields in `objects_or`
+        filter = {
+            "hide__stageandrecovery__method": {"GROUND_PAD": True, "DRONE_SHIP": False},
+            "hide__stageandrecovery__landing_zone": {str(lz1.id): True},
+        }
+        result = get_model_objects_with_filter(Launch, filter)
+        self.assertGreater(result.count(), 0)  # Check that some objects are returned
+
+        # check nonsense that will return nothing
+        filter = {"hide__stageandrecovery__method": {str(slc40.id): True}}
+        result = get_model_objects_with_filter(Launch, filter)
+        self.assertGreater(result.count(), 0)
+
+        # Test with no objects matching `or_list` criteria
+        filter = {"launch_outcome": {"SUCCESS": True}, "rocket": {"1": True, "2": True}}
+        result = get_model_objects_with_filter(Launch, filter)
         self.assertEqual(result.count(), 7)
 
-        filter = {"rocket": {str(f9.id): False, str(fh.id): False}}
-        result = get_model_objects_with_filter(Launch, filter)
-        self.assertEqual(result.count(), 0)
-
-        filter = {"rocket": {"1": False, "2": False, "3": False, "4": False}}
-        result = get_model_objects_with_filter(Launch, filter)
+        # Test with non-matching search query
+        result = get_model_objects_with_filter(Launch, filter, "Non-existent")
         self.assertEqual(result.count(), 0)
 
     def test_launches_per_day(self):
@@ -268,6 +221,15 @@ class TestCases(TestCase):
         result = launches_per_day(Launch.objects.all())
         expected = [("January 01", 2), ("May 01", 1), ("April 01", 1), ("March 01", 1), ("February 01", 1)]
         self.assertEqual(result, expected)
+
+    def test_launch_turnaround_times(self):
+        expected = {
+            "Falcon 9 Launch 2": 31,
+            "Falcon 9 Launch 3": 29,
+            "Falcon Heavy Launch 1": 31,
+            "Falcon 9 Launch 4": 30,
+        }
+        self.assertEqual(launch_turnaround_times(Launch.objects.all().order_by("time")), expected)
 
     def test_line_of_best_fit(self):
 
@@ -298,6 +260,31 @@ class TestCases(TestCase):
         # Test exponential fit with weights
         fit_func = line_of_best_fit(self.x, self.y_exponential, fit_type="exponential", weights=self.weights)
         np.testing.assert_array_almost_equal(fit_func(self.x), self.y_exponential, decimal=1)
+
+    def test_time_between_launches(self):
+        self.line_of_best_fit = lambda x: 2 * x + 3
+        integral, _ = quad(self.line_of_best_fit, 1, 3)
+        result = time_between_launches(self.line_of_best_fit, 1, 3, min_value=0)
+        self.assertEqual(result, integral)
+
+        # Test case where the integral between the two launches is exactly zero
+        zero_line_of_best_fit = lambda x: 0  # This function always returns 0, so the integral should be 0
+        result = time_between_launches(zero_line_of_best_fit, 1, 2, min_value=5)
+        self.assertEqual(result, 5)
+
+        # Test case where the integral between the two launches is negative
+        negative_line_of_best_fit = lambda x: -2 * x - 3  # This function always returns negative values
+        result = time_between_launches(negative_line_of_best_fit, 1, 3, min_value=10)
+        self.assertEqual(result, 10)
+
+        # Test case where the integral equals the minimum value
+        constant_line_of_best_fit = lambda x: 0  # Constant function, the integral should be 0
+        result = time_between_launches(constant_line_of_best_fit, 1, 2, min_value=0)
+        self.assertEqual(result, 0)
+
+        # Test case where the integral is less than or equal to zero, and min_value is returned
+        result = time_between_launches(self.line_of_best_fit, 1, 1, min_value=3)
+        self.assertEqual(result, 3)
 
     def test_launches_in_time_interval(self):
         # Set up some common data

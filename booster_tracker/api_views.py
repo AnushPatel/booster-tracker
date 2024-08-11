@@ -69,6 +69,77 @@ class StandardPagination(PageNumberPagination):
     page_size_query_param = "page_size"
 
 
+# APIViews without any additional logic
+class OrbitApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        orbits = Orbit.objects.all()
+        serializer = OrbitSerializer(orbits, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class LaunchOnlyApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        """List all the Launch items (without recoveries) for given requested user"""
+        launches = Launch.objects.all()
+        serializer = LaunchOnlySerializer(launches, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class RocketApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        """List all the Rocket items for given requested user"""
+        rockets = Rocket.objects.all()
+        serializer = RocketOnlySerializer(rockets, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class RocketFamilyApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        """List all the RocketFamily items for given requested user"""
+        rocketfamilies = RocketFamily.objects.all()
+        serializer = RocketFamilySerializer(rocketfamilies, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class OperatorApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        """List all the Operator items for given requested user"""
+        operators = Operator.objects.all()
+        serializer = OperatorSerializer(operators, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class BoatApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        """List of all boats"""
+        boats = Boat.objects.all()
+        serializer = BoatSerializer(boats, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class StageAndRecoveryApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        """List of all stage and recoveries"""
+        stage_and_recoveries = StageAndRecovery.objects.all()
+        serializer = StageAndRecoverySerializer(stage_and_recoveries, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SpacecraftFamilyApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        """List of all spacecraft families"""
+        spacecraft_families = SpacecraftFamily.objects.all()
+        serializer = SpacecraftFamilySerializer(spacecraft_families, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 # This section handles the API view of the application:
 class FilteredLaunchDaysApiView(APIView):
     def get(self, request):
@@ -125,49 +196,6 @@ class LaunchApiView(ListAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class OrbitApiView(APIView):
-    def get(self, request, *args, **kwargs):
-        orbits = Orbit.objects.all()
-        serializer = OrbitSerializer(orbits, many=True)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class LaunchOnlyApiView(APIView):
-    def get(self, request, *args, **kwargs):
-        """List all the Launch items (without recoveries) for given requested user"""
-        launches = Launch.objects.all()
-        serializer = LaunchOnlySerializer(launches, many=True)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class RocketApiView(APIView):
-    def get(self, request, *args, **kwargs):
-        """List all the Rocket items for given requested user"""
-        rockets = Rocket.objects.all()
-        serializer = RocketOnlySerializer(rockets, many=True)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class RocketFamilyApiView(APIView):
-    def get(self, request, *args, **kwargs):
-        """List all the RocketFamily items for given requested user"""
-        rocketfamilies = RocketFamily.objects.all()
-        serializer = RocketFamilySerializer(rocketfamilies, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class OperatorApiView(APIView):
-    def get(self, request, *args, **kwargs):
-        """List all the Operator items for given requested user"""
-        operators = Operator.objects.all()
-        serializer = OperatorSerializer(operators, many=True)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
 class PadApiView(APIView):
     def get(self, request, *args, **kwargs):
         """List of all pads"""
@@ -191,9 +219,10 @@ class PadInformationApiView(RetrieveAPIView):
         display_launches = filtered_launches.filter(time__lte=datetime.now(pytz.utc)).reverse()[:25]
         start_date = filtered_launches.first().time
 
-        date_str = self.request.query_params.get("startdate", "").strip('"').replace("Z", "")
-        if not date_str == "undefined":
-            start_time = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=pytz.utc)
+        if date_str := self.request.query_params.get("startdate", ""):
+            start_time = datetime.strptime(date_str.strip('"').replace("Z", ""), "%Y-%m-%dT%H:%M:%S.%f").replace(
+                tzinfo=pytz.utc
+            )
         else:
             start_time = start_date
 
@@ -238,9 +267,10 @@ class LandingZoneInformationApiView(RetrieveAPIView):
 
         start_date = filtered_stage_and_recoveries.first().launch.time
 
-        date_str = self.request.query_params.get("startdate", "").strip('"').replace("Z", "")
-        if not date_str == "undefined":
-            start_time = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=pytz.utc)
+        if date_str := self.request.query_params.get("startdate", ""):
+            start_time = datetime.strptime(date_str.strip('"').replace("Z", ""), "%Y-%m-%dT%H:%M:%S.%f").replace(
+                tzinfo=pytz.utc
+            )
         else:
             start_time = start_date
 
@@ -256,24 +286,6 @@ class LandingZoneInformationApiView(RetrieveAPIView):
         serializer = LandingZoneInformationSerializer(data)
 
         return Response(serializer.data)
-
-
-class BoatApiView(APIView):
-    def get(self, request, *args, **kwargs):
-        """List of all boats"""
-        boats = Boat.objects.all()
-        serializer = BoatSerializer(boats, many=True)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class StageAndRecoveryApiView(APIView):
-    def get(self, request, *args, **kwargs):
-        """List of all stage and recoveries"""
-        stage_and_recoveries = StageAndRecovery.objects.all()
-        serializer = StageAndRecoverySerializer(stage_and_recoveries, many=True)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class LaunchInformationApiView(RetrieveAPIView):
@@ -301,15 +313,6 @@ class StageApiView(ListAPIView):
         """List all the stage items for given requested user"""
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class SpacecraftFamilyApiView(APIView):
-    def get(self, request, *args, **kwargs):
-        """List of all spacecraft families"""
-        spacecraft_families = SpacecraftFamily.objects.all()
-        serializer = SpacecraftFamilySerializer(spacecraft_families, many=True)
-
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -342,9 +345,10 @@ class StageInformationApiView(RetrieveAPIView):
 
         start_date = filtered_stage_and_recoveries.first().launch.time
 
-        date_str = self.request.query_params.get("startdate", "").strip('"').replace("Z", "")
-        if not date_str == "undefined":
-            start_time = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=pytz.utc)
+        if date_str := self.request.query_params.get("startdate", ""):
+            start_time = datetime.strptime(date_str.strip('"').replace("Z", ""), "%Y-%m-%dT%H:%M:%S.%f").replace(
+                tzinfo=pytz.utc
+            )
         else:
             start_time = start_date
 
@@ -374,9 +378,10 @@ class SpacecraftInformationApiView(RetrieveAPIView):
 
         start_date = filtered_spacecraft_on_launch.first().launch.time
 
-        date_str = self.request.query_params.get("startdate", "").strip('"').replace("Z", "")
-        if not date_str == "undefined":
-            start_time = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=pytz.utc)
+        if date_str := self.request.query_params.get("startdate", ""):
+            start_time = datetime.strptime(date_str.strip('"').replace("Z", ""), "%Y-%m-%dT%H:%M:%S.%f").replace(
+                tzinfo=pytz.utc
+            )
         else:
             start_time = start_date
 
@@ -598,12 +603,13 @@ class FamilyInformationApiView(APIView):
         return RocketFamily.objects.get(name__icontains=self.request.query_params.get("family", ""))
 
     def get_launch_years(self, family):
-        date_str = self.request.query_params.get("startdate", "").strip('"').replace("Z", "")
         first_launch_year = Launch.objects.filter(rocket__family=family).order_by("time").first().time.year
         current_year = datetime.now(pytz.utc).year
 
-        if not date_str == "undefined":
-            start_year = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=pytz.utc).year
+        if date_str := self.request.query_params.get("startdate", ""):
+            start_year = datetime.strptime(date_str.strip('"').replace("Z", ""), "%Y-%m-%dT%H:%M:%S.%f").replace(
+                tzinfo=pytz.utc
+            )
         else:
             start_year = first_launch_year
 

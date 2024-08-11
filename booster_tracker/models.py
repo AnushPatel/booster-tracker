@@ -1,12 +1,12 @@
 from django.db import models
 from booster_tracker.utils import (
-    turnaround_time,
     make_ordinal,
     concatenated_list,
     TurnaroundObjects,
     success,
     convert_seconds,
     format_time,
+    turnaround_time,
 )
 from datetime import datetime
 from django.db.models import Q
