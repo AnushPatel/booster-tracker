@@ -12,9 +12,15 @@ from booster_tracker.models import (
     Launch,
     RocketFamily,
     Spacecraft,
-    SpacecraftFamily,
 )
-from booster_tracker.utils import concatenated_list, convert_seconds, TurnaroundObjects, all_values_true, version_format
+from booster_tracker.utils import (
+    concatenated_list,
+    convert_seconds,
+    TurnaroundObjects,
+    all_values_true,
+    version_format,
+    combine_dicts,
+)
 from datetime import datetime
 from django.templatetags.static import static
 import pytz
@@ -476,20 +482,6 @@ def generate_spacecraft_list(family: Spacecraft):
 
 
 # This section deals with functions that are used by the API
-def combine_dicts(dict1, dict2):
-    combined = defaultdict(list)
-
-    for key, value in dict1.items():
-        combined[key].extend(value)
-
-    if dict2:
-        for key, value in dict2.items():
-            combined[key].extend(value)
-
-    for key in combined:
-        combined[key] = list(set(combined[key]))
-
-    return dict(combined)
 
 
 def get_true_filter_values(filter, filter_item):

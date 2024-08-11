@@ -1,5 +1,7 @@
 from enum import StrEnum
+from collections import defaultdict
 import re
+import datetime
 
 # This section we create StrEnums to limit options in functions. While not used in this document, these are often used in models.py
 
@@ -19,10 +21,8 @@ class MonotonicDirections(StrEnum):
 
 
 # First several functions will be defined that are commonly used.
-# As the name implies, this formats the time to be in the following format: March 25, 2024 04:38 UTC
-
-
-def format_time(time_obj):
+def format_time(time_obj: datetime) -> str:
+    """formats the time to be in the following format: March 25, 2024 04:38 UTC"""
     formatted_date = time_obj.strftime("%B %d, %Y")
     formatted_time = time_obj.strftime("%H:%M")
     timezone_abbr = time_obj.strftime("%Z")
@@ -32,10 +32,8 @@ def format_time(time_obj):
     return formatted_str
 
 
-# This converts from seconds to a human readable format in days, hours, minutes, and seconds. If any are zero, they are removed.
-
-
-def convert_seconds(x):
+def convert_seconds(x) -> str:
+    """Converts from seconds to a human readable format in days, hours, minutes, and seconds. If any are zero, they are removed."""
     if x is None:
         return None
     d = int(x / 86400)
@@ -69,7 +67,8 @@ def convert_seconds(x):
 
 
 # Makes an ordinal; 1 -> 1st
-def make_ordinal(n: int):
+def make_ordinal(n: int) -> str:
+    """Returns the ordinal of an int"""
     if n is None:
         return "None"
     if 11 <= (n % 100) <= 13:
@@ -79,8 +78,8 @@ def make_ordinal(n: int):
     return str(n) + suffix
 
 
-# Takes in a list of items and returns them in concatinated form [Bob, Doug, GO Beyond] -> Bob, Doug, and GO Beyond
-def concatenated_list(items):
+def concatenated_list(items) -> str:
+    """Takes in a list of items and returns a string in concatenated form; [Bob, Doug, GO Beyond] -> Bob, Doug, and GO Beyond"""
     return (
         items[0]
         if len(items) == 1
@@ -113,7 +112,7 @@ def all_values_true(dictionary):
     return False
 
 
-def version_format(string):
+def version_format(string) -> str:
     """Returns custom formatting for versions (V1.0 -> v1.0)"""
     regex = r"^V\d"
     if re.match(regex, string):
@@ -121,7 +120,8 @@ def version_format(string):
     return string
 
 
-def get_averages(values, chunk_size):
+def get_averages(values: list, chunk_size: int) -> list:
+    """For a given list, averages chunks of chunk_size, creating a smaller object"""
     averages = []
     for i in range(0, len(values), chunk_size):
         chunk = values[i : i + chunk_size]
@@ -130,7 +130,8 @@ def get_averages(values, chunk_size):
     return averages
 
 
-def make_monotonic(list: list, order: MonotonicDirections):
+def make_monotonic(list: list, order: MonotonicDirections) -> list:
+    """Takes in a list and makes it monotonic"""
     for index, value in enumerate(list):
         if order == MonotonicDirections.INCREASING:
             if index == 0:
@@ -146,5 +147,23 @@ def make_monotonic(list: list, order: MonotonicDirections):
     return list
 
 
-def all_zeros(list: list):
+def all_zeros(list: list) -> bool:
+    """Returns if all values in a list are 0"""
     return all(v == 0 for v in list)
+
+
+def combine_dicts(dict1: dict, dict2: dict) -> dict:
+    """For dicts with arrays as values, combines the arrays for equal keys; returns dict with combined arrays"""
+    combined = defaultdict(list)
+
+    for key, value in dict1.items():
+        combined[key].extend(value)
+
+    if dict2:
+        for key, value in dict2.items():
+            combined[key].extend(value)
+
+    for key in combined:
+        combined[key] = list(set(combined[key]))
+
+    return dict(combined)
