@@ -9,7 +9,14 @@ from booster_tracker.home_utils import (
     get_most_flown_stages,
     StageObjects,
 )
-from booster_tracker.utils import concatenated_list, convert_seconds, TurnaroundObjects, all_zeros
+from booster_tracker.utils import (
+    concatenated_list,
+    convert_seconds,
+    TurnaroundObjects,
+    all_zeros,
+    parse_start_time,
+    get_start_date,
+)
 from rest_framework.pagination import PageNumberPagination
 import pytz
 import statistics
@@ -140,7 +147,7 @@ class SpacecraftFamilyApiView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# This section handles the API view of the application:
+# Launch Calendar Stats
 class FilteredLaunchDaysApiView(APIView):
     def get(self, request):
         filter = json.loads(request.query_params.get("filter"))
@@ -171,6 +178,9 @@ class FilteredLaunchDaysApiView(APIView):
         return Response(serializer.data)
 
 
+# List API views
+
+
 class LaunchApiView(ListAPIView):
     serializer_class = LaunchSerializer
     pagination_class = StandardPagination
@@ -191,63 +201,25 @@ class LaunchApiView(ListAPIView):
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(queryset, many=True)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 class PadApiView(APIView):
     def get(self, request, *args, **kwargs):
         """List of all pads"""
-        filter_param = self.request.query_params.get("filter", {})
-        if filter_param == "undefined":
-            filter = {}
-        else:
-            filter = json.loads(filter_param)
+        filter_param = self.request.query_params.get("filter", "{}")
+
+        filter = json.loads(filter_param)
         query = self.request.query_params.get("query", "")
         filtered_pads = get_model_objects_with_filter(Pad, filter, query).order_by("-name")
         serializer = PadSerializer(filtered_pads, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class PadInformationApiView(RetrieveAPIView):
-    def get(self, request, *args, **kwargs):
-        """Get pad by ID"""
-        id = self.request.query_params.get("id", "")
-        pad = Pad.objects.get(id=id)
-        filtered_launches = Launch.objects.filter(pad=pad).order_by("time")
-        display_launches = filtered_launches.filter(time__lte=datetime.now(pytz.utc)).reverse()[:25]
-        start_date = filtered_launches.first().time
-
-        if date_str := self.request.query_params.get("startdate", ""):
-            start_time = datetime.strptime(date_str.strip('"').replace("Z", ""), "%Y-%m-%dT%H:%M:%S.%f").replace(
-                tzinfo=pytz.utc
-            )
-        else:
-            start_time = start_date
-
-        launches = filtered_launches.filter(time__gte=start_time)
-
-        data = {
-            "pad": pad,
-            "launches": launches,
-            "display_launches": display_launches,
-            "start_date": start_date,
-        }
-
-        serializer = PadInformationSerializer(data)
-
-        return Response(serializer.data)
-
-
 class LandingZoneApiView(APIView):
     def get(self, request, *args, **kwargs):
         """List of all landing zones"""
-        filter_param = self.request.query_params.get("filter", {})
-        if filter_param == "undefined":
-            filter = {}
-        else:
-            filter = json.loads(filter_param)
+        filter_param = self.request.query_params.get("filter", "{}")
+
+        filter = json.loads(filter_param)
         query = self.request.query_params.get("query", "")
         filtered_zones = get_model_objects_with_filter(LandingZone, filter, query).order_by("-name")
         serializer = LandingZoneSerializer(filtered_zones, many=True)
@@ -255,53 +227,11 @@ class LandingZoneApiView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class LandingZoneInformationApiView(RetrieveAPIView):
-    def get(self, request, *args, **kwargs):
-        """Get stage by ID"""
-        id = self.request.query_params.get("id", "")
-        landing_zone = LandingZone.objects.get(id=id)
-        filtered_stage_and_recoveries = StageAndRecovery.objects.filter(landing_zone=landing_zone).order_by(
-            "launch__time"
-        )
-        display_items = filtered_stage_and_recoveries.filter(launch__time__lte=datetime.now(pytz.utc)).reverse()[:25]
-
-        start_date = filtered_stage_and_recoveries.first().launch.time
-
-        if date_str := self.request.query_params.get("startdate", ""):
-            start_time = datetime.strptime(date_str.strip('"').replace("Z", ""), "%Y-%m-%dT%H:%M:%S.%f").replace(
-                tzinfo=pytz.utc
-            )
-        else:
-            start_time = start_date
-
-        stage_and_recoveries = filtered_stage_and_recoveries.filter(launch__time__gte=start_time)
-
-        data = {
-            "landing_zone": landing_zone,
-            "stage_and_recoveries": stage_and_recoveries,
-            "display_stage_and_recoveries": display_items,
-            "start_date": start_date,
-        }
-
-        serializer = LandingZoneInformationSerializer(data)
-
-        return Response(serializer.data)
-
-
-class LaunchInformationApiView(RetrieveAPIView):
-    serializer_class = LaunchInformationSerializer
-
-    def get_object(self):
-        """Get launch by ID"""
-        id = self.request.query_params.get("id", "")
-        return Launch.objects.get(id=id)
-
-
 class StageApiView(ListAPIView):
     serializer_class = StageSerializer
 
     def get_queryset(self):
-        """Return the list of items for this view."""
+        """Return the list of items for this view"""
         filter_param = self.request.query_params.get("filter", "{}")
         filter = json.loads(filter_param)
         type = self.request.query_params.get("type")
@@ -335,6 +265,45 @@ class SpacecraftApiView(ListAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+# Information API Views
+
+
+class LaunchInformationApiView(RetrieveAPIView):
+    serializer_class = LaunchInformationSerializer
+
+    def get_object(self):
+        """Get launch by ID"""
+        id = self.request.query_params.get("id", "")
+        return Launch.objects.get(id=id)
+
+
+class LandingZoneInformationApiView(RetrieveAPIView):
+    def get(self, request, *args, **kwargs):
+        """Get stage by ID"""
+        id = self.request.query_params.get("id", "")
+        landing_zone = LandingZone.objects.get(id=id)
+        filtered_stage_and_recoveries = StageAndRecovery.objects.filter(landing_zone=landing_zone).order_by(
+            "launch__time"
+        )
+        display_items = filtered_stage_and_recoveries.filter(launch__time__lte=datetime.now(pytz.utc)).reverse()[:25]
+
+        start_date = get_start_date(filtered_stage_and_recoveries.first())
+        start_time = parse_start_time(self.request.query_params, start_date)
+
+        stage_and_recoveries = filtered_stage_and_recoveries.filter(launch__time__gte=start_time)
+
+        data = {
+            "landing_zone": landing_zone,
+            "stage_and_recoveries": stage_and_recoveries,
+            "display_stage_and_recoveries": display_items,
+            "start_date": start_date,
+        }
+
+        serializer = LandingZoneInformationSerializer(data)
+
+        return Response(serializer.data)
+
+
 class StageInformationApiView(RetrieveAPIView):
     def get(self, request, *args, **kwargs):
         """Get stage by ID"""
@@ -343,14 +312,8 @@ class StageInformationApiView(RetrieveAPIView):
         filtered_stage_and_recoveries = StageAndRecovery.objects.filter(stage=stage).order_by("launch__time")
         display_items = filtered_stage_and_recoveries.filter(launch__time__lte=datetime.now(pytz.utc)).reverse()
 
-        start_date = filtered_stage_and_recoveries.first().launch.time
-
-        if date_str := self.request.query_params.get("startdate", ""):
-            start_time = datetime.strptime(date_str.strip('"').replace("Z", ""), "%Y-%m-%dT%H:%M:%S.%f").replace(
-                tzinfo=pytz.utc
-            )
-        else:
-            start_time = start_date
+        start_date = get_start_date(filtered_stage_and_recoveries.first())
+        start_time = parse_start_time(self.request.query_params, start_date)
 
         stage_and_recoveries = filtered_stage_and_recoveries.filter(launch__time__gte=start_time)
 
@@ -376,14 +339,8 @@ class SpacecraftInformationApiView(RetrieveAPIView):
         )
         display_items = filtered_spacecraft_on_launch.filter(launch__time__lte=datetime.now(pytz.utc)).reverse()
 
-        start_date = filtered_spacecraft_on_launch.first().launch.time
-
-        if date_str := self.request.query_params.get("startdate", ""):
-            start_time = datetime.strptime(date_str.strip('"').replace("Z", ""), "%Y-%m-%dT%H:%M:%S.%f").replace(
-                tzinfo=pytz.utc
-            )
-        else:
-            start_time = start_date
+        start_date = get_start_date(filtered_spacecraft_on_launch.first())
+        start_time = parse_start_time(self.request.query_params, start_date)
 
         spacecraft_on_launches = filtered_spacecraft_on_launch.filter(launch__time__gte=start_time)
 
@@ -399,24 +356,48 @@ class SpacecraftInformationApiView(RetrieveAPIView):
         return Response(serializer.data)
 
 
+class PadInformationApiView(RetrieveAPIView):
+    def get(self, request, *args, **kwargs):
+        """Get pad by ID"""
+        id = self.request.query_params.get("id", "")
+        pad = Pad.objects.get(id=id)
+        filtered_launches = Launch.objects.filter(pad=pad).order_by("time")
+        display_launches = filtered_launches.filter(time__lte=datetime.now(pytz.utc)).reverse()[:25]
+
+        start_date = get_start_date(filtered_launches.first())
+        start_time = parse_start_time(self.request.query_params, start_date)
+
+        launches = filtered_launches.filter(time__gte=start_time)
+
+        data = {
+            "pad": pad,
+            "launches": launches,
+            "display_launches": display_launches,
+            "start_date": start_date,
+        }
+
+        serializer = PadInformationSerializer(data)
+
+        return Response(serializer.data)
+
+
+# API views for home and rocket families
+
+
 class HomeDataApiView(APIView):
     def get(self, request):
-        print(datetime.now(), "func start")
-        date_str = self.request.query_params.get("startdate", "").strip('"').replace("Z", "")
-        start_time = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=pytz.utc)
         today = datetime.now(pytz.utc)
+        start_time = parse_start_time(self.request.query_params, today)
         function_type = self.request.query_params.get("functiontype", "")
 
-        # Temporary filter, will be sent from API
-        received_filter = {}
-        # Get filtered launches, filtering by time
+        # Get filtered launches
         filtered_launches = (
-            get_model_objects_with_filter(Launch, filter=received_filter)
+            get_model_objects_with_filter(Launch, filter={}, search_query="")
             .filter(time__gte=start_time, time__lte=today)
             .order_by("time")
         )
 
-        # Prepare homepage stats even if there are no filtered launches
+        # Fetch basic stats
         next_launch, last_launch = get_next_and_last_launches()
         num_missions = Launch.objects.filter(rocket__family__provider__name="SpaceX").count()
         num_successes = Launch.objects.filter(rocket__family__provider__name="SpaceX", launch_outcome="SUCCESS").count()
@@ -430,6 +411,77 @@ class HomeDataApiView(APIView):
                 "turnaround_time"
             ]
         )
+        num_stage_reflights = self._calculate_num_stage_reflights()
+
+        if not filtered_launches.exists():
+            data = self._prepare_empty_response_data(
+                next_launch,
+                last_launch,
+                num_missions,
+                num_successes,
+                num_landings,
+                shortest_time_between_launches,
+                num_stage_reflights,
+            )
+            serializer = HomePageSerializer(data)
+            return Response(serializer.data)
+
+        # Process turnaround data and best fit calculations
+        turnaround_data = self._process_turnaround_data(filtered_launches, function_type)
+
+        # Calculate future launch predictions
+        launch_predictions = self._calculate_launch_predictions(
+            filtered_launches, today, turnaround_data["best_fit_line"]
+        )
+
+        data = {
+            "turnaround_x_values": turnaround_data["x_values"],
+            "turnaround_data": turnaround_data["averaged_values"],
+            "best_fit_turnaround_values": turnaround_data["best_fit_turnaround_values"],
+            "total_launches_current_year": launch_predictions["total_launches_current_year"],
+            "total_launches_next_year": launch_predictions["total_launches_next_year"],
+            "total_launches_year_after_next": launch_predictions["total_launches_year_after_next"],
+            "next_launch": next_launch,
+            "last_launch": last_launch,
+            "num_missions": num_missions,
+            "num_successes": num_successes,
+            "num_landings": num_landings,
+            "shortest_time_between_launches": shortest_time_between_launches,
+            "num_stage_reflights": num_stage_reflights,
+        }
+
+        serializer = HomePageSerializer(data)
+        print(datetime.now(), "func end")
+        return Response(serializer.data)
+
+    def _prepare_empty_response_data(
+        self,
+        next_launch,
+        last_launch,
+        num_missions,
+        num_successes,
+        num_landings,
+        shortest_time_between_launches,
+        num_stage_reflights,
+    ):
+        return {
+            "turnaround_x_values": [],
+            "turnaround_data": [],
+            "best_fit_turnaround_values": [],
+            "remaining_launches_current_year": 0,
+            "total_launches_current_year": 0,
+            "total_launches_next_year": 0,
+            "total_launches_year_after_next": 0,
+            "next_launch": next_launch,
+            "last_launch": last_launch,
+            "num_missions": num_missions,
+            "num_successes": num_successes,
+            "num_landings": num_landings,
+            "shortest_time_between_launches": shortest_time_between_launches,
+            "num_stage_reflights": num_stage_reflights,
+        }
+
+    def _calculate_num_stage_reflights(self):
         num_stage_uses = (
             StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc))
             .filter(launch__rocket__name__icontains="Falcon")
@@ -441,59 +493,38 @@ class HomeDataApiView(APIView):
             .distinct()
             .count()
         )
-        num_stage_reflights = num_stage_uses - num_stages_used
+        return num_stage_uses - num_stages_used
 
-        # If no launches are found, return early with empty lists and zeroed fields for the turnaround data
-        if not filtered_launches.exists():
-            data = {
-                "turnaround_x_values": [],
-                "turnaround_data": [],
-                "best_fit_turnaround_values": [],
-                "remaining_launches_current_year": 0,
-                "total_launches_current_year": 0,
-                "total_launches_next_year": 0,
-                "total_launches_year_after_next": 0,
-                "next_launch": next_launch,
-                "last_launch": last_launch,
-                "num_missions": num_missions,
-                "num_successes": num_successes,
-                "num_landings": num_landings,
-                "shortest_time_between_launches": shortest_time_between_launches,
-                "num_stage_reflights": num_stage_reflights,
-            }
-            serializer = HomePageSerializer(data)
-            print(datetime.now(), "func end")
-            return Response(serializer.data)
-
-        # Proceed with processing if launches are found
+    def _process_turnaround_data(self, filtered_launches, function_type):
         turnaround_data = launch_turnaround_times(filtered_launches=filtered_launches)
         turnaround_values = list(turnaround_data.values())
         chunk_size = 10
 
-        # Create x_values based on chunk_size
         x_values = list(range(0, len(turnaround_values), chunk_size // 2))
-
-        # Calculate the best fit line for all x values
-        weights = np.linspace(1, 1.1, len(turnaround_values))  # Increasing weights
+        weights = np.linspace(1, 1.1, len(turnaround_values))
         all_x_values = list(range(len(turnaround_values)))
         best_fit_line = line_of_best_fit(x=all_x_values, y=turnaround_values, fit_type=function_type, weights=weights)
 
-        # Calculate the best fit values for all x values
         best_fit_turnaround_values = [best_fit_line(x) for x in x_values]
-
-        # Insert null values at every other x value in turnaround_values; this is to break values up on line chart
         averaged_values = [(turnaround_values[x] if i % 2 == 0 else None) for i, x in enumerate(x_values)]
 
-        # Calculate current launch number (the last one in the list)
-        current_launch_number = len(filtered_launches)
+        return {
+            "turnaround_data": turnaround_data,
+            "best_fit_turnaround_values": best_fit_turnaround_values,
+            "x_values": x_values,
+            "averaged_values": averaged_values,
+            "best_fit_line": best_fit_line,
+        }
 
-        # Calculate remaining launches for the current year
+    def _calculate_launch_predictions(self, filtered_launches, today, best_fit_line):
+        current_launch_number = len(filtered_launches)
         days_in_current_year = 366 if today.year % 4 == 0 else 365
         days_passed_current_year = (today - datetime(today.year, 1, 1, tzinfo=pytz.utc)).days
         remaining_days_current_year = days_in_current_year - days_passed_current_year
 
         launches_this_year = filtered_launches.filter(time__gte=(datetime(today.year, 1, 1, tzinfo=pytz.utc))).count()
 
+        # Calculate the remaining launches for the current year
         remaining_launches_current_year = (
             launches_in_time_interval(
                 line_of_best_fit=best_fit_line,
@@ -522,36 +553,18 @@ class HomeDataApiView(APIView):
             min_value=0.33,
         )
 
-        # Prepare data for serialization
-        data = {
-            "turnaround_x_values": x_values,
-            "turnaround_data": averaged_values,
-            "best_fit_turnaround_values": best_fit_turnaround_values,
-            "remaining_launches_current_year": remaining_launches_current_year,
-            "total_launches_current_year": launches_this_year + remaining_launches_current_year,
+        return {
+            "total_launches_current_year": remaining_launches_current_year + launches_this_year,
             "total_launches_next_year": next_year_launches - (current_launch_number + remaining_launches_current_year),
             "total_launches_year_after_next": year_after_next_launches - next_year_launches,
-            "next_launch": next_launch,
-            "last_launch": last_launch,
-            "num_missions": num_missions,
-            "num_successes": num_successes,
-            "num_landings": num_landings,
-            "shortest_time_between_launches": shortest_time_between_launches,
-            "num_stage_reflights": num_stage_reflights,
         }
-
-        # Serialize data
-        serializer = HomePageSerializer(data)
-
-        # Return serialized data in response
-        print(datetime.now(), "func end")
-        return Response(serializer.data)
 
 
 class FamilyInformationApiView(APIView):
     def get(self, request):
-        family = self.get_rocket_family()
-        start_year, current_year = self.get_launch_years(family)
+        family = self._get_rocket_family()
+        first_launch_time = Launch.objects.filter(rocket__family=family).order_by("time").first().time
+        start_year, current_year = self._get_launch_years(family)
         (
             max_booster_flights,
             avg_booster_flights,
@@ -559,9 +572,9 @@ class FamilyInformationApiView(APIView):
             max_stage_two_flights,
             avg_stage_two_flights,
             x_axis,
-        ) = self.get_flight_data(family, start_year, current_year)
-        family_stats = self.get_family_stats(family)
-        family_children_stats = self.get_family_children_stats(family)
+        ) = self._get_flight_data(family, start_year, current_year)
+        family_stats = self._get_family_stats(family)
+        family_children_stats = self._get_family_children_stats(family)
         (
             boosters_with_most_flights,
             booster_max_num_flights,
@@ -571,8 +584,8 @@ class FamilyInformationApiView(APIView):
             booster_turnaround_time,
             stage_two_with_quickest_turnaround,
             stage_two_turnaround_time,
-        ) = self.get_stage_stats(family)
-        series_data = self.get_series_data(
+        ) = self._get_stage_stats(family)
+        series_data = self._get_series_data(
             max_booster_flights, avg_booster_flights, max_fairing_flights, max_stage_two_flights, avg_stage_two_flights
         )
 
@@ -590,7 +603,7 @@ class FamilyInformationApiView(APIView):
             "booster_turnaround_time": booster_turnaround_time,
             "stage_two_with_quickest_turnaround": stage_two_with_quickest_turnaround,
             "stage_two_turnaround_time": stage_two_turnaround_time,
-            "start_date": datetime(start_year, 1, 1, tzinfo=pytz.utc),
+            "start_date": first_launch_time,
         }
 
         # Serialize the data
@@ -599,23 +612,18 @@ class FamilyInformationApiView(APIView):
         # Return the serialized data as a response
         return Response(serializer.data)
 
-    def get_rocket_family(self):
+    def _get_rocket_family(self):
         return RocketFamily.objects.get(name__icontains=self.request.query_params.get("family", ""))
 
-    def get_launch_years(self, family):
-        first_launch_year = Launch.objects.filter(rocket__family=family).order_by("time").first().time.year
+    def _get_launch_years(self, family):
+        first_launch_year = Launch.objects.filter(rocket__family=family).order_by("time").first().time
         current_year = datetime.now(pytz.utc).year
 
-        if date_str := self.request.query_params.get("startdate", ""):
-            start_year = datetime.strptime(date_str.strip('"').replace("Z", ""), "%Y-%m-%dT%H:%M:%S.%f").replace(
-                tzinfo=pytz.utc
-            )
-        else:
-            start_year = first_launch_year
+        start_year = parse_start_time(self.request.query_params, first_launch_year).year
 
         return start_year, current_year
 
-    def get_flight_data(self, family, start_year, current_year):
+    def _get_flight_data(self, family, start_year, current_year):
         x_axis = [i for i in range(start_year, current_year + 1)]
         max_booster_flights = []
         avg_booster_flights = []
@@ -631,16 +639,16 @@ class FamilyInformationApiView(APIView):
             )
 
             # Get max launch number for both stages
-            max_booster_flights.append(self.get_stage_data(family, StageObjects.BOOSTER, before_date))
-            max_stage_two_flights.append(self.get_stage_data(family, StageObjects.SECOND_STAGE, before_date))
+            max_booster_flights.append(self._get_stage_data(family, StageObjects.BOOSTER, before_date))
+            max_stage_two_flights.append(self._get_stage_data(family, StageObjects.SECOND_STAGE, before_date))
 
             # Get flight numbers for boosters and stages
-            booster_flight_nums, stage_two_flight_nums = self.get_flight_numbers(family, year, before_date)
+            booster_flight_nums, stage_two_flight_nums = self._get_flight_numbers(family, year, before_date)
             avg_booster_flights.append(statistics.mean(booster_flight_nums) if booster_flight_nums else 0)
             avg_stage_two_flights.append(statistics.mean(stage_two_flight_nums) if stage_two_flight_nums else 0)
 
             # Determine the maximum fairing flights for the year
-            max_fairing_flights.append(self.get_max_fairing_flights(family, before_date))
+            max_fairing_flights.append(self._get_max_fairing_flights(family, before_date))
 
         return (
             max_booster_flights,
@@ -651,11 +659,11 @@ class FamilyInformationApiView(APIView):
             x_axis,
         )
 
-    def get_stage_data(self, family, stage_type, before_date):
+    def _get_stage_data(self, family, stage_type, before_date):
         stage_data = get_most_flown_stages(family=family, stage_type=stage_type, before_date=before_date)
         return stage_data["num_launches"]
 
-    def get_flight_numbers(self, family, year, before_date):
+    def _get_flight_numbers(self, family, year, before_date):
         booster_flight_nums = []
         stage_two_flight_nums = []
 
@@ -671,7 +679,7 @@ class FamilyInformationApiView(APIView):
 
         return booster_flight_nums, stage_two_flight_nums
 
-    def get_max_fairing_flights(self, family, before_date):
+    def _get_max_fairing_flights(self, family, before_date):
         max_num = 0
         for fairing_recovery in FairingRecovery.objects.filter(
             launch__time__lte=before_date, launch__rocket__family=family
@@ -680,7 +688,7 @@ class FamilyInformationApiView(APIView):
                 max_num = max(max_num, int(fairing_recovery.flights))
         return max_num
 
-    def get_family_stats(self, family):
+    def _get_family_stats(self, family):
         num_missions = Launch.objects.filter(rocket__family__name=family).count()
         num_landings = StageAndRecovery.objects.filter(
             launch__rocket__family__name=family,
@@ -697,7 +705,7 @@ class FamilyInformationApiView(APIView):
         }
         return family_stats
 
-    def get_family_children_stats(self, family):
+    def _get_family_children_stats(self, family):
         family_children_stats = {}
 
         for rocket in Rocket.objects.filter(family__name=family):
@@ -724,7 +732,7 @@ class FamilyInformationApiView(APIView):
 
         return family_children_stats
 
-    def get_stage_stats(self, family):
+    def _get_stage_stats(self, family):
         booster_most_flight_stats = get_most_flown_stages(
             family=family, stage_type=StageObjects.BOOSTER, before_date=datetime.now(pytz.utc)
         )
@@ -774,7 +782,7 @@ class FamilyInformationApiView(APIView):
             stage_two_turnaround_time,
         )
 
-    def get_series_data(
+    def _get_series_data(
         self,
         max_booster_flights,
         avg_booster_flights,

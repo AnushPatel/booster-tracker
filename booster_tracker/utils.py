@@ -1,7 +1,8 @@
 from enum import StrEnum
 from collections import defaultdict
 import re
-import datetime
+from datetime import datetime
+import pytz
 
 # This section we create StrEnums to limit options in functions. While not used in this document, these are often used in models.py
 
@@ -167,3 +168,24 @@ def combine_dicts(dict1: dict, dict2: dict) -> dict:
         combined[key] = list(set(combined[key]))
 
     return dict(combined)
+
+
+def parse_start_time(query_params, default_start_date: datetime) -> datetime:
+    """Checks to see if query specifies start date; else returns default_start_date"""
+    date_str: str = query_params.get("startdate", "")
+    if date_str:
+        return datetime.strptime(date_str.strip('"').replace("Z", ""), "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=pytz.utc)
+    return default_start_date
+
+
+from datetime import datetime
+import pytz
+
+
+def get_start_date(last_object):
+    if last_object:
+        if hasattr(last_object, "launch") and (time := last_object.launch.time):
+            return time
+        if hasattr(last_object, "time") and (time := last_object.time):
+            return time
+    return datetime.now(pytz.utc)

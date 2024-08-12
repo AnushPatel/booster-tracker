@@ -182,7 +182,7 @@ else:
 if not DEBUG:
     CACHE_MIDDLEWARE_SECONDS = 180
 else:
-    CACHE_MIDDLEWARE_SECONDS = 1
+    CACHE_MIDDLEWARE_SECONDS = 0
 
 CELERY_BROKER_URL = "sqs://"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"

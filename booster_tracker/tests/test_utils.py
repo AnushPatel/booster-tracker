@@ -11,6 +11,7 @@ from booster_tracker.utils import (
     all_zeros,
     combine_dicts,
     turnaround_time,
+    parse_start_time,
 )
 
 from booster_tracker.models import (
@@ -194,3 +195,17 @@ class TestCases(TestCase):
         expected = {"a": [1, 2, 5], "A": [3, 4], "b": [6]}
         result = combine_dicts(dict1, dict2)
         self.assertEqual(result, expected)
+
+    def test_parse_start_time(self):
+        default_start_date = datetime(2024, 1, 1, tzinfo=pytz.utc)
+        query_params = {"startdate": '"2024-08-11T12:34:56.789Z"'}
+        expected_date = datetime(2024, 8, 11, 12, 34, 56, 789000, tzinfo=pytz.utc)
+
+        result = parse_start_time(query_params, default_start_date)
+        self.assertEqual(result, expected_date)
+
+        query_params = {}
+        expected_date = default_start_date
+
+        result = parse_start_time(query_params, default_start_date)
+        self.assertEqual(result, default_start_date)

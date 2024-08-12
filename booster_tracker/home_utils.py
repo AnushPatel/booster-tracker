@@ -150,7 +150,7 @@ def launch_turnaround_times(filtered_launches: list[Launch]):
     turnaround_times = {}
     for launch in filtered_launches:
         if time := (launch.company_turnaround):
-            turnaround_times[launch.name] = round(time / 86400)
+            turnaround_times[launch.name] = round(time / 86400, 2)
 
     return turnaround_times
 
