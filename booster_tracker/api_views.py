@@ -8,6 +8,7 @@ from booster_tracker.home_utils import (
     get_next_and_last_launches,
     get_most_flown_stages,
     StageObjects,
+    build_filter,
 )
 from booster_tracker.utils import (
     concatenated_list,
@@ -58,15 +59,15 @@ from booster_tracker.serializers import (
     LandingZoneInformationSerializer,
     StageAndRecoverySerializer,
     LaunchInformationSerializer,
-    StageSerializer,
     StageInformationSerializer,
-    SpacecraftSerializer,
+    SpacecraftListSerializer,
     SpacecraftInformationSerializer,
     BoatSerializer,
     SpacecraftFamilySerializer,
     HomePageSerializer,
     FamilyInformationSerializer,
     CalendarStatsSerializer,
+    StageListSerializer,
 )
 import json
 
@@ -227,42 +228,51 @@ class LandingZoneApiView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class StageApiView(ListAPIView):
-    serializer_class = StageSerializer
-
-    def get_queryset(self):
-        """Return the list of items for this view"""
+class StageApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        # Get information from URL
         filter_param = self.request.query_params.get("filter", "{}")
         filter = json.loads(filter_param)
         type = self.request.query_params.get("type")
         query = self.request.query_params.get("query", "")
-        filtered_stages = get_model_objects_with_filter(Stage, filter, query).filter(type=type).order_by("-name")
-        return filtered_stages
+        family_str = self.request.query_params.get("family", "")
+        family = RocketFamily.objects.get(name__icontains=family_str)
 
-    def get(self, request, *args, **kwargs):
-        """List all the stage items for given requested user"""
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # Prepare information
+        start_filter = build_filter(model=Stage, family=family, type=type)
+        filtered_stages = (
+            get_model_objects_with_filter(Stage, filter, query)
+            .filter(type=type, rocket__family=family)
+            .order_by("-name")
+        )
+
+        data = {"start_filter": start_filter, "stages": filtered_stages}
+
+        serializer = StageListSerializer(data)
+
+        return Response(serializer.data)
 
 
 class SpacecraftApiView(ListAPIView):
-    serializer_class = SpacecraftSerializer
-
-    def get_queryset(self):
-        """Return the list of items for this view."""
+    def get(self, request, *args, **kwargs):
+        # Get information from URL
         filter_param = self.request.query_params.get("filter", "{}")
         filter = json.loads(filter_param)
         query = self.request.query_params.get("query", "")
-        filtered_spacecraft = get_model_objects_with_filter(Spacecraft, filter, query).order_by("-name")
-        return filtered_spacecraft
+        family_str = self.request.query_params.get("family", "")
+        family = SpacecraftFamily.objects.get(name__icontains=family_str)
 
-    def get(self, request, *args, **kwargs):
-        """List all the spacecraft items for given requested user"""
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
+        # Prepare information
+        start_filter = build_filter(model=Spacecraft, family=family, type=None)
+        filtered_spacecraft = (
+            get_model_objects_with_filter(Spacecraft, filter, query).filter(family=family).order_by("-name")
+        )
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        data = {"start_filter": start_filter, "spacecraft": filtered_spacecraft}
+
+        serializer = SpacecraftListSerializer(data)
+
+        return Response(serializer.data)
 
 
 # Information API Views

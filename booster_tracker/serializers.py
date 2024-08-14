@@ -162,6 +162,11 @@ class StageSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "version", "type", "image", "status", "rocket", "num_launches"]
 
 
+class StageListSerializer(serializers.Serializer):
+    start_filter = serializers.DictField(child=serializers.CharField(), required=True)
+    stages = serializers.ListField(child=StageSerializer())
+
+
 class StageInformationSerializer(serializers.Serializer):
     stage_and_recoveries = serializers.ListField(child=StageAndRecoverySerializer())
     display_stage_and_recoveries = serializers.ListField(child=StageAndRecoverySerializer())
@@ -179,6 +184,11 @@ class SpacecraftSerializer(serializers.ModelSerializer):
     class Meta:
         model = Spacecraft
         fields = ["id", "name", "nickname", "version", "type", "status", "image", "family", "num_launches"]
+
+
+class SpacecraftListSerializer(serializers.Serializer):
+    start_filter = serializers.DictField(child=serializers.CharField(), required=True)
+    spacecraft = serializers.ListField(child=SpacecraftSerializer())
 
 
 class SpacecraftOnLaunchSerializer(serializers.ModelSerializer):

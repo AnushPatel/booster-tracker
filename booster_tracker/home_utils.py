@@ -211,3 +211,47 @@ def launches_in_time_interval(line_of_best_fit, start_launch_num: int, remaining
         )
         end_launch_num += 1
     return end_launch_num
+
+
+def build_filter(model: models.Model, family: models.Model, type: StageObjects):
+    rockets = set()
+    versions = set()
+    statuses = set()
+
+    q_objects = Q()
+
+    if model == Stage:
+        q_objects &= Q(**{f"rocket__family": family})
+        q_objects &= Q(**{f"type": type})
+    elif model == Spacecraft:
+        q_objects &= Q(**{f"family": family})
+
+    for child in model.objects.filter(q_objects):
+        if hasattr(child, "version"):
+            versions.add(child.version)
+        if hasattr(child, "status"):
+            statuses.add(child.status)
+        if hasattr(child, "rocket"):
+            rockets.add(child.rocket.id)
+
+    filter = {}
+
+    if rockets:
+        filter_item = {}
+        for rocket in sorted(list(rockets), reverse=True):
+            filter_item[f"{rocket}"] = True
+        filter["rocket"] = filter_item
+
+    if versions:
+        filter_item = {}
+        for version in sorted(list(versions), reverse=True):
+            filter_item[f"{version}"] = True
+        filter["version"] = filter_item
+
+    if statuses:
+        filter_item = {}
+        for status in sorted(list(statuses)):
+            filter_item[f"{status}"] = True
+        filter["status"] = filter_item
+
+    return filter
