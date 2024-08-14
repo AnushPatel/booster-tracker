@@ -60,6 +60,8 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "colorfield",
+    "django_celery_beat",
+    "django_celery_results",
 ]
 
 MIDDLEWARE = [
@@ -191,6 +193,30 @@ INTERNAL_IPS = [
     "127.0.0.1",
     # ...
 ]
+
+
+CELERY_BROKER_URL = "sqs://"
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
+
+
+AWS_REGION = "us-west-2"
+
+if not DEBUG:
+    CELERY_BROKER_URL = "sqs://"
+    CELERY_BROKER_TRANSPORT_OPTIONS = {
+        "region": AWS_REGION,
+        "polling_interval": 3,
+        "queue_name_prefix": "",
+        "visibility_timeout": 3600,
+    }
+else:
+    CELERY_BROKER_URL = "redis://127.0.0.1:6379"
+
+CELERY_RESULT_BACKEND = "django-db"
+CELERY_CACHE_BACKEND = "django-cache"
+
+TASK_QUEUE_NAME = "boostertracker_queue"
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
