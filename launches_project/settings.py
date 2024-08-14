@@ -126,7 +126,7 @@ if DEBUG:
     CORS_ORIGIN_ALLOW_ALL = True
 else:
     CORS_ALLOWED_ORIGINS = [
-        "https:/boostertracker.com",
+        "https://boostertracker.com",
     ]
 
 # Database
