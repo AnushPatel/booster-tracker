@@ -39,9 +39,10 @@ if DEBUG:
     ALLOWED_HOSTS = []
 else:
     ALLOWED_HOSTS = [
-        "boostertracker.com",
+        "api.boostertracker.com",
         "boostertracker.eba-afvxhcfx.us-west-2.elasticbeanstalk.com",
         "www.boostertracker.com",
+        "boostertracker.com",
     ]
     ALLOWED_HOSTS.append(gethostbyname(gethostname()))
     SECURE_SSL_REDIRECT = True
