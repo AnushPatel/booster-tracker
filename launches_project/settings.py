@@ -41,8 +41,6 @@ else:
     ALLOWED_HOSTS = [
         "api.boostertracker.com",
         "boostertracker.eba-afvxhcfx.us-west-2.elasticbeanstalk.com",
-        "www.boostertracker.com",
-        "boostertracker.com",
     ]
     ALLOWED_HOSTS.append(gethostbyname(gethostname()))
     SECURE_SSL_REDIRECT = True
@@ -59,8 +57,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "storages",
-    "django_celery_beat",
-    "django_celery_results",
     "rest_framework",
     "corsheaders",
     "colorfield",
@@ -70,9 +66,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.cache.UpdateCacheMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.cache.FetchFromCacheMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -154,57 +148,6 @@ else:
         }
     }
 
-# Caching of database
-if not DEBUG and not TESTING:
-    REDIS_HOST = os.environ["REDIS_HOST"]
-    REDIS_URL = f"rediss://{REDIS_HOST}:6379"
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": REDIS_URL,
-        }
-    }
-elif DEBUG and not TESTING:
-    REDIS_URL = "redis://127.0.0.1:6379"
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": REDIS_URL,
-        }
-    }
-else:
-    REDIS_URL = None
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.dummy.DummyCache",
-        }
-    }
-
-if not DEBUG:
-    CACHE_MIDDLEWARE_SECONDS = 180
-else:
-    CACHE_MIDDLEWARE_SECONDS = 0
-
-CELERY_BROKER_URL = "sqs://"
-CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
-
-AWS_REGION = "us-west-2"
-
-if not DEBUG:
-    CELERY_BROKER_URL = "sqs://"
-    CELERY_BROKER_TRANSPORT_OPTIONS = {
-        "region": AWS_REGION,
-        "polling_interval": 3,
-        "queue_name_prefix": "",
-        "visibility_timeout": 3600,
-    }
-else:
-    CELERY_BROKER_URL = REDIS_URL
-
-CELERY_RESULT_BACKEND = "django-db"
-CELERY_CACHE_BACKEND = "django-cache"
-
-TASK_QUEUE_NAME = "boostertracker_queue"
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
