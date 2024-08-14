@@ -47,7 +47,6 @@ else:
     SECURE_REDIRECT_EXEMPT = ["health/"]
 
 # Application definition
-
 INSTALLED_APPS = [
     "booster_tracker.apps.BoosterTrackerConfig",
     "django.contrib.admin",
@@ -123,7 +122,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "launches_project.wsgi.application"
 
-CORS_ORIGIN_ALLOW_ALL = DEBUG
+if DEBUG:
+    CORS_ORIGIN_ALLOW_ALL = True
+else:
+    CORS_ALLOWED_ORIGINS = [
+        "https:/boostertracker.com",
+    ]
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
