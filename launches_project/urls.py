@@ -19,10 +19,12 @@ from django.contrib import admin
 from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
+from booster_tracker import views
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("", include("booster_tracker.urls")),
+    path("api/", include("booster_tracker.urls")),
+    path("health/", views.health, name="health"),
+    path("", admin.site.urls),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if not settings.TESTING and settings.DEBUG:

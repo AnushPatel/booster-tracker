@@ -397,7 +397,6 @@ class PadInformationApiView(RetrieveAPIView):
 
 class HomeDataApiView(APIView):
     def get(self, request):
-        print("start", datetime.now())
         today = datetime.now(pytz.utc)
         start_time = parse_start_time(self.request.query_params, today)
         function_type = self.request.query_params.get("functiontype", "")
@@ -470,7 +469,6 @@ class HomeDataApiView(APIView):
         }
 
         serializer = HomePageSerializer(data)
-        print(datetime.now(), "func end")
         return Response(serializer.data)
 
     def _prepare_empty_response_data(
@@ -630,6 +628,7 @@ class HomeDataApiView(APIView):
 
 class FamilyInformationApiView(APIView):
     def get(self, request):
+        print("start", datetime.now())
         family = self._get_rocket_family()
         first_launch_time = Launch.objects.filter(rocket__family=family).order_by("time").first().time
         start_year, current_year = self._get_launch_years(family)
@@ -641,6 +640,7 @@ class FamilyInformationApiView(APIView):
             avg_stage_two_flights,
             x_axis,
         ) = self._get_flight_data(family, start_year, current_year)
+        print("middle", datetime.now())
         family_stats = self._get_family_stats(family)
         family_children_stats = self._get_family_children_stats(family)
         (
@@ -678,6 +678,7 @@ class FamilyInformationApiView(APIView):
         serializer = FamilyInformationSerializer(data)
 
         # Return the serialized data as a response
+        print("end", datetime.now())
         return Response(serializer.data)
 
     def _get_rocket_family(self):
