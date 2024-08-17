@@ -12,6 +12,7 @@ from booster_tracker.models import (
     PadUsed,
     Launch,
     StageAndRecovery,
+    SpacecraftFamily,
 )
 
 
@@ -23,6 +24,9 @@ def initialize_test_data():
     falcon_family = RocketFamily.objects.create(name="Falcon", provider=spacex)
     falcon_9 = Rocket.objects.create(name="Falcon 9", family=falcon_family)
     falcon_heavy = Rocket.objects.create(name="Falcon Heavy", family=falcon_family)
+
+    # Create spacecraft data
+    dragon = SpacecraftFamily.objects.create(name="Dragon", provider=spacex)
 
     # Create pads
     pad1 = Pad.objects.create(

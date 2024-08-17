@@ -1,4 +1,5 @@
-from django.db.models import Q
+from django.db.models import Q, Count
+from django.db.models.functions import ExtractYear
 from booster_tracker.home_utils import (
     get_model_objects_with_filter,
     launches_per_day,
@@ -400,6 +401,9 @@ class HomeDataApiView(APIView):
         start_time = parse_start_time(self.request.query_params, today)
         function_type = self.request.query_params.get("functiontype", "")
 
+        # Get launches per rocket per year:
+        launches_per_rocket_per_year, years = self._get_launches_per_vehicle_per_year()
+
         # Get filtered launches
         filtered_launches = (
             get_model_objects_with_filter(Launch, filter={}, search_query="")
@@ -432,6 +436,8 @@ class HomeDataApiView(APIView):
                 num_landings,
                 shortest_time_between_launches,
                 num_stage_reflights,
+                years,
+                launches_per_rocket_per_year,
             )
             serializer = HomePageSerializer(data)
             return Response(serializer.data)
@@ -458,6 +464,8 @@ class HomeDataApiView(APIView):
             "num_landings": num_landings,
             "shortest_time_between_launches": shortest_time_between_launches,
             "num_stage_reflights": num_stage_reflights,
+            "years": years,
+            "launches_per_rocket_per_year": launches_per_rocket_per_year,
         }
 
         serializer = HomePageSerializer(data)
@@ -473,6 +481,8 @@ class HomeDataApiView(APIView):
         num_landings,
         shortest_time_between_launches,
         num_stage_reflights,
+        years,
+        launches_per_rocket_per_year,
     ):
         return {
             "turnaround_x_values": [],
@@ -489,7 +499,54 @@ class HomeDataApiView(APIView):
             "num_landings": num_landings,
             "shortest_time_between_launches": shortest_time_between_launches,
             "num_stage_reflights": num_stage_reflights,
+            "years": years,
+            "launches_per_rocket_per_year": launches_per_rocket_per_year,
         }
+
+    def _get_launches_per_vehicle_per_year(self):
+        launches_per_rocket_per_year = {}
+        current_year = datetime.now().year
+
+        # Initialize a variable to track the global minimum year
+        global_min_year = current_year
+
+        # First pass: Find the global minimum year across all rockets
+        for rocket in Rocket.objects.filter(family__provider__name="SpaceX"):
+            launches_per_year = (
+                Launch.objects.filter(rocket=rocket)
+                .annotate(year=ExtractYear("time"))
+                .values("year")
+                .annotate(count=Count("id"))
+                .order_by("year")
+            )
+
+            if launches_per_year.exists():
+                rocket_min_year = min(entry["year"] for entry in launches_per_year)
+                global_min_year = min(global_min_year, rocket_min_year)
+
+        # Second pass: Populate the dictionary with zeros for missing years
+        for rocket in Rocket.objects.filter(family__provider__name="SpaceX").order_by("-name"):
+            launches_per_year = (
+                Launch.objects.filter(rocket=rocket)
+                .annotate(year=ExtractYear("time"))
+                .values("year")
+                .annotate(count=Count("id"))
+                .order_by("year")
+            )
+
+            # Convert the queryset to a dictionary
+            formatted_dict = {entry["year"]: entry["count"] for entry in launches_per_year}
+
+            # Fill in missing years with zeros from global_min_year to current_year
+            for year in range(global_min_year, current_year + 1):
+                if year not in formatted_dict:
+                    formatted_dict[year] = 0
+
+            # Sort the dictionary by year
+            launches_per_rocket_per_year[rocket.id] = list(dict(sorted(formatted_dict.items())).values())
+            years = list(formatted_dict.keys())
+
+        return launches_per_rocket_per_year, years
 
     def _calculate_num_stage_reflights(self):
         num_stage_uses = (

@@ -226,6 +226,8 @@ class HomePageSerializer(serializers.Serializer):
     num_landings = serializers.IntegerField()
     shortest_time_between_launches = serializers.CharField()
     num_stage_reflights = serializers.CharField()
+    years = serializers.ListField(child=serializers.IntegerField())
+    launches_per_rocket_per_year = serializers.DictField(child=serializers.CharField())
 
 
 class FamilyInformationSerializer(serializers.Serializer):

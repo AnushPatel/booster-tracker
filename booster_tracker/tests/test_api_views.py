@@ -129,29 +129,33 @@ class ListApiTestCases(APITestCase):
         response_data = response.json()
         self.assertEqual(len(response_data), 3)
 
-    """     def test_filtered_stages(self):
+    def test_filtered_stages(self):
+        filter_data = {"rocket": {str(self.f9.id): True, str(self.fh.id): True}}
         self.url = reverse("booster_tracker:stages")
-        response = self.client.get(self.url)
+        response = self.client.get(
+            self.url, {"filter": json.dumps(filter_data), "query": "", "type": "BOOSTER", "family": "Falcon"}
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Filter data
-        filter_data = {"rocket": {str(self.f9.id): True, str(self.fh.id): True}}
-        response = self.client.get(self.url, {"filter": json.dumps(filter_data), "query": "", "type": "BOOSTER"})
+        response = self.client.get(
+            self.url, {"filter": json.dumps(filter_data), "query": "", "type": "BOOSTER", "family": "Falcon"}
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
-        self.assertEqual(len(response_data), 3)
+        self.assertEqual(len(response_data["stages"]), 3)
 
     def test_filtered_spacecraft(self):
+        filter_data = {}
         self.url = reverse("booster_tracker:spacecraft")
-        response = self.client.get(self.url)
+        response = self.client.get(self.url, {"filter": json.dumps(filter_data), "query": "", "family": "dragon"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Filter data
-        filter_data = {}
-        response = self.client.get(self.url, {"filter": json.dumps(filter_data), "query": "", "type": "BOOSTER"})
+        response = self.client.get(self.url, {"filter": json.dumps(filter_data), "query": "", "family": "dragon"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
-        self.assertEqual(len(response_data), 0) """
+        self.assertEqual(len(response_data["spacecraft"]), 0)
 
     def test_launch_information_view(self):
         launch = Launch.objects.get(name="Falcon 9 Launch 1")
@@ -202,7 +206,7 @@ class ListApiTestCases(APITestCase):
         self.assertEqual(response_data["stage_and_recoveries"][0]["stage"], stage.id)
 
     def test_spacecraft_information_view(self):
-        spacecraft_family = SpacecraftFamily.objects.create(name="Dragon")
+        spacecraft_family = SpacecraftFamily.objects.get(name="Dragon")
         spacecraft = Spacecraft.objects.create(family=spacecraft_family, name="C207")
         self.url = reverse("booster_tracker:spacecraft_information")
         response = self.client.get(self.url, {"id": spacecraft.id})
