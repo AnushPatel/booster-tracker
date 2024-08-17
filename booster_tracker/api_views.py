@@ -397,6 +397,7 @@ class PadInformationApiView(RetrieveAPIView):
 
 class HomeDataApiView(APIView):
     def get(self, request):
+        print("start", datetime.now())
         today = datetime.now(pytz.utc)
         start_time = parse_start_time(self.request.query_params, today)
         function_type = self.request.query_params.get("functiontype", "")

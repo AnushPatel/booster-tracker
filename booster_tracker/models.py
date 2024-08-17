@@ -199,20 +199,18 @@ class Pad(models.Model):
         return Launch.objects.filter(pad=self, time__lte=datetime.now(pytz.utc)).count()
 
     @property
-    def fastest_turnaround(self) -> str:
-        """Function returns fastest turnaround of launch pad in string form (ex: 12 days, 4 hours, and 3 minutes)"""
-        fastest_turnaround = "N/A"
+    def fastest_turnaround(self):
+        """Returns the fastest turnaround of landing zone"""
+        if (
+            launch := Launch.objects.filter(time__lte=datetime.now(pytz.utc), pad=self)
+            .order_by("pad_turnaround")
+            .first()
+        ):
+            if launch is None or launch.pad_turnaround is None:
+                return "N/A"
+            return convert_seconds(launch.pad_turnaround)
 
-        if launch := Launch.objects.filter(time__lte=datetime.now(pytz.utc), pad=self).first():
-            turnarounds = launch.calculate_turnarounds(turnaround_object=TurnaroundObjects.PAD)
-            if turnarounds:
-                specific_pad_turnarounds = [
-                    row for row in turnarounds["ordered_turnarounds"] if self == row["turnaround_object"]
-                ]
-                if len(specific_pad_turnarounds) > 0:
-                    fastest_turnaround = convert_seconds(specific_pad_turnarounds[0]["turnaround_time"])
-
-        return fastest_turnaround
+        return "N/A"
 
 
 class Launch(models.Model):
@@ -848,19 +846,18 @@ class LandingZone(models.Model):
     @property
     def fastest_turnaround(self):
         """Returns the fastest turnaround of landing zone"""
-        fastest_turnaround = "N/A"
+        if (
+            stage_and_recovery := StageAndRecovery.objects.filter(
+                launch__time__lte=datetime.now(pytz.utc), landing_zone=self
+            )
+            .order_by("zone_turnaround")
+            .first()
+        ):
+            if stage_and_recovery is None or stage_and_recovery.zone_turnaround is None:
+                return "N/A"
+            return convert_seconds(stage_and_recovery.zone_turnaround)
 
-        if launch := Launch.objects.filter(
-            time__lte=datetime.now(pytz.utc), stageandrecovery__landing_zone=self
-        ).first():
-            turnarounds = launch.calculate_turnarounds(turnaround_object=TurnaroundObjects.LANDING_ZONE)
-            specific_zone_turnarounds = [
-                row for row in turnarounds["ordered_turnarounds"] if self == row["turnaround_object"]
-            ]
-            if len(specific_zone_turnarounds) > 0:
-                fastest_turnaround = convert_seconds(specific_zone_turnarounds[0]["turnaround_time"])
-
-        return fastest_turnaround
+        return "N/A"
 
 
 class StageAndRecovery(models.Model):
