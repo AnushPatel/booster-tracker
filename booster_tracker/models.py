@@ -153,6 +153,7 @@ class Spacecraft(models.Model):
     family = models.ForeignKey(SpacecraftFamily, on_delete=models.CASCADE, blank=True, null=True)
     status = models.CharField(max_length=50, choices=STAGE_LIFE_OPTIONS, default="ACTIVE")
     image = models.ImageField(upload_to="spacecraft_photos/", default="spacecraft_photos/default_dragon.jpg")
+    credit = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -191,6 +192,7 @@ class Pad(models.Model):
     location = models.CharField(max_length=100, null=True, blank=True)
     status = models.CharField(max_length=20, choices=LIFE_OPTIONS, default="ACTIVE")
     image = models.ImageField(upload_to="pad_photos/", default="media/pad_photos/default.png")
+    credit = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return self.nickname
@@ -828,6 +830,7 @@ class LandingZone(models.Model):
     serial_number = models.CharField(max_length=10, blank=True, null=True)
     status = models.CharField(max_length=20, choices=LIFE_OPTIONS, default="ACTIVE")
     image = models.ImageField(upload_to="landing_zone_photos/", default="media/pad_photos/default.png")
+    credit = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -1033,6 +1036,7 @@ class PadUsed(models.Model):
         upload_to="rocket_pad_photos/",
         default="media/pad_photos/default.png",
     )
+    credit = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
         verbose_name_plural = "Pads Used"
