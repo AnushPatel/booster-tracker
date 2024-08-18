@@ -244,7 +244,7 @@ class StageApiView(APIView):
         filtered_stages = (
             get_model_objects_with_filter(Stage, filter, query)
             .filter(type=type, rocket__family=family)
-            .order_by("-name")
+            .order_by("-version", "-name")
         )
 
         data = {"start_filter": start_filter, "stages": filtered_stages}
