@@ -98,11 +98,12 @@ class Rocket(models.Model):
 
 
 class Stage(models.Model):
-    name = models.CharField(max_length=20)
+    name = models.CharField(max_length=50)
     rocket = models.ForeignKey(Rocket, on_delete=models.CASCADE)
     version = models.CharField(max_length=20)
     type = models.CharField(max_length=20, choices=STAGE_TYPES)
     image = models.ImageField(upload_to="stage_photos/", default="stage_photos/default_booster.jpg")
+    credit = models.CharField(max_length=100, null=True, blank=True)
     status = models.CharField(max_length=20, choices=STAGE_LIFE_OPTIONS, default="ACTIVE")
 
     def __str__(self):
