@@ -187,7 +187,7 @@ def line_of_best_fit(x: list, y: list, fit_type="exponential", weights=None, lon
 
         if weights is None:
             weights = np.ones_like(x)
-            weights[-(int(len(x) * 0.40)) :] = 10
+            # weights[-(int(len(x) * 0.40)) :] = 10
 
         coeffs, _ = curve_fit(exp_func, x, y, p0=initial_guess, maxfev=10000, sigma=weights, bounds=bounds)
         fit_func = lambda x: exp_func(x, *coeffs)
