@@ -568,7 +568,7 @@ class HomeDataApiView(APIView):
         chunk_size = 10
 
         x_values = list(range(0, len(turnaround_values), chunk_size // 2))
-        weights = np.linspace(1, 1, len(turnaround_values))
+        weights = np.linspace(1, 3, len(turnaround_values))
         all_x_values = list(range(len(turnaround_values)))
         best_fit_line = line_of_best_fit(x=all_x_values, y=turnaround_values, fit_type=function_type, weights=weights)
 
@@ -645,9 +645,7 @@ class FamilyInformationApiView(APIView):
         family_children_stats = self._get_family_children_stats(family)
         (
             boosters_with_most_flights,
-            booster_max_num_flights,
             stage_two_with_most_flights,
-            stage_two_max_num_flights,
             booster_with_quickest_turnaround,
             booster_turnaround_time,
             stage_two_with_quickest_turnaround,
@@ -664,9 +662,7 @@ class FamilyInformationApiView(APIView):
             "stats": family_stats,
             "children_stats": family_children_stats,
             "boosters_with_most_flights": boosters_with_most_flights,
-            "booster_max_num_flights": booster_max_num_flights,
             "stage_two_with_most_flights": stage_two_with_most_flights,
-            "stage_two_max_num_flights": stage_two_max_num_flights,
             "booster_with_quickest_turnaround": booster_with_quickest_turnaround,
             "booster_turnaround_time": booster_turnaround_time,
             "stage_two_with_quickest_turnaround": stage_two_with_quickest_turnaround,
@@ -879,9 +875,7 @@ class FamilyInformationApiView(APIView):
 
         return (
             booster_most_flight_stats["stages"],
-            booster_most_flight_stats["num_launches"],
             stage_two_most_flight_stats["stages"],
-            stage_two_most_flight_stats["num_launches"],
             booster_with_quickest_turnaround,
             booster_turnaround_time,
             stage_two_with_quickest_turnaround,
