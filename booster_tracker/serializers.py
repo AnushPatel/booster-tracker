@@ -72,9 +72,13 @@ class LaunchSerializer(serializers.ModelSerializer):
         ]
 
 
-class RocketSerializer(serializers.ModelSerializer):
-    launches = LaunchOnlySerializer(many=True, read_only=True, source="launch_set")
+class LaunchOnlySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Launch
+        fields = "__all__"
 
+
+class RocketSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rocket
         fields = "__all__"
@@ -232,7 +236,7 @@ class HomePageSerializer(serializers.Serializer):
 
 class FamilyInformationSerializer(serializers.Serializer):
     launch_years = serializers.ListField(child=serializers.IntegerField())
-    series_data = serializers.DictField(child=serializers.ListField(child=serializers.IntegerField()), required=False)
+    series_data = serializers.DictField(child=serializers.ListField(child=serializers.FloatField()), required=False)
     stats = serializers.DictField(child=serializers.CharField(), required=True)
     children_stats = serializers.DictField(child=serializers.CharField(), required=True)
     boosters_with_most_flights = serializers.ListField(child=StageSerializer(), required=True)
@@ -258,3 +262,4 @@ class CalendarStatsSerializer(serializers.Serializer):
     percentageDaysWithLaunches = serializers.FloatField()
     mostLaunches = serializers.IntegerField()
     daysWithMostLaunches = serializers.CharField()
+    launches = serializers.ListField(child=LaunchOnlySerializer())

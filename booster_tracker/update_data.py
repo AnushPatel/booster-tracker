@@ -2,7 +2,6 @@ import django
 import os
 import sys
 
-print(sys.path)
 sys.path.append("")
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "launches_project.settings")

@@ -319,13 +319,11 @@ class Launch(models.Model):
 
     def get_rocket_flights_reused_vehicle(self) -> int:
         """Up to and including the launch, counts number of launches of that vehicle that have flown with one or more flight proven boosters; increments by one regardless of if one, two, or three boosters are flight proven"""
-        count = 0
-
-        for launch in Launch.objects.filter(time__lte=self.time, rocket=self.rocket):
-            if StageAndRecovery.objects.filter(launch=launch, num_flights__gt=1).exists():
-                count += 1
-
-        return count
+        return (
+            Launch.objects.filter(time__lte=self.time, rocket=self.rocket, stageandrecovery__num_flights__gt=1)
+            .distinct()
+            .count()
+        )
 
     def get_total_reflights(self, start: datetime) -> str:
         """Counts total number of booster reflights past the starting date; so this function increments by two if two boosters are flight proven on Falcon Heavy"""
@@ -597,15 +595,14 @@ class Launch(models.Model):
         return launch_landings
 
     def get_booster_reuse_stats(self, stats):
-        if self.flight_proven_booster:
-            booster_reuse = self.get_rocket_flights_reused_vehicle()
-            stats.append(f"– {make_ordinal(booster_reuse)} {self.rocket} flight with a flight-proven booster")
-            stats.append(
-                f"– {self.get_total_reflights(start=datetime(2000, 1, 1, tzinfo=pytz.utc))} reflight of a booster"
-            )
-            stats.append(
-                f"– {self.get_total_reflights(start=datetime(self.time.year - 1, 12, 31, 23, 59, 59, 999, tzinfo=pytz.utc))} reflight of a booster in {self.time.year}"
-            )
+        if not self.flight_proven_booster:
+            return
+        booster_reuse = self.get_rocket_flights_reused_vehicle()
+        stats.append(f"– {make_ordinal(booster_reuse)} {self.rocket} flight with a flight-proven booster")
+        stats.append(f"– {self.get_total_reflights(start=datetime(2000, 1, 1, tzinfo=pytz.utc))} reflight of a booster")
+        stats.append(
+            f"– {self.get_total_reflights(start=datetime(self.time.year - 1, 12, 31, 23, 59, 59, 999, tzinfo=pytz.utc))} reflight of a booster in {self.time.year}"
+        )
 
     def get_booster_landing_stats(self, stats):
         booster_landings = self.get_num_booster_landings()
@@ -947,10 +944,10 @@ class FairingRecovery(models.Model):
         blank=True,
     )
     catch = models.BooleanField()
-    recovery = models.CharField(max_length=200)
+    recovery = models.CharField(max_length=200, blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
-    flights = models.CharField(max_length=200)
+    flights = models.IntegerField(blank=True, null=True)
 
     class Meta:
         verbose_name_plural = "Fairing Recoveries"

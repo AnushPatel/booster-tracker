@@ -34,7 +34,6 @@ from enum import StrEnum
 import csv
 import statistics
 
-print(sys.path)
 sys.path.append("")
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "launches_project.settings")
 django.setup()

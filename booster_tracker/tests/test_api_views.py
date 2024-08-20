@@ -284,8 +284,8 @@ class FamilyInformationApiViewTests(APITestCase):
 
         # Example assertion: Check series_data
         expected_series_data = {
-            "Max Booster": [3],
-            "Avg Booster": [1],
+            "Max Booster": [3.0],
+            "Avg Booster": [1.86],
         }
         self.assertEqual(data["series_data"], expected_series_data)
 

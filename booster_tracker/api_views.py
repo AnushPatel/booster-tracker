@@ -1,4 +1,4 @@
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Max, Avg
 from django.db.models.functions import ExtractYear
 from booster_tracker.home_utils import (
     get_model_objects_with_filter,
@@ -173,6 +173,7 @@ class FilteredLaunchDaysApiView(APIView):
             "percentageDaysWithLaunches": percentage_days_with_launch,
             "mostLaunches": max_launches,
             "daysWithMostLaunches": concatenated_list(days_with_most_launches),
+            "launches": filtered_launches,
         }
 
         serializer = CalendarStatsSerializer(data)
@@ -640,7 +641,6 @@ class FamilyInformationApiView(APIView):
             avg_stage_two_flights,
             x_axis,
         ) = self._get_flight_data(family, start_year, current_year)
-        print("middle", datetime.now())
         family_stats = self._get_family_stats(family)
         family_children_stats = self._get_family_children_stats(family)
         (
@@ -693,31 +693,68 @@ class FamilyInformationApiView(APIView):
         return start_year, current_year
 
     def _get_flight_data(self, family, start_year, current_year):
-        x_axis = [i for i in range(start_year, current_year + 1)]
-        max_booster_flights = []
-        avg_booster_flights = []
-        max_fairing_flights = []
-        max_stage_two_flights = []
-        avg_stage_two_flights = []
+        # Create a list of years in the range
+        x_axis = list(range(start_year, current_year + 1))
 
-        for year in range(start_year, current_year + 1):
-            before_date = (
-                datetime.now(pytz.utc)
-                if year == current_year
-                else datetime(year, 12, 31, 23, 59, 59, 999, tzinfo=pytz.utc)
+        # Create a single queryset for all necessary data, grouped by year
+        flight_data = (
+            StageAndRecovery.objects.filter(
+                stage__rocket__family=family,
+                launch__time__year__gte=start_year,
+                launch__time__lte=datetime.now(pytz.utc),
             )
+            .annotate(year=ExtractYear("launch__time"))
+            .values("year", "stage__type")
+            .annotate(
+                max_flights=Max("num_flights"),
+                avg_flights=Avg("num_flights"),
+            )
+            .order_by("year", "stage__type")
+        )
 
-            # Get max launch number for both stages
-            max_booster_flights.append(self._get_stage_data(family, StageObjects.BOOSTER, before_date))
-            max_stage_two_flights.append(self._get_stage_data(family, StageObjects.SECOND_STAGE, before_date))
+        fairing_flight_data = (
+            FairingRecovery.objects.filter(
+                launch__rocket__family=family,
+                launch__time__year__gte=start_year,
+                launch__time__lte=datetime.now(pytz.utc),
+            )
+            .annotate(year=ExtractYear("launch__time"))
+            .values("year")
+            .annotate(
+                max_flights=Max("flights"),
+            )
+            .order_by("year")
+        )
 
-            # Get flight numbers for boosters and stages
-            booster_flight_nums, stage_two_flight_nums = self._get_flight_numbers(family, year, before_date)
-            avg_booster_flights.append(statistics.mean(booster_flight_nums) if booster_flight_nums else 0)
-            avg_stage_two_flights.append(statistics.mean(stage_two_flight_nums) if stage_two_flight_nums else 0)
+        # Initialize dictionaries to hold the max and avg flights for each stage type by year
+        max_booster_flights = {year: 0 for year in x_axis}
+        avg_booster_flights = {year: 0 for year in x_axis}
+        max_stage_two_flights = {year: 0 for year in x_axis}
+        avg_stage_two_flights = {year: 0 for year in x_axis}
+        max_fairing_flights = {year: 0 for year in x_axis}
 
-            # Determine the maximum fairing flights for the year
-            max_fairing_flights.append(self._get_max_fairing_flights(family, before_date))
+        # Populate stage data from query set
+        for data in flight_data:
+            year = data["year"]
+            stage_type = data["stage__type"]
+            if stage_type == StageObjects.BOOSTER:
+                max_booster_flights[year] = data["max_flights"]
+                avg_booster_flights[year] = round(data["avg_flights"], 2)
+            elif stage_type == StageObjects.SECOND_STAGE:
+                max_stage_two_flights[year] = data["max_flights"]
+                avg_stage_two_flights[year] = round(data["avg_flights"], 2)
+
+        # Populate fairing data from query set
+        for data in fairing_flight_data:
+            year = data["year"]
+            max_fairing_flights[year] = data["max_flights"]
+
+        # Convert dictionaries to lists for return
+        max_booster_flights = max_booster_flights.values()
+        avg_booster_flights = avg_booster_flights.values()
+        max_stage_two_flights = max_stage_two_flights.values()
+        avg_stage_two_flights = avg_stage_two_flights.values()
+        max_fairing_flights = max_fairing_flights.values()
 
         return (
             max_booster_flights,
@@ -777,7 +814,7 @@ class FamilyInformationApiView(APIView):
     def _get_family_children_stats(self, family):
         family_children_stats = {}
 
-        for rocket in Rocket.objects.filter(family__name=family):
+        for rocket in Rocket.objects.filter(family__name=family).order_by("id"):
             last_launch: Launch = (
                 Launch.objects.filter(time__lte=datetime.now(pytz.utc), rocket=rocket).order_by("-time").first()
             )
