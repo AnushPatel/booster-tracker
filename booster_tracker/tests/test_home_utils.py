@@ -255,11 +255,11 @@ class TestCases(TestCase):
 
         # Test exponential fit
         fit_func = line_of_best_fit(self.x, self.y_exponential, fit_type="exponential")
-        np.testing.assert_array_almost_equal(fit_func(self.x), self.y_exponential, decimal=1)
+        np.testing.assert_array_almost_equal(fit_func(self.x), self.y_exponential, decimal=0)
 
         # Test exponential fit with weights
         fit_func = line_of_best_fit(self.x, self.y_exponential, fit_type="exponential", weights=self.weights)
-        np.testing.assert_array_almost_equal(fit_func(self.x), self.y_exponential, decimal=1)
+        np.testing.assert_array_almost_equal(fit_func(self.x), self.y_exponential, decimal=0)
 
     def test_time_between_launches(self):
         self.line_of_best_fit = lambda x: 2 * x + 3

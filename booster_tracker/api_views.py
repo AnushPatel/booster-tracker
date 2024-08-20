@@ -568,9 +568,8 @@ class HomeDataApiView(APIView):
         chunk_size = 10
 
         x_values = list(range(0, len(turnaround_values), chunk_size // 2))
-        weights = np.linspace(1, 5, len(turnaround_values))
         all_x_values = list(range(len(turnaround_values)))
-        best_fit_line = line_of_best_fit(x=all_x_values, y=turnaround_values, fit_type=function_type, weights=weights)
+        best_fit_line = line_of_best_fit(x=all_x_values, y=turnaround_values, fit_type=function_type, weights=None)
 
         best_fit_turnaround_values = [best_fit_line(x) for x in x_values]
         averaged_values = [(turnaround_values[x] if i % 2 == 0 else None) for i, x in enumerate(x_values)]

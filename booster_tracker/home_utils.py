@@ -24,7 +24,7 @@ import pytz
 from enum import StrEnum
 from collections import defaultdict
 import numpy as np
-from scipy.optimize import curve_fit, least_squares
+from scipy.optimize import curve_fit
 from scipy.integrate import quad
 
 
@@ -180,21 +180,15 @@ def line_of_best_fit(x: list, y: list, fit_type="exponential", weights=None):
         def exp_func(x, a, b, c):
             return a * np.exp(b * x) + c
 
-        # Tail-weighted initial guess
-        initial_guess = [y[-1], 0.1, y[-1]]
+        # Better initial guess for exponential decay
+        initial_guess = (y[0] - y[-1], -0.5, np.min(y))
 
         if weights is None:
             weights = np.ones_like(x)
-        else:
-            weights = np.array(weights)
+            weights[-(int(len(x) * 0.40)) :] = 100
 
-        def weighted_exp_func(params, x, y, weights):
-            a, b, c = params
-            residuals = y - (a * np.exp(b * np.array(x)) + c)
-            return weights * residuals
-
-        result = least_squares(weighted_exp_func, initial_guess, args=(x, y, weights), loss="soft_l1", f_scale=0.1)
-        fit_func = lambda x: exp_func(x, *result.x)
+        coeffs, _ = curve_fit(exp_func, x, y, p0=initial_guess, maxfev=10000, sigma=weights)
+        fit_func = lambda x: exp_func(x, *coeffs)
 
     return fit_func
 
