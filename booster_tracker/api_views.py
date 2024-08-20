@@ -589,7 +589,7 @@ class HomeDataApiView(APIView):
             y=turnaround_values,
             fit_type=function_type,
             weights=None,
-            long_term_behavior_max=recent_average / 2,
+            long_term_behavior_max=recent_average / 1.5,
         )
 
         best_fit_turnaround_values = [best_fit_line(x) for x in x_values]
