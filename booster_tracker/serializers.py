@@ -222,7 +222,6 @@ class HomePageSerializer(serializers.Serializer):
     best_fit_turnaround_values = serializers.ListField(child=serializers.FloatField())
     total_launches_current_year = serializers.IntegerField()
     total_launches_next_year = serializers.IntegerField()
-    total_launches_year_after_next = serializers.IntegerField()
     next_launch = LaunchSerializer()
     last_launch = LaunchSerializer()
     num_missions = serializers.IntegerField()

@@ -457,7 +457,6 @@ class HomeDataApiView(APIView):
             "best_fit_turnaround_values": turnaround_data["best_fit_turnaround_values"],
             "total_launches_current_year": launch_predictions["total_launches_current_year"],
             "total_launches_next_year": launch_predictions["total_launches_next_year"],
-            "total_launches_year_after_next": launch_predictions["total_launches_year_after_next"],
             "next_launch": next_launch,
             "last_launch": last_launch,
             "num_missions": num_missions,
@@ -631,19 +630,9 @@ class HomeDataApiView(APIView):
             min_value=0.33,
         )
 
-        # Calculate total launches for the year after next
-        year_after_next_days = 366 if (today.year + 2) % 4 == 0 else 365
-        year_after_next_launches = launches_in_time_interval(
-            line_of_best_fit=best_fit_line,
-            start_launch_num=next_year_launches,
-            remaining_days=year_after_next_days,
-            min_value=0.33,
-        )
-
         return {
             "total_launches_current_year": remaining_launches_current_year + launches_this_year,
             "total_launches_next_year": next_year_launches - (current_launch_number + remaining_launches_current_year),
-            "total_launches_year_after_next": year_after_next_launches - next_year_launches,
         }
 
 

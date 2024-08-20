@@ -254,7 +254,6 @@ class HomeDataApiViewTests(APITestCase):
         self.assertEqual(data["best_fit_turnaround_values"], [])
         self.assertEqual(data["total_launches_current_year"], 0)
         self.assertEqual(data["total_launches_next_year"], 0)
-        self.assertEqual(data["total_launches_year_after_next"], 0)
 
 
 """     def test_with_launches(self):
@@ -269,7 +268,6 @@ class HomeDataApiViewTests(APITestCase):
         np.testing.assert_array_almost_equal(data["best_fit_turnaround_values"], [30.42], decimal=0)
         self.assertEqual(data["total_launches_current_year"], 10)
         self.assertEqual(data["total_launches_next_year"], 13)
-        self.assertEqual(data["total_launches_year_after_next"], 14)
  """
 
 
