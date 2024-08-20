@@ -158,7 +158,7 @@ def launch_turnaround_times(filtered_launches: list[Launch]):
     return turnaround_times
 
 
-def line_of_best_fit(x: list, y: list, fit_type="exponential", weights=None):
+def line_of_best_fit(x: list, y: list, fit_type="exponential", weights=None, long_term_behavior_max=2.5):
     # Linear fit
     if fit_type == "linear":
         coeffs = np.polyfit(x, y, 1)
@@ -183,7 +183,7 @@ def line_of_best_fit(x: list, y: list, fit_type="exponential", weights=None):
         # Better initial guess for exponential decay
         initial_guess = (y[0] - y[-1], -0.5, 0.5)
 
-        bounds = ([-np.inf, -np.inf, 0], [np.inf, np.inf, 2.5])
+        bounds = ([-np.inf, -np.inf, 0], [np.inf, np.inf, long_term_behavior_max])
 
         if weights is None:
             weights = np.ones_like(x)

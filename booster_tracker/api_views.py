@@ -569,7 +569,28 @@ class HomeDataApiView(APIView):
 
         x_values = list(range(0, len(turnaround_values), chunk_size // 2))
         all_x_values = list(range(len(turnaround_values)))
-        best_fit_line = line_of_best_fit(x=all_x_values, y=turnaround_values, fit_type=function_type, weights=None)
+        # Get all spacex launches
+        all_spacex_launches = Launch.objects.filter(rocket__family__provider__name="SpaceX").order_by("-time")
+
+        # Determine the count of launches and calculate the top 10%
+        launch_count = all_spacex_launches.count()
+        recent_10_percent_count = max(1, int(launch_count * 0.10))
+
+        # Slice the queryset to get the most recent 10% and calculate the average
+        recent_average = (
+            all_spacex_launches[:recent_10_percent_count].aggregate(Avg("company_turnaround"))[
+                "company_turnaround__avg"
+            ]
+            / 86400
+        )
+        print(recent_average)
+        best_fit_line = line_of_best_fit(
+            x=all_x_values,
+            y=turnaround_values,
+            fit_type=function_type,
+            weights=None,
+            long_term_behavior_max=recent_average / 2,
+        )
 
         best_fit_turnaround_values = [best_fit_line(x) for x in x_values]
         averaged_values = [(turnaround_values[x] if i % 2 == 0 else None) for i, x in enumerate(x_values)]
