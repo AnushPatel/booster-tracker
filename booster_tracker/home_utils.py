@@ -181,13 +181,15 @@ def line_of_best_fit(x: list, y: list, fit_type="exponential", weights=None):
             return a * np.exp(b * x) + c
 
         # Better initial guess for exponential decay
-        initial_guess = (y[0] - y[-1], -0.5, np.min(y))
+        initial_guess = (y[0] - y[-1], -0.5, 0.5)
+
+        bounds = ([-np.inf, -np.inf, 0], [np.inf, np.inf, 2.5])
 
         if weights is None:
             weights = np.ones_like(x)
-            weights[-(int(len(x) * 0.40)) :] = 100
+            weights[-(int(len(x) * 0.40)) :] = 10
 
-        coeffs, _ = curve_fit(exp_func, x, y, p0=initial_guess, maxfev=10000, sigma=weights)
+        coeffs, _ = curve_fit(exp_func, x, y, p0=initial_guess, maxfev=10000, sigma=weights, bounds=bounds)
         fit_func = lambda x: exp_func(x, *coeffs)
 
     return fit_func
