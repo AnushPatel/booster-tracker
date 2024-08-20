@@ -153,7 +153,7 @@ class SpacecraftFamilyApiView(APIView):
 class FilteredLaunchDaysApiView(APIView):
     def get(self, request):
         filter = json.loads(request.query_params.get("filter"))
-        filtered_launches = get_model_objects_with_filter(Launch, filter)
+        filtered_launches = get_model_objects_with_filter(Launch, filter).filter(time__lte=datetime.now(pytz.utc))
         launches_on_day = launches_per_day(filtered_launches)
 
         num_days_with_launches = len(launches_on_day)
@@ -398,8 +398,8 @@ class PadInformationApiView(RetrieveAPIView):
 
 class HomeDataApiView(APIView):
     def get(self, request):
-        today = datetime.now(pytz.utc)
-        start_time = parse_start_time(self.request.query_params, today)
+        self.now = datetime.now(pytz.utc)
+        start_time = parse_start_time(self.request.query_params, self.now)
         function_type = self.request.query_params.get("functiontype", "")
 
         # Get launches per rocket per year:
@@ -408,7 +408,7 @@ class HomeDataApiView(APIView):
         # Get filtered launches
         filtered_launches = (
             get_model_objects_with_filter(Launch, filter={}, search_query="")
-            .filter(time__gte=start_time, time__lte=today)
+            .filter(time__gte=start_time, time__lte=self.now)
             .order_by("time")
         )
 
@@ -448,7 +448,7 @@ class HomeDataApiView(APIView):
 
         # Calculate future launch predictions
         launch_predictions = self._calculate_launch_predictions(
-            filtered_launches, today, turnaround_data["best_fit_line"]
+            filtered_launches, self.now, turnaround_data["best_fit_line"]
         )
 
         data = {
@@ -504,7 +504,7 @@ class HomeDataApiView(APIView):
 
     def _get_launches_per_vehicle_per_year(self):
         launches_per_rocket_per_year = {}
-        current_year = datetime.now().year
+        current_year = self.now.year
 
         # Initialize a variable to track the global minimum year
         global_min_year = current_year
@@ -549,12 +549,12 @@ class HomeDataApiView(APIView):
 
     def _calculate_num_stage_reflights(self):
         num_stage_uses = (
-            StageAndRecovery.objects.filter(launch__time__lte=datetime.now(pytz.utc))
+            StageAndRecovery.objects.filter(launch__time__lte=self.now)
             .filter(launch__rocket__name__icontains="Falcon")
             .count()
         )
         num_stages_used = (
-            Stage.objects.filter(stageandrecovery__launch__time__lte=datetime.now(pytz.utc))
+            Stage.objects.filter(stageandrecovery__launch__time__lte=self.now)
             .filter(rocket__family__provider__name="SpaceX")
             .distinct()
             .count()
@@ -582,7 +582,7 @@ class HomeDataApiView(APIView):
             ]
             / 86400
         )
-        print(recent_average)
+
         best_fit_line = line_of_best_fit(
             x=all_x_values,
             y=turnaround_values,
@@ -638,7 +638,7 @@ class HomeDataApiView(APIView):
 
 class FamilyInformationApiView(APIView):
     def get(self, request):
-        print("start", datetime.now())
+        self.now = datetime.now(pytz.utc)
         family = self._get_rocket_family()
         first_launch_time = Launch.objects.filter(rocket__family=family).order_by("time").first().time
         start_year, current_year = self._get_launch_years(family)
@@ -683,7 +683,6 @@ class FamilyInformationApiView(APIView):
         serializer = FamilyInformationSerializer(data)
 
         # Return the serialized data as a response
-        print("end", datetime.now())
         return Response(serializer.data)
 
     def _get_rocket_family(self):
@@ -691,7 +690,7 @@ class FamilyInformationApiView(APIView):
 
     def _get_launch_years(self, family):
         first_launch_year = Launch.objects.filter(rocket__family=family).order_by("time").first().time
-        current_year = datetime.now(pytz.utc).year
+        current_year = self.now.year
 
         start_year = parse_start_time(self.request.query_params, first_launch_year).year
 
@@ -706,7 +705,7 @@ class FamilyInformationApiView(APIView):
             StageAndRecovery.objects.filter(
                 stage__rocket__family=family,
                 launch__time__year__gte=start_year,
-                launch__time__lte=datetime.now(pytz.utc),
+                launch__time__lte=self.now,
             )
             .annotate(year=ExtractYear("launch__time"))
             .values("year", "stage__type")
@@ -721,7 +720,7 @@ class FamilyInformationApiView(APIView):
             FairingRecovery.objects.filter(
                 launch__rocket__family=family,
                 launch__time__year__gte=start_year,
-                launch__time__lte=datetime.now(pytz.utc),
+                launch__time__lte=self.now,
             )
             .annotate(year=ExtractYear("launch__time"))
             .values("year")
@@ -820,14 +819,18 @@ class FamilyInformationApiView(APIView):
         family_children_stats = {}
 
         for rocket in Rocket.objects.filter(family__name=family).order_by("id"):
-            last_launch: Launch = (
-                Launch.objects.filter(time__lte=datetime.now(pytz.utc), rocket=rocket).order_by("-time").first()
-            )
+            last_launch: Launch = Launch.objects.filter(time__lte=self.now, rocket=rocket).order_by("-time").first()
             booster_reflights = StageAndRecovery.objects.filter(
-                launch__rocket__name=rocket.name, num_flights__gt=1, stage__type=StageObjects.BOOSTER
+                launch__rocket__name=rocket.name,
+                num_flights__gt=1,
+                stage__type=StageObjects.BOOSTER,
+                launch__time__lte=self.now,
             ).count()
             stage_two_reflights = StageAndRecovery.objects.filter(
-                launch__rocket__name=rocket.name, num_flights__gt=1, stage__type=StageObjects.SECOND_STAGE
+                launch__rocket__name=rocket.name,
+                num_flights__gt=1,
+                stage__type=StageObjects.SECOND_STAGE,
+                launch__time__lte=self.now,
             ).count()
             launches = Launch.objects.filter(rocket=rocket).count()
             successes = Launch.objects.filter(rocket=rocket, launch_outcome="SUCCESS").count()
@@ -845,15 +848,15 @@ class FamilyInformationApiView(APIView):
 
     def _get_stage_stats(self, family):
         booster_most_flight_stats = get_most_flown_stages(
-            family=family, stage_type=StageObjects.BOOSTER, before_date=datetime.now(pytz.utc)
+            family=family, stage_type=StageObjects.BOOSTER, before_date=self.now
         )
         stage_two_most_flight_stats = get_most_flown_stages(
-            family=family, stage_type=StageObjects.SECOND_STAGE, before_date=datetime.now(pytz.utc)
+            family=family, stage_type=StageObjects.SECOND_STAGE, before_date=self.now
         )
 
         quickest_booster_stage_and_recovery = (
             StageAndRecovery.objects.filter(
-                stage__rocket__family=family, stage__type="BOOSTER", launch__time__lte=datetime.now(pytz.utc)
+                stage__rocket__family=family, stage__type="BOOSTER", launch__time__lte=self.now
             )
             .exclude(stage_turnaround__isnull=True)
             .order_by("stage_turnaround")
@@ -861,7 +864,7 @@ class FamilyInformationApiView(APIView):
         )
         quickest_stage_two_stage_and_recovery = (
             StageAndRecovery.objects.filter(
-                stage__rocket__family=family, stage__type="SECOND_STAGE", launch__time__lte=datetime.now(pytz.utc)
+                stage__rocket__family=family, stage__type="SECOND_STAGE", launch__time__lte=self.now
             )
             .exclude(stage_turnaround__isnull=True)
             .order_by("stage_turnaround")

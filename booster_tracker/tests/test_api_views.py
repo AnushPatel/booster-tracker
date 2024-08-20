@@ -42,7 +42,7 @@ class FilteredLaunchDaysApiViewTest(APITestCase):
         )
 
         Launch.objects.create(
-            time=datetime(2025, 1, 1, 0, 0, tzinfo=pytz.utc),
+            time=datetime(2022, 1, 1, 0, 0, tzinfo=pytz.utc),
             pad=Pad.objects.get(name="Space Launch Complex 40"),
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 1",
@@ -255,8 +255,7 @@ class HomeDataApiViewTests(APITestCase):
         self.assertEqual(data["total_launches_current_year"], 0)
         self.assertEqual(data["total_launches_next_year"], 0)
 
-
-"""     def test_with_launches(self):
+    def test_with_launches(self):
         self.start_date = "2018-01-01T07:00:00.000Z"
 
         response = self.client.get(self.url, {"startdate": self.start_date, "functiontype": "exponential"})
@@ -268,7 +267,6 @@ class HomeDataApiViewTests(APITestCase):
         np.testing.assert_array_almost_equal(data["best_fit_turnaround_values"], [30.42], decimal=0)
         self.assertEqual(data["total_launches_current_year"], 10)
         self.assertEqual(data["total_launches_next_year"], 13)
- """
 
 
 class FamilyInformationApiViewTests(APITestCase):
