@@ -37,7 +37,7 @@ class LaunchOnlySerializer(serializers.ModelSerializer):
             "pad",
             "rocket",
             "orbit",
-            "image",
+            "launch_photo",
         ]
 
 
@@ -66,16 +66,10 @@ class LaunchSerializer(serializers.ModelSerializer):
             "pad",
             "rocket",
             "orbit",
-            "boosters",
+            "stages_string",
             "recoveries",
-            "image",
+            "launch_photo",
         ]
-
-
-class LaunchOnlySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Launch
-        fields = "__all__"
 
 
 class RocketSerializer(serializers.ModelSerializer):

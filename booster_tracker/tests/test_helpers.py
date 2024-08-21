@@ -84,7 +84,7 @@ def initialize_test_data():
     )
     PadUsed.objects.create(
         rocket=falcon_heavy,
-        pad=pad2,
+        pad=pad1,
     )
     PadUsed.objects.create(
         rocket=falcon_9,

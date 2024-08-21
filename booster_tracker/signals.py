@@ -46,7 +46,9 @@ def updated_cached_launch_values(sender, instance, **kwargs):
             if instance.name not in updated_names:
                 instance.company_turnaround = instance.get_company_turnaround
                 instance.pad_turnaround = instance.get_pad_turnaround
-                instance.save(update_fields=["company_turnaround", "pad_turnaround"])
+                instance.stages_string = instance.boosters
+                instance.launch_photo = instance.image
+                instance.save(update_fields=["company_turnaround", "pad_turnaround", "stages_string", "launch_photo"])
                 updated_names.add(instance.name)
     finally:
         # Reconnect signals after the update
@@ -74,3 +76,23 @@ def updated_cached_spacecraftonlaunch_values(sender, instance, **kwargs):
         # Reconnect signals after the update
         post_save.connect(updated_cached_spacecraftonlaunch_values, sender=SpacecraftOnLaunch)
         post_delete.connect(updated_cached_spacecraftonlaunch_values, sender=SpacecraftOnLaunch)
+
+
+""" @receiver(post_save, sender=Launch)
+@receiver(post_delete, sender=Launch)
+def updated_cached_launch_values(sender, instance, **kwargs):
+    post_save.disconnect(updated_cached_launch_values, sender=Launch)
+    post_delete.disconnect(updated_cached_launch_values, sender=Launch)
+
+    try:
+        instance.launch_photo = instance.image
+        instance.save(
+            update_fields=[
+                "launch_photo",
+            ]
+        )
+
+    finally:
+        # Reconnect signals after the update
+        post_save.connect(updated_cached_launch_values, sender=Launch)
+        post_delete.connect(updated_cached_launch_values, sender=Launch) """
