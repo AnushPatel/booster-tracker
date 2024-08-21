@@ -47,8 +47,8 @@ def updated_cached_launch_values(sender, instance, **kwargs):
                 instance.company_turnaround = instance.get_company_turnaround
                 instance.pad_turnaround = instance.get_pad_turnaround
                 instance.stages_string = instance.boosters
-                instance.launch_photo = instance.image
-                instance.save(update_fields=["company_turnaround", "pad_turnaround", "stages_string", "launch_photo"])
+                instance.image = instance.get_image
+                instance.save(update_fields=["company_turnaround", "pad_turnaround", "stages_string", "image"])
                 updated_names.add(instance.name)
     finally:
         # Reconnect signals after the update
@@ -85,10 +85,10 @@ def updated_cached_launch_values(sender, instance, **kwargs):
     post_delete.disconnect(updated_cached_launch_values, sender=Launch)
 
     try:
-        instance.launch_photo = instance.image
+        instance.image = instance.get_image
         instance.save(
             update_fields=[
-                "launch_photo",
+                "image",
             ]
         )
 

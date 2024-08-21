@@ -37,7 +37,7 @@ class LaunchOnlySerializer(serializers.ModelSerializer):
             "pad",
             "rocket",
             "orbit",
-            "launch_photo",
+            "image",
         ]
 
 
@@ -68,7 +68,7 @@ class LaunchSerializer(serializers.ModelSerializer):
             "orbit",
             "stages_string",
             "recoveries",
-            "launch_photo",
+            "image",
         ]
 
 

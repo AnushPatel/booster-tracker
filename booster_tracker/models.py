@@ -227,7 +227,7 @@ class Launch(models.Model):
     launch_outcome = models.CharField(max_length=200, choices=LAUNCH_OUTCOMES, blank=True, null=True)
     pad_turnaround = models.IntegerField(blank=True, null=True, editable=False)
     company_turnaround = models.IntegerField(blank=True, null=True, editable=False)
-    launch_photo = models.CharField(max_length=200, blank=True, null=True, editable=False)
+    image = models.CharField(max_length=200, blank=True, null=True, editable=False)
     stages_string = models.CharField(max_length=500, blank=True, null=True, editable=False)
 
     class Meta:
@@ -238,7 +238,7 @@ class Launch(models.Model):
         return self.name
 
     @property
-    def image(self) -> str:
+    def get_image(self) -> str:
         """Returns the image url stored in database"""
         return PadUsed.objects.get(pad=self.pad, rocket=self.rocket).image.url
 
