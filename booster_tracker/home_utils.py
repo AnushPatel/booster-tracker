@@ -103,6 +103,7 @@ def get_model_objects_with_filter(model: models.Model, filter: dict, search_quer
         "stageandrecovery__method_success",
         "status",
         "version",
+        "type",
     ]
     objects_or = [["hide__stageandrecovery__method", "hide__stageandrecovery__landing_zone"]]
 
@@ -222,6 +223,7 @@ def launches_in_time_interval(line_of_best_fit, start_launch_num: int, remaining
 def build_filter(model: models.Model, family: models.Model, type: StageObjects):
     rockets = set()
     versions = set()
+    types = set()
     statuses = set()
 
     q_objects = Q()
@@ -239,6 +241,8 @@ def build_filter(model: models.Model, family: models.Model, type: StageObjects):
             statuses.add(child.status)
         if hasattr(child, "rocket"):
             rockets.add(child.rocket.id)
+        if hasattr(child, "type"):
+            types.add(child.type)
 
     filter = {}
 
@@ -259,5 +263,11 @@ def build_filter(model: models.Model, family: models.Model, type: StageObjects):
         for status in sorted(list(statuses)):
             filter_item[f"{status}"] = True
         filter["status"] = filter_item
+
+    if types:
+        filter_item = {}
+        for type in sorted(list(types)):
+            filter_item[f"{type}"] = True
+        filter["type"] = filter_item
 
     return filter

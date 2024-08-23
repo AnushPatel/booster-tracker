@@ -226,9 +226,9 @@ class Launch(models.Model):
     customer = models.CharField(max_length=200)
     launch_outcome = models.CharField(max_length=200, choices=LAUNCH_OUTCOMES, blank=True, null=True)
     pad_turnaround = models.IntegerField(blank=True, null=True, editable=False)
-    company_turnaround = models.IntegerField(blank=True, null=True, editable=True)
-    image = models.CharField(max_length=200, blank=True, null=True, editable=True)
-    stages_string = models.CharField(max_length=500, blank=True, null=True, editable=True)
+    company_turnaround = models.IntegerField(blank=True, null=True, editable=False)
+    image = models.CharField(max_length=200, blank=True, null=True, editable=False)
+    stages_string = models.CharField(max_length=500, blank=True, null=True, editable=False)
 
     class Meta:
         verbose_name_plural = "Launches"
@@ -950,6 +950,7 @@ class FairingRecovery(models.Model):
         blank=True,
     )
     catch = models.BooleanField()
+    recovery_attempt = models.BooleanField()
     recovery = models.CharField(max_length=200, blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
@@ -1005,7 +1006,7 @@ class SpacecraftOnLaunch(models.Model):
         null=True,
     )
     spacecraft_turnaround = models.IntegerField(blank=True, null=True, editable=False)
-    num_flights = models.IntegerField(blank=True, null=True, editable=True)
+    num_flights = models.IntegerField(blank=True, null=True, editable=False)
 
     class Meta:
         verbose_name_plural = "Dragon on Launch"
@@ -1015,6 +1016,8 @@ class SpacecraftOnLaunch(models.Model):
         if self.spacecraft:
             return f"{self.spacecraft.name} on launch"
         return "Spacecraft"
+
+    _from_task = False
 
     def get_turnaround(self):
         if (
