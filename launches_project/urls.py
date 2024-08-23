@@ -24,9 +24,10 @@ from booster_tracker import views
 urlpatterns = [
     path("api/", include("booster_tracker.urls")),
     path("health/", views.health, name="health"),
-    path("", admin.site.urls),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
+urlpatterns.append(
+    path("", admin.site.urls),  # admin URLs added after other URLs to ensure other patterns are searched first
+)
 if not settings.TESTING and settings.DEBUG:
     urlpatterns = [
         path("__debug__/", include("debug_toolbar.urls")),

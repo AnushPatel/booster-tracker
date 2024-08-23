@@ -20,7 +20,7 @@ import pytz
 
 class TestCases(TestCase):
     def setUp(self):
-        initialize_test_data()
+        self.test_data = initialize_test_data()
 
     def test_num_launches_rocket(self):
         # Test function on perm objects
@@ -92,7 +92,7 @@ class TestCases(TestCase):
 
         self.assertEqual(LandingZone.objects.get(nickname="LZ-1").num_landings, 4)
         self.assertEqual(LandingZone.objects.get(nickname="LZ-2").num_landings, 1)
-        self.assertEqual(LandingZone.objects.get(nickname="JRtI").num_landings, 1)
+        self.assertEqual(LandingZone.objects.get(nickname="JRtI").num_landings, 2)
 
         Launch.objects.create(
             time=datetime(2024, 4, 1, tzinfo=pytz.utc),
@@ -120,7 +120,7 @@ class TestCases(TestCase):
 
         self.assertEqual(LandingZone.objects.get(nickname="LZ-1").num_landings, 4)
         self.assertEqual(LandingZone.objects.get(nickname="LZ-2").num_landings, 2)
-        self.assertEqual(LandingZone.objects.get(nickname="JRtI").num_landings, 1)
+        self.assertEqual(LandingZone.objects.get(nickname="JRtI").num_landings, 2)
 
         Launch.objects.create(
             time=datetime(2024, 4, 2, tzinfo=pytz.utc),
@@ -148,7 +148,7 @@ class TestCases(TestCase):
 
         self.assertEqual(LandingZone.objects.get(nickname="LZ-1").num_landings, 5)
         self.assertEqual(LandingZone.objects.get(nickname="LZ-2").num_landings, 2)
-        self.assertEqual(LandingZone.objects.get(nickname="JRtI").num_landings, 1)
+        self.assertEqual(LandingZone.objects.get(nickname="JRtI").num_landings, 2)
 
     def test_fastest_turnaround(self):
         # Test with perm objects
@@ -157,7 +157,7 @@ class TestCases(TestCase):
 
         self.assertEqual(LandingZone.objects.get(nickname="LZ-1").fastest_turnaround, "29 days")
         self.assertEqual(LandingZone.objects.get(nickname="LZ-2").fastest_turnaround, "N/A")
-        self.assertEqual(LandingZone.objects.get(nickname="JRtI").fastest_turnaround, "N/A")
+        self.assertEqual(LandingZone.objects.get(nickname="JRtI").fastest_turnaround, "30 days")
 
         Launch.objects.create(
             time=datetime(2024, 4, 1, tzinfo=pytz.utc),
@@ -179,13 +179,29 @@ class TestCases(TestCase):
             recovery_success=True,
         )
 
+        for stage_and_recovery in StageAndRecovery.objects.all():
+            stage_and_recovery.stage_turnaround = stage_and_recovery.get_stage_turnaround
+            stage_and_recovery.zone_turnaround = stage_and_recovery.get_zone_turnaround
+            stage_and_recovery.num_flights = stage_and_recovery.get_num_flights
+            stage_and_recovery.num_recoveries = stage_and_recovery.get_num_landings
+            stage_and_recovery.save(
+                update_fields=["stage_turnaround", "zone_turnaround", "num_flights", "num_recoveries"]
+            )
+
+        for launch in Launch.objects.all():
+            launch.stages_string = launch.boosters
+            launch.company_turnaround = launch.get_company_turnaround
+            launch.pad_turnaround = launch.get_pad_turnaround
+            launch.image = launch.get_image
+            launch.save(update_fields=["company_turnaround", "pad_turnaround", "image", "stages_string"])
+
         # Ensure after adding launch that is not new quickest does not update
         self.assertEqual(Pad.objects.get(nickname="SLC-40").fastest_turnaround, "29 days")
         self.assertEqual(Pad.objects.get(nickname="LC-39A").fastest_turnaround, "N/A")
 
         self.assertEqual(LandingZone.objects.get(nickname="LZ-1").fastest_turnaround, "29 days")
         self.assertEqual(LandingZone.objects.get(nickname="LZ-2").fastest_turnaround, "N/A")
-        self.assertEqual(LandingZone.objects.get(nickname="JRtI").fastest_turnaround, "N/A")
+        self.assertEqual(LandingZone.objects.get(nickname="JRtI").fastest_turnaround, "30 days")
 
         Launch.objects.create(
             time=datetime(2024, 4, 2, tzinfo=pytz.utc),
@@ -207,13 +223,29 @@ class TestCases(TestCase):
             recovery_success=True,
         )
 
+        for stage_and_recovery in StageAndRecovery.objects.all():
+            stage_and_recovery.stage_turnaround = stage_and_recovery.get_stage_turnaround
+            stage_and_recovery.zone_turnaround = stage_and_recovery.get_zone_turnaround
+            stage_and_recovery.num_flights = stage_and_recovery.get_num_flights
+            stage_and_recovery.num_recoveries = stage_and_recovery.get_num_landings
+            stage_and_recovery.save(
+                update_fields=["stage_turnaround", "zone_turnaround", "num_flights", "num_recoveries"]
+            )
+
+        for launch in Launch.objects.all():
+            launch.stages_string = launch.boosters
+            launch.company_turnaround = launch.get_company_turnaround
+            launch.pad_turnaround = launch.get_pad_turnaround
+            launch.image = launch.get_image
+            launch.save(update_fields=["company_turnaround", "pad_turnaround", "image", "stages_string"])
+
         # Ensure stats update correctly with new quickest turnaround
         self.assertEqual(Pad.objects.get(nickname="SLC-40").fastest_turnaround, "29 days")
         self.assertEqual(Pad.objects.get(nickname="LC-39A").fastest_turnaround, "1 day")
 
         self.assertEqual(LandingZone.objects.get(nickname="LZ-1").fastest_turnaround, "1 day")
         self.assertEqual(LandingZone.objects.get(nickname="LZ-2").fastest_turnaround, "N/A")
-        self.assertEqual(LandingZone.objects.get(nickname="JRtI").fastest_turnaround, "N/A")
+        self.assertEqual(LandingZone.objects.get(nickname="JRtI").fastest_turnaround, "30 days")
 
         self.assertEqual(Stage.objects.get(name="B1062").fastest_turnaround, "31 days")
 
@@ -459,6 +491,22 @@ class TestCases(TestCase):
             method_success="SUCCESS",
             recovery_success=True,
         )
+
+        for stage_and_recovery in StageAndRecovery.objects.all():
+            stage_and_recovery.stage_turnaround = stage_and_recovery.get_stage_turnaround
+            stage_and_recovery.zone_turnaround = stage_and_recovery.get_zone_turnaround
+            stage_and_recovery.num_flights = stage_and_recovery.get_num_flights
+            stage_and_recovery.num_recoveries = stage_and_recovery.get_num_landings
+            stage_and_recovery.save(
+                update_fields=["stage_turnaround", "zone_turnaround", "num_flights", "num_recoveries"]
+            )
+
+        for launch in Launch.objects.all():
+            launch.stages_string = launch.boosters
+            launch.company_turnaround = launch.get_company_turnaround
+            launch.pad_turnaround = launch.get_pad_turnaround
+            launch.image = launch.get_image
+            launch.save(update_fields=["company_turnaround", "pad_turnaround", "image", "stages_string"])
 
         # Ensure function updates as expected for Falcon launches with varying number of flight proven boosters
         self.assertEqual(
@@ -868,6 +916,22 @@ class TestCases(TestCase):
             },
         )
 
+        for stage_and_recovery in StageAndRecovery.objects.all():
+            stage_and_recovery.stage_turnaround = stage_and_recovery.get_stage_turnaround
+            stage_and_recovery.zone_turnaround = stage_and_recovery.get_zone_turnaround
+            stage_and_recovery.num_flights = stage_and_recovery.get_num_flights
+            stage_and_recovery.num_recoveries = stage_and_recovery.get_num_landings
+            stage_and_recovery.save(
+                update_fields=["stage_turnaround", "zone_turnaround", "num_flights", "num_recoveries"]
+            )
+
+        for launch in Launch.objects.all():
+            launch.stages_string = launch.boosters
+            launch.company_turnaround = launch.get_company_turnaround
+            launch.pad_turnaround = launch.get_pad_turnaround
+            launch.image = launch.get_image
+            launch.save(update_fields=["company_turnaround", "pad_turnaround", "image", "stages_string"])
+
         # Testing of LANDING_ZONE case
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 1").calculate_turnarounds(
@@ -949,19 +1013,25 @@ class TestCases(TestCase):
                 "is_record": False,
                 "ordered_turnarounds": [
                     {
-                        "turnaround_object": LandingZone.objects.get(nickname="LZ-1"),
+                        "turnaround_object": self.test_data["lz1"],
                         "turnaround_time": 2505600.0,
                         "launch_name": "Falcon 9 Launch 3",
                         "last_launch_name": "Falcon 9 Launch 2",
                     },
                     {
-                        "turnaround_object": LandingZone.objects.get(nickname="LZ-1"),
+                        "turnaround_object": self.test_data["jrti"],
+                        "turnaround_time": 2592000.0,
+                        "launch_name": "Falcon 9 Launch 4",
+                        "last_launch_name": "Falcon Heavy Launch 1",
+                    },
+                    {
+                        "turnaround_object": self.test_data["lz1"],
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon 9 Launch 2",
                         "last_launch_name": "Falcon 9 Launch 1",
                     },
                     {
-                        "turnaround_object": LandingZone.objects.get(nickname="LZ-1"),
+                        "turnaround_object": self.test_data["lz1"],
                         "turnaround_time": 2678400.0,
                         "launch_name": "Falcon Heavy Launch 1",
                         "last_launch_name": "Falcon 9 Launch 3",
@@ -989,6 +1059,22 @@ class TestCases(TestCase):
             method_success="SUCCESS",
             recovery_success=True,
         )
+
+        for stage_and_recovery in StageAndRecovery.objects.all():
+            stage_and_recovery.stage_turnaround = stage_and_recovery.get_stage_turnaround
+            stage_and_recovery.zone_turnaround = stage_and_recovery.get_zone_turnaround
+            stage_and_recovery.num_flights = stage_and_recovery.get_num_flights
+            stage_and_recovery.num_recoveries = stage_and_recovery.get_num_landings
+            stage_and_recovery.save(
+                update_fields=["stage_turnaround", "zone_turnaround", "num_flights", "num_recoveries"]
+            )
+
+        for launch in Launch.objects.all():
+            launch.stages_string = launch.boosters
+            launch.company_turnaround = launch.get_company_turnaround
+            launch.pad_turnaround = launch.get_pad_turnaround
+            launch.image = launch.get_image
+            launch.save(update_fields=["company_turnaround", "pad_turnaround", "image", "stages_string"])
 
         # Make sure it responds correctly when another launch is added
         self.assertEqual(
@@ -1390,7 +1476,7 @@ class TestCases(TestCase):
             Launch.objects.get(name="Falcon Heavy Launch 1").recoveries,
             "JRtI, LZ-1, and LZ-2",
         )
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").recoveries, "Expended")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").recoveries, "JRtI")
 
         Launch.objects.create(
             time=datetime(2024, 1, 1, 0, 0, tzinfo=pytz.utc),
@@ -1603,6 +1689,7 @@ class TestCases(TestCase):
                 "– Quickest turnaround of B1080 to date at 31 days",
             ],
         )
+
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 4").make_stats(),
             [
@@ -1613,6 +1700,7 @@ class TestCases(TestCase):
                 "– 5th SpaceX launch of 2024",
                 "– 5th SpaceX launch from Space Launch Complex 40",
                 "– Quickest turnaround of a booster to date at 30 days. Previous record: B1062 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
+                "– Quickest turnaround of JRtI to date at 30 days",
             ],
         )
 
@@ -1636,6 +1724,22 @@ class TestCases(TestCase):
             recovery_success=True,
         )
 
+        for stage_and_recovery in StageAndRecovery.objects.all():
+            stage_and_recovery.stage_turnaround = stage_and_recovery.get_stage_turnaround
+            stage_and_recovery.zone_turnaround = stage_and_recovery.get_zone_turnaround
+            stage_and_recovery.num_flights = stage_and_recovery.get_num_flights
+            stage_and_recovery.num_recoveries = stage_and_recovery.get_num_landings
+            stage_and_recovery.save(
+                update_fields=["stage_turnaround", "zone_turnaround", "num_flights", "num_recoveries"]
+            )
+
+        for launch in Launch.objects.all():
+            launch.stages_string = launch.boosters
+            launch.company_turnaround = launch.get_company_turnaround
+            launch.pad_turnaround = launch.get_pad_turnaround
+            launch.image = launch.get_image
+            launch.save(update_fields=["company_turnaround", "pad_turnaround", "image", "stages_string"])
+
         # Test stats update for additional launch
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Temp Launch 1").make_stats(),
@@ -1649,7 +1753,7 @@ class TestCases(TestCase):
                 "– 6th SpaceX launch of 2024",
                 "– 6th SpaceX launch from Space Launch Complex 40",
                 "– Quickest turnaround of B1062 to date at 30 days and 1 minute. Previous record: 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
-                "– Quickest turnaround of JRtI to date at 30 days and 1 minute",
+                "– Quickest turnaround time of a landing zone to date at 1 minute. Previous record: LZ-1 at 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
                 "– Shortest time between any two SpaceX launches at 1 minute. Previous record: 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
                 "– Quickest turnaround of a SpaceX pad to date at 1 minute. Previous record: SLC-40 at 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
             ],
@@ -1695,6 +1799,22 @@ class TestCases(TestCase):
             recovery_success=True,
         )
 
+        for stage_and_recovery in StageAndRecovery.objects.all():
+            stage_and_recovery.stage_turnaround = stage_and_recovery.get_stage_turnaround
+            stage_and_recovery.zone_turnaround = stage_and_recovery.get_zone_turnaround
+            stage_and_recovery.num_flights = stage_and_recovery.get_num_flights
+            stage_and_recovery.num_recoveries = stage_and_recovery.get_num_landings
+            stage_and_recovery.save(
+                update_fields=["stage_turnaround", "zone_turnaround", "num_flights", "num_recoveries"]
+            )
+
+        for launch in Launch.objects.all():
+            launch.stages_string = launch.boosters
+            launch.company_turnaround = launch.get_company_turnaround
+            launch.pad_turnaround = launch.get_pad_turnaround
+            launch.image = launch.get_image
+            launch.save(update_fields=["company_turnaround", "pad_turnaround", "image", "stages_string"])
+
         # Test to ensure quickest turnaround stats work
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Temp Launch 2").make_stats(),
@@ -1708,7 +1828,6 @@ class TestCases(TestCase):
                 "– 7th SpaceX launch of 2024",
                 "– 1st SpaceX launch from Launch Complex 39A",
                 "– Quickest turnaround of a booster to date at 23 hours and 59 minutes. Previous record: B1080 at 30 days between Falcon Heavy Launch 1 and Falcon 9 Launch 4",
-                "– Quickest turnaround time of a landing zone to date at 23 hours and 59 minutes. Previous record: LZ-1 at 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
             ],
         )
         self.assertEqual(
@@ -1846,13 +1965,11 @@ class TestCases(TestCase):
                 ],
             },
         )
+
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 4").create_launch_table(),
             {
-                "Liftoff Time": [
-                    "May 01, 2024 - 00:00 UTC",
-                    "April 30, 2024 - 20:00 EDT",
-                ],
+                "Liftoff Time": ["May 01, 2024 - 00:00 UTC", "April 30, 2024 - 20:00 EDT"],
                 "Mission Name": ["Falcon 9 Launch 4"],
                 "Launch Provider <br /> (What rocket company launched it?)": ["SpaceX"],
                 "Customer <br /> (Who paid for this?)": ["SpaceX"],
@@ -1870,6 +1987,7 @@ class TestCases(TestCase):
                     "– 5th SpaceX launch of 2024",
                     "– 5th SpaceX launch from Space Launch Complex 40",
                     "– Quickest turnaround of a booster to date at 30 days. Previous record: B1062 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
+                    "– Quickest turnaround of JRtI to date at 30 days",
                 ],
             },
         )
@@ -1893,6 +2011,22 @@ class TestCases(TestCase):
             method_success="SUCCESS",
             recovery_success=True,
         )
+
+        for stage_and_recovery in StageAndRecovery.objects.all():
+            stage_and_recovery.stage_turnaround = stage_and_recovery.get_stage_turnaround
+            stage_and_recovery.zone_turnaround = stage_and_recovery.get_zone_turnaround
+            stage_and_recovery.num_flights = stage_and_recovery.get_num_flights
+            stage_and_recovery.num_recoveries = stage_and_recovery.get_num_landings
+            stage_and_recovery.save(
+                update_fields=["stage_turnaround", "zone_turnaround", "num_flights", "num_recoveries"]
+            )
+
+        for launch in Launch.objects.all():
+            launch.stages_string = launch.boosters
+            launch.company_turnaround = launch.get_company_turnaround
+            launch.pad_turnaround = launch.get_pad_turnaround
+            launch.image = launch.get_image
+            launch.save(update_fields=["company_turnaround", "pad_turnaround", "image", "stages_string"])
 
         # Test for additional launch that is landing on ocean surface
         self.assertEqual(
@@ -1939,6 +2073,22 @@ class TestCases(TestCase):
             method="DRONE_SHIP",
             recovery_success=True,
         )
+
+        for stage_and_recovery in StageAndRecovery.objects.all():
+            stage_and_recovery.stage_turnaround = stage_and_recovery.get_stage_turnaround
+            stage_and_recovery.zone_turnaround = stage_and_recovery.get_zone_turnaround
+            stage_and_recovery.num_flights = stage_and_recovery.get_num_flights
+            stage_and_recovery.num_recoveries = stage_and_recovery.get_num_landings
+            stage_and_recovery.save(
+                update_fields=["stage_turnaround", "zone_turnaround", "num_flights", "num_recoveries"]
+            )
+
+        for launch in Launch.objects.all():
+            launch.stages_string = launch.boosters
+            launch.company_turnaround = launch.get_company_turnaround
+            launch.pad_turnaround = launch.get_pad_turnaround
+            launch.image = launch.get_image
+            launch.save(update_fields=["company_turnaround", "pad_turnaround", "image", "stages_string"])
 
         # Test additional launch for drone ship
         self.assertEqual(

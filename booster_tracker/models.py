@@ -226,9 +226,9 @@ class Launch(models.Model):
     customer = models.CharField(max_length=200)
     launch_outcome = models.CharField(max_length=200, choices=LAUNCH_OUTCOMES, blank=True, null=True)
     pad_turnaround = models.IntegerField(blank=True, null=True, editable=False)
-    company_turnaround = models.IntegerField(blank=True, null=True, editable=False)
-    image = models.CharField(max_length=200, blank=True, null=True, editable=False)
-    stages_string = models.CharField(max_length=500, blank=True, null=True, editable=False)
+    company_turnaround = models.IntegerField(blank=True, null=True, editable=True)
+    image = models.CharField(max_length=200, blank=True, null=True, editable=True)
+    stages_string = models.CharField(max_length=500, blank=True, null=True, editable=True)
 
     class Meta:
         verbose_name_plural = "Launches"
@@ -236,6 +236,8 @@ class Launch(models.Model):
 
     def __str__(self):
         return self.name
+
+    _from_task = False
 
     @property
     def get_image(self) -> str:
@@ -889,6 +891,8 @@ class StageAndRecovery(models.Model):
         if self.stage and self.stage.name:
             return f"{self.stage.name} recovery"
         return "Unknown recovery"
+
+    _from_task = False
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["launch", "stage"], name="unique_launch_stage")]

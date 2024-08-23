@@ -10,6 +10,7 @@ from booster_tracker.home_utils import (
     StageObjects,
     time_between_launches,
 )
+from booster_tracker.tasks import update_cached_stageandrecovery_value_task
 
 from booster_tracker.models import Rocket, Pad, Orbit, Launch, Stage, RocketFamily, StageAndRecovery, LandingZone
 
@@ -23,7 +24,7 @@ from scipy.integrate import quad
 
 class TestCases(TestCase):
     def setUp(self):
-        initialize_test_data()
+        self.test_data = initialize_test_data()
 
     def test_get_most_flown_stages(self):
         # Ensure most flown boosters being grabbed successfully
@@ -49,7 +50,7 @@ class TestCases(TestCase):
             launch_outcome="SUCCESS",
         )
 
-        StageAndRecovery.objects.create(
+        recovery2 = StageAndRecovery.objects.create(
             launch=Launch.objects.get(name="Falcon 9 Temp Launch 1"),
             stage=Stage.objects.get(name="B1080"),
             landing_zone=LandingZone.objects.get(name="Landing Zone 1"),
@@ -57,6 +58,22 @@ class TestCases(TestCase):
             method_success="SUCCESS",
             recovery_success=True,
         )
+
+        for stage_and_recovery in StageAndRecovery.objects.all():
+            stage_and_recovery.stage_turnaround = stage_and_recovery.get_stage_turnaround
+            stage_and_recovery.zone_turnaround = stage_and_recovery.get_zone_turnaround
+            stage_and_recovery.num_flights = stage_and_recovery.get_num_flights
+            stage_and_recovery.num_recoveries = stage_and_recovery.get_num_landings
+            stage_and_recovery.save(
+                update_fields=["stage_turnaround", "zone_turnaround", "num_flights", "num_recoveries"]
+            )
+
+        for launch in Launch.objects.all():
+            launch.stages_string = launch.boosters
+            launch.company_turnaround = launch.get_company_turnaround
+            launch.pad_turnaround = launch.get_pad_turnaround
+            launch.image = launch.get_image
+            launch.save(update_fields=["company_turnaround", "pad_turnaround", "image", "stages_string"])
 
         # After adding the launch, ensure the output updates accordingly
         self.assertEqual(

@@ -19,7 +19,7 @@ import json
 
 class FilteredLaunchDaysApiViewTest(APITestCase):
     def setUp(self):
-        initialize_test_data()
+        self.test_data = initialize_test_data()
         self.f9 = Rocket.objects.get(name="Falcon 9")
         self.fh = Rocket.objects.get(name="Falcon Heavy")
         self.client = APIClient()
@@ -67,7 +67,7 @@ class FilteredLaunchDaysApiViewTest(APITestCase):
 
 class ListApiTestCases(APITestCase):
     def setUp(self):
-        initialize_test_data()
+        self.test_data = initialize_test_data()
         self.f9 = Rocket.objects.get(name="Falcon 9")
         self.fh = Rocket.objects.get(name="Falcon Heavy")
         self.client = APIClient()
@@ -240,7 +240,7 @@ class ListApiTestCases(APITestCase):
 
 class HomeDataApiViewTests(APITestCase):
     def setUp(self):
-        initialize_test_data()
+        self.test_data = initialize_test_data()
         self.start_date = "2026-01-01T07:00:00.000Z"
         self.url = reverse("booster_tracker:home")  # Adjust the URL name accordingly
 
@@ -272,7 +272,7 @@ class HomeDataApiViewTests(APITestCase):
 class FamilyInformationApiViewTests(APITestCase):
     def setUp(self):
         # Create test data
-        initialize_test_data()
+        self.test_data = initialize_test_data()
         self.url = reverse("booster_tracker:family_information")
 
     def test_get_family_information(self):

@@ -29,7 +29,7 @@ import pytz
 
 class TestCases(TestCase):
     def setUp(self):
-        initialize_test_data()
+        self.test_data = initialize_test_data()
 
     def test_format_time(self):
         self.assertEqual(

@@ -199,7 +199,17 @@ INTERNAL_IPS = [
 ]
 
 
-CELERY_BROKER_URL = "sqs://"
+if DEBUG and not TESTING:
+    REDIS_URL = "redis://127.0.0.1:6379"
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": "redis://127.0.0.1:6379",
+            "LOCATION": REDIS_URL,
+        }
+    }
+
+
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
 
 
@@ -244,6 +254,7 @@ if not DEBUG:
 else:
     STATIC_ROOT = BASE_DIR / "staticfiles"
     STATIC_URL = "/static/"
+    MEDIA_URL = "/media/"
     MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 
