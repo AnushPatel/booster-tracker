@@ -14,9 +14,9 @@ from pathlib import Path
 import os
 import sys
 from dotenv import load_dotenv
-from socket import gethostbyname, gethostname
+import socket
 import requests
-from requests.exceptions import ConnectionError
+from requests.exceptions import RequestException
 from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -45,24 +45,32 @@ else:
         "boostertracker.eba-afvxhcfx.us-west-2.elasticbeanstalk.com",
         "52.33.84.150",
     ]
-    ALLOWED_HOSTS.append(gethostbyname(gethostname()))
 
-    # Get a session token
-    token_url = "http://169.254.169.254/latest/api/token"
-    headers = {"X-aws-ec2-metadata-token-ttl-seconds": "21600"}
-    token_response = requests.put(token_url, headers=headers)
-    token = token_response.text
-
-    # Use the token to get the public IPv4 address
-    metadata_url = "http://169.254.169.254/latest/meta-data/public-ipv4"
-    headers = {"X-aws-ec2-metadata-token": token}
+    # Add the local hostname to ALLOWED_HOSTS
     try:
+        local_ip = socket.gethostbyname(socket.gethostname())
+        ALLOWED_HOSTS.append(local_ip)
+    except socket.error as e:
+        raise ImproperlyConfigured(f"Unable to determine local IP: {e}")
+
+    # Fetch the public IPv4 address from EC2 metadata
+    try:
+        # Obtain a session token
+        token_url = "http://169.254.169.254/latest/api/token"
+        headers = {"X-aws-ec2-metadata-token-ttl-seconds": "21600"}
+        token_response = requests.put(token_url, headers=headers)
+        token_response.raise_for_status()  # Check for request errors
+        token = token_response.text
+
+        # Use the token to get the public IPv4 address
+        metadata_url = "http://169.254.169.254/latest/meta-data/public-ipv4"
+        headers = {"X-aws-ec2-metadata-token": token}
         r = requests.get(metadata_url, headers=headers)
-        instance_ip = r.text
-        ALLOWED_HOSTS += [instance_ip]
-    except requests.exceptions.ConnectionError:
-        error_msg = "You can only run production settings on an AWS EC2 instance"
-        raise ImproperlyConfigured(error_msg)
+        r.raise_for_status()  # Check for request errors
+        instance_ip = r.text.strip()
+        ALLOWED_HOSTS.append(instance_ip)
+    except RequestException as e:
+        raise ImproperlyConfigured(f"Error obtaining instance public IP: {e}")
 
     SECURE_SSL_REDIRECT = True
     SECURE_REDIRECT_EXEMPT = ["health/"]
