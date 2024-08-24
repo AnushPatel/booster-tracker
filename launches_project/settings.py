@@ -46,12 +46,20 @@ else:
     ]
     ALLOWED_HOSTS.append(gethostbyname(gethostname()))
 
-    url = "http://169.254.169.254/latest/meta-data/public-ipv4"
+    # Get a session token
+    token_url = "http://169.254.169.254/latest/api/token"
+    headers = {"X-aws-ec2-metadata-token-ttl-seconds": "21600"}
+    token_response = requests.put(token_url, headers=headers)
+    token = token_response.text
+
+    # Use the token to get the public IPv4 address
+    metadata_url = "http://169.254.169.254/latest/meta-data/public-ipv4"
+    headers = {"X-aws-ec2-metadata-token": token}
     try:
-        r = requests.get(url)
+        r = requests.get(metadata_url, headers=headers)
         instance_ip = r.text
         ALLOWED_HOSTS += [instance_ip]
-    except ConnectionError:
+    except requests.exceptions.ConnectionError:
         error_msg = "You can only run production settings on an AWS EC2 instance"
         raise ImproperlyConfigured(error_msg)
 
