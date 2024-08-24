@@ -38,7 +38,7 @@ class TestCases(TestCase):
             recovery_success=True,
         )
 
-        update_cached_stageandrecovery_value_task([stage_and_recovery.stage.id], stage_and_recovery.landing_zone.id)
+        update_cached_stageandrecovery_value_task([stage_and_recovery.stage.id], [stage_and_recovery.landing_zone.id])
         stage_and_recovery.refresh_from_db()
         stage_and_recovery2.refresh_from_db()
         launch2.refresh_from_db()
@@ -62,8 +62,8 @@ class TestCases(TestCase):
         # Update stage and recovery
         stage_and_recovery.stage = self.test_data["b1080"]
         stage_and_recovery.save(update_fields=["stage"])
-        update_cached_stageandrecovery_value_task([stage_and_recovery.stage.id], stage_and_recovery.landing_zone.id)
-        update_cached_stageandrecovery_value_task([self.test_data["b1062"].id], stage_and_recovery.landing_zone.id)
+        update_cached_stageandrecovery_value_task([stage_and_recovery.stage.id], [stage_and_recovery.landing_zone.id])
+        update_cached_stageandrecovery_value_task([self.test_data["b1062"].id], [stage_and_recovery.landing_zone.id])
         stage_and_recovery.refresh_from_db()
         stage_and_recovery2.refresh_from_db()
         launch2.refresh_from_db()

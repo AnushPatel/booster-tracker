@@ -17,8 +17,10 @@ def cache_old_stageandrecovery_values(sender, instance, **kwargs):
         try:
             # Retrieve the current state before the update
             old_instance = StageAndRecovery.objects.get(pk=instance.pk)
-            instance._old_stage_id = old_instance.stage.id
-            instance._old_landing_zone_id = old_instance.landing_zone.id
+            if old_instance.stage:
+                instance._old_stage_id = old_instance.stage.id
+            if old_instance.landing_zone:
+                instance._old_landing_zone_id = old_instance.landing_zone.id
         except StageAndRecovery.DoesNotExist:
             instance._old_stage_id = None
             instance._old_landing_zone_id = None
@@ -30,13 +32,23 @@ def updated_cached_stageandrecovery_values(sender, instance, **kwargs):
     if getattr(instance, "_from_task", True):
         return
 
-    # Updated old values:
-    if hasattr(instance, "_old_stage_id") and hasattr(instance, "_old_landing_zone_id"):
-        update_cached_stageandrecovery_value_task.delay(
-            [instance._old_stage_id, instance.stage.id], instance._old_landing_zone_id
-        )
-    else:
-        update_cached_stageandrecovery_value_task.delay([instance.stage.id], instance.landing_zone.id)
+    stage_ids = []
+    landing_zone_ids = []
+
+    # Check if stage exists and add its ID to the list
+    if hasattr(instance, "stage") and instance.stage:
+        stage_ids.append(instance.stage.id)
+    if hasattr(instance, "_old_stage_id") and instance._old_stage_id:
+        stage_ids.append(instance._old_stage_id)
+
+    # Check if landing zone exists and add its ID to the list
+    if hasattr(instance, "landing_zone") and instance.landing_zone:
+        landing_zone_ids.append(instance.landing_zone.id)
+    if hasattr(instance, "_old_landing_zone_id") and instance._old_landing_zone_id:
+        landing_zone_ids.append(instance._old_landing_zone_id)
+
+    # Pass the lists to the task, using empty lists if no IDs exist
+    update_cached_stageandrecovery_value_task.delay(stage_ids, landing_zone_ids)
 
 
 @receiver(post_save, sender=Launch)

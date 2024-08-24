@@ -18,6 +18,8 @@ from booster_tracker.utils import (
     all_zeros,
     parse_start_time,
     get_start_date,
+    make_monotonic,
+    MonotonicDirections,
 )
 from rest_framework.pagination import PageNumberPagination
 import pytz
@@ -758,7 +760,7 @@ class FamilyInformationApiView(APIView):
         avg_booster_flights = avg_booster_flights.values()
         max_stage_two_flights = max_stage_two_flights.values()
         avg_stage_two_flights = avg_stage_two_flights.values()
-        max_fairing_flights = max_fairing_flights.values()
+        max_fairing_flights = make_monotonic(list(max_fairing_flights.values()), MonotonicDirections.INCREASING)
 
         return (
             max_booster_flights,

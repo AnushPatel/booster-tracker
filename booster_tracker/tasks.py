@@ -8,11 +8,11 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task
-def update_cached_stageandrecovery_value_task(stage_id_list, zone_id):
+def update_cached_stageandrecovery_value_task(stage_id_list, zone_id_list):
 
     # Update all related StageAndRecovery instances
     related_stage_and_recoveries = StageAndRecovery.objects.filter(
-        stage__id__in=stage_id_list, landing_zone__id=zone_id
+        Q(stage__id__in=stage_id_list) | Q(landing_zone__id__in=zone_id_list)
     )
     for stage_and_recovery in related_stage_and_recoveries:
         stage_and_recovery._from_task = True
