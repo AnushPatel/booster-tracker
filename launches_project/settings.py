@@ -15,8 +15,9 @@ import os
 import sys
 from dotenv import load_dotenv
 from socket import gethostbyname, gethostname
-import boto3
 import requests
+from requests.exceptions import ConnectionError
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -39,24 +40,21 @@ TESTING = "test" in sys.argv
 if DEBUG:
     ALLOWED_HOSTS = []
 else:
-    try:
-        IMDSv2_TOKEN = requests.put(
-            "http://169.254.169.254/latest/api/token", headers={"X-aws-ec2-metadata-token-ttl-seconds": "3600"}
-        ).text
-        EC2_PRIVATE_IP = requests.get(
-            "http://169.254.169.254/latest/meta-data/local-ipv4",
-            timeout=0.01,
-            headers={"X-aws-ec2-metadata-token": IMDSv2_TOKEN},
-        ).text
-    except requests.exceptions.RequestException:
-        EC2_PRIVATE_IP = None
-
     ALLOWED_HOSTS = [
         "api.boostertracker.com",
         "boostertracker.eba-afvxhcfx.us-west-2.elasticbeanstalk.com",
     ]
     ALLOWED_HOSTS.append(gethostbyname(gethostname()))
-    ALLOWED_HOSTS.append(EC2_PRIVATE_IP)
+
+    url = "http://169.254.169.254/latest/meta-data/public-ipv4"
+    try:
+        r = requests.get(url)
+        instance_ip = r.text
+        ALLOWED_HOSTS += [instance_ip]
+    except ConnectionError:
+        error_msg = "You can only run production settings on an AWS EC2 instance"
+        raise ImproperlyConfigured(error_msg)
+
     SECURE_SSL_REDIRECT = True
     SECURE_REDIRECT_EXEMPT = ["health/"]
 
