@@ -514,7 +514,7 @@ class HomeDataApiView(APIView):
         # First pass: Find the global minimum year across all rockets
         for rocket in Rocket.objects.filter(family__provider__name="SpaceX"):
             launches_per_year = (
-                Launch.objects.filter(rocket=rocket)
+                Launch.objects.filter(rocket=rocket, time__lte=self.now)
                 .annotate(year=ExtractYear("time"))
                 .values("year")
                 .annotate(count=Count("id"))

@@ -43,6 +43,7 @@ else:
     ALLOWED_HOSTS = [
         "api.boostertracker.com",
         "boostertracker.eba-afvxhcfx.us-west-2.elasticbeanstalk.com",
+        "52.33.84.150",
     ]
     ALLOWED_HOSTS.append(gethostbyname(gethostname()))
 
