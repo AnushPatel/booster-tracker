@@ -241,7 +241,7 @@ def build_filter(model: models.Model, family: models.Model, type: StageObjects):
             statuses.add(child.status)
         if hasattr(child, "rocket"):
             rockets.add(child.rocket.id)
-        if hasattr(child, "type"):
+        if not model == Stage and hasattr(child, "type"):
             types.add(child.type)
 
     filter = {}
