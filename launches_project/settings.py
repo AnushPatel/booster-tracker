@@ -39,7 +39,6 @@ TESTING = "test" in sys.argv
 if DEBUG:
     ALLOWED_HOSTS = []
 else:
-
     try:
         IMDSv2_TOKEN = requests.put(
             "http://169.254.169.254/latest/api/token", headers={"X-aws-ec2-metadata-token-ttl-seconds": "3600"}

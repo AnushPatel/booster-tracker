@@ -20,14 +20,15 @@ from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
 from booster_tracker import views
+from django.views.generic.base import RedirectView
 
 urlpatterns = [
+    path("", RedirectView.as_view(url="/admin/", permanent=True)),
     path("api/", include("booster_tracker.urls")),
     path("health/", views.health, name="health"),
+    path("admin/", admin.site.urls),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-urlpatterns.append(
-    path("", admin.site.urls),  # admin URLs added after other URLs to ensure other patterns are searched first
-)
+
 if not settings.TESTING and settings.DEBUG:
     urlpatterns = [
         path("__debug__/", include("debug_toolbar.urls")),
