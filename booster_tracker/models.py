@@ -540,8 +540,9 @@ class Launch(models.Model):
 
         # Create the strings for stages and turnarounds
         for stage_and_recovery in StageAndRecovery.objects.filter(launch=self).order_by("stage_position"):
-            stage_known = True
-            stages_string += stage_and_recovery.stage.name + "-" + f"{stage_and_recovery.num_flights}" + ", "
+            stage_known = stage_and_recovery.stage
+            if stage_known:
+                stages_string += stage_and_recovery.stage.name + "-" + f"{stage_and_recovery.num_flights}" + ", "
 
             turnaround_string += (
                 f"{round(stage_and_recovery.stage_turnaround / 86400, 2):.2f}"
