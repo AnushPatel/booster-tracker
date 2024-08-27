@@ -189,3 +189,15 @@ def get_start_date(last_object):
         if hasattr(last_object, "time") and (time := last_object.time):
             return time
     return datetime.now(pytz.utc)
+
+
+def build_table_html(data):
+    table_html = "<table>"
+    for key, values in data.items():
+        table_html += f'<tr><th class="has-text-align-left" data-align="left"><h6><strong>{key}</strong></h6></th>'
+        table_html += "<td>"
+        for value in values:
+            table_html += f"<em>{value}</em><br>"
+        table_html += "</td></tr>"
+    table_html += "</table>"
+    return table_html

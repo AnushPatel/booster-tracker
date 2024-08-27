@@ -254,3 +254,7 @@ class CalendarStatsSerializer(serializers.Serializer):
     mostLaunches = serializers.IntegerField()
     daysWithMostLaunches = serializers.CharField()
     launches = serializers.ListField(child=LaunchOnlySerializer())
+
+
+class EDATableSerializer(serializers.Serializer):
+    launchTable = serializers.CharField()

@@ -20,6 +20,7 @@ from booster_tracker.utils import (
     get_start_date,
     make_monotonic,
     MonotonicDirections,
+    build_table_html,
 )
 from rest_framework.pagination import PageNumberPagination
 import pytz
@@ -71,6 +72,7 @@ from booster_tracker.serializers import (
     FamilyInformationSerializer,
     CalendarStatsSerializer,
     StageListSerializer,
+    EDATableSerializer,
 )
 import json
 
@@ -916,3 +918,26 @@ class FamilyInformationApiView(APIView):
         filtered_series_data = {k: v for k, v in series_data.items() if not all_zeros(v)}
 
         return filtered_series_data
+
+
+class EDAApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        """Get launch by encoded name"""
+        name = self.request.query_params.get("name", "")
+
+        launch = Launch.objects.get(name__contains=name)
+
+        launch_table = build_table_html(launch.create_launch_table())
+
+        print(launch_table)
+
+        # Compile all collected data into a single dictionary
+        data = {
+            "launchTable": launch_table,
+        }
+
+        # Serialize the data
+        serializer = EDATableSerializer(data)
+
+        # Return the serialized data as a response
+        return Response(serializer.data)

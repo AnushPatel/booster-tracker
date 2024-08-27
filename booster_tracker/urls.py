@@ -21,6 +21,7 @@ from booster_tracker.api_views import (
     HomeDataApiView,
     FamilyInformationApiView,
     FilteredLaunchDaysApiView,
+    EDAApiView,
 )
 
 app_name = "booster_tracker"
@@ -47,4 +48,5 @@ urlpatterns = [
     path("landingzoneinformation/", LandingZoneInformationApiView.as_view(), name="landing_zone_information"),
     path("stageandrecoveries/", StageAndRecoveryApiView.as_view(), name="stage_and_recoveries"),
     path("calendarstats/", FilteredLaunchDaysApiView.as_view(), name="filter_calendar_stats"),
+    path("edatable/", EDAApiView.as_view(), name="EDA table"),
 ]

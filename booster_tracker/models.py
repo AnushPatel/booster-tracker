@@ -768,17 +768,6 @@ class Launch(models.Model):
         stats = self.make_stats()
         data["This will be the"] = stats
 
-    def build_table_html(self, data):
-        table_html = "<table>"
-        for key, values in data.items():
-            table_html += f'<tr><th class="has-text-align-left" data-align="left"><h6><strong>{key}</strong></h6></th>'
-            table_html += "<td>"
-            for value in values:
-                table_html += f"<em>{value}</em><br>"
-            table_html += "</td></tr>"
-        table_html += "</table>"
-        return table_html
-
     def create_launch_table(self) -> str:
         """Returns an EDA-style launch table for the launch"""
         # Data contains table titles
