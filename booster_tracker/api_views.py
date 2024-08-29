@@ -576,9 +576,11 @@ class HomeDataApiView(APIView):
             chunk_size = math.ceil(len(turnaround_values) / 40)
 
         if chunk_size == 1:
-            x_values = list(range(0, len(turnaround_values), 1))
+            x_values = list(np.arange(0, len(turnaround_values) - 0.5, 0.5))
+            averaged_values = [(turnaround_values[int(x)] if i % 2 == 1 else None) for i, x in enumerate(x_values)]
         else:
             x_values = list(range(0, len(turnaround_values), chunk_size // 2))
+            averaged_values = [(turnaround_values[x] if i % 2 == 1 else None) for i, x in enumerate(x_values)]
         all_x_values = list(range(len(turnaround_values)))
         # Get all spacex launches
         all_spacex_launches = Launch.objects.filter(rocket__family__provider__name="SpaceX").order_by("-time")
@@ -604,7 +606,6 @@ class HomeDataApiView(APIView):
         )
 
         best_fit_turnaround_values = [best_fit_line(x) for x in x_values]
-        averaged_values = [(turnaround_values[x] if i % 2 == 0 else None) for i, x in enumerate(x_values)]
 
         return {
             "turnaround_data": turnaround_data,
@@ -621,7 +622,11 @@ class HomeDataApiView(APIView):
         days_passed_current_year = (today - datetime(today.year, 1, 1, tzinfo=pytz.utc)).days
         remaining_days_current_year = days_in_current_year - days_passed_current_year
 
-        launches_this_year = filtered_launches.filter(time__gte=(datetime(today.year, 1, 1, tzinfo=pytz.utc))).count()
+        launches_this_year = Launch.objects.filter(
+            time__gte=(datetime(today.year, 1, 1, tzinfo=pytz.utc)),
+            time__lte=self.now,
+            rocket__family__provider__name="SpaceX",
+        ).count()
 
         # Calculate the remaining launches for the current year
         remaining_launches_current_year = (
