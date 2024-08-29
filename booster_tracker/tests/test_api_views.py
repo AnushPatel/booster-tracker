@@ -262,9 +262,11 @@ class HomeDataApiViewTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
 
-        self.assertEqual(data["turnaround_x_values"], [0.0])
-        self.assertEqual(data["turnaround_data"], [31.0])
-        np.testing.assert_array_almost_equal(data["best_fit_turnaround_values"], [30.42], decimal=0)
+        self.assertEqual(data["turnaround_x_values"], [0.0, 1.0, 2.0, 3.0])
+        self.assertEqual(data["turnaround_data"], [31.0, None, 31.0, None])
+        np.testing.assert_array_almost_equal(
+            data["best_fit_turnaround_values"], [30.42, 30.42, 30.42, 30.42], decimal=0
+        )
         self.assertEqual(data["total_launches_current_year"], 10)
         self.assertEqual(data["total_launches_next_year"], 13)
 

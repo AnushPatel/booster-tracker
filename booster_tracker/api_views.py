@@ -24,7 +24,7 @@ from booster_tracker.utils import (
 )
 from rest_framework.pagination import PageNumberPagination
 import pytz
-import statistics
+import math
 import numpy as np
 from datetime import datetime
 
@@ -459,6 +459,7 @@ class HomeDataApiView(APIView):
             "turnaround_x_values": turnaround_data["x_values"],
             "turnaround_data": turnaround_data["averaged_values"],
             "best_fit_turnaround_values": turnaround_data["best_fit_turnaround_values"],
+            "chunk_size": turnaround_data["chunk_size"],
             "total_launches_current_year": launch_predictions["total_launches_current_year"],
             "total_launches_next_year": launch_predictions["total_launches_next_year"],
             "next_launch": next_launch,
@@ -491,6 +492,7 @@ class HomeDataApiView(APIView):
             "turnaround_x_values": [],
             "turnaround_data": [],
             "best_fit_turnaround_values": [],
+            "chunk_size": 0,
             "remaining_launches_current_year": 0,
             "total_launches_current_year": 0,
             "total_launches_next_year": 0,
@@ -568,9 +570,15 @@ class HomeDataApiView(APIView):
     def _process_turnaround_data(self, filtered_launches, function_type):
         turnaround_data = launch_turnaround_times(filtered_launches=filtered_launches)
         turnaround_values = list(turnaround_data.values())
-        chunk_size = 10
+        if not turnaround_values:
+            chunk_size = 1
+        else:
+            chunk_size = math.ceil(len(turnaround_values) / 40)
 
-        x_values = list(range(0, len(turnaround_values), chunk_size // 2))
+        if chunk_size == 1:
+            x_values = list(range(0, len(turnaround_values), 1))
+        else:
+            x_values = list(range(0, len(turnaround_values), chunk_size // 2))
         all_x_values = list(range(len(turnaround_values)))
         # Get all spacex launches
         all_spacex_launches = Launch.objects.filter(rocket__family__provider__name="SpaceX").order_by("-time")
@@ -604,6 +612,7 @@ class HomeDataApiView(APIView):
             "x_values": x_values,
             "averaged_values": averaged_values,
             "best_fit_line": best_fit_line,
+            "chunk_size": chunk_size,
         }
 
     def _calculate_launch_predictions(self, filtered_launches, today, best_fit_line):
