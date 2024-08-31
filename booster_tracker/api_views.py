@@ -21,6 +21,7 @@ from booster_tracker.utils import (
     make_monotonic,
     MonotonicDirections,
     build_table_html,
+    get_averages,
 )
 from rest_framework.pagination import PageNumberPagination
 import pytz
@@ -575,12 +576,9 @@ class HomeDataApiView(APIView):
         else:
             chunk_size = math.ceil(len(turnaround_values) / 40)
 
-        if chunk_size == 1:
-            x_values = list(np.arange(0, len(turnaround_values) - 0.5, 0.5))
-            averaged_values = [(turnaround_values[int(x)] if i % 2 == 1 else None) for i, x in enumerate(x_values)]
-        else:
-            x_values = list(range(0, len(turnaround_values), chunk_size // 2))
-            averaged_values = [(turnaround_values[x] if i % 2 == 1 else None) for i, x in enumerate(x_values)]
+        x_values = list(np.arange(0, len(turnaround_values), chunk_size))
+        averaged_values = get_averages(turnaround_values, chunk_size, 2)
+
         all_x_values = list(range(len(turnaround_values)))
         # Get all spacex launches
         all_spacex_launches = Launch.objects.filter(rocket__family__provider__name="SpaceX").order_by("-time")
@@ -605,7 +603,7 @@ class HomeDataApiView(APIView):
             long_term_behavior_max=recent_average / 1.25,
         )
 
-        best_fit_turnaround_values = [best_fit_line(x) for x in x_values]
+        best_fit_turnaround_values = [round(best_fit_line(x), 2) for x in x_values]
 
         return {
             "turnaround_data": turnaround_data,

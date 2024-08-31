@@ -121,12 +121,12 @@ def version_format(string) -> str:
     return string
 
 
-def get_averages(values: list, chunk_size: int) -> list:
+def get_averages(values: list, chunk_size: int, round_to_place: int) -> list:
     """For a given list, averages chunks of chunk_size, creating a smaller object"""
     averages = []
     for i in range(0, len(values), chunk_size):
         chunk = values[i : i + chunk_size]
-        avg = sum(chunk) / len(chunk) if chunk else 0
+        avg = round(sum(chunk) / len(chunk), round_to_place) if chunk else 0
         averages.append(avg)
     return averages
 

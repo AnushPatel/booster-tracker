@@ -106,16 +106,16 @@ class TestCases(TestCase):
         self.assertEqual(version_format(str3), "Version")
 
     def test_get_averages(self):
-        self.assertEqual(get_averages([1, 2, 3, 4, 5, 6], 2), [1.5, 3.5, 5.5])
-        self.assertEqual(get_averages([1, 2, 3, 4, 5], 10), [3.0])
-        self.assertEqual(get_averages([1, 2, 3, 4, 5], 5), [3.0])
-        self.assertEqual(get_averages([], 3), [])
-        self.assertEqual(get_averages([1, 2, 3, 4, 5], 1), [1, 2, 3, 4, 5])
-        self.assertEqual(get_averages([1, 2, 3, 4, 5], 2), [1.5, 3.5, 5.0])
-        self.assertEqual(get_averages([1, 2, 3, 4, 5, 6, 7], 3), [2.0, 5.0, 7.0])
+        self.assertEqual(get_averages([1, 2, 3, 4, 5, 6], 2, 2), [1.5, 3.5, 5.5])
+        self.assertEqual(get_averages([1, 2, 3, 4, 5], 10, 2), [3.0])
+        self.assertEqual(get_averages([1, 2, 3, 4, 5], 5, 2), [3.0])
+        self.assertEqual(get_averages([], 3, 2), [])
+        self.assertEqual(get_averages([1, 2, 3, 4, 5], 1, 2), [1, 2, 3, 4, 5])
+        self.assertEqual(get_averages([1, 2, 3, 4, 5], 2, 2), [1.5, 3.5, 5.0])
+        self.assertEqual(get_averages([1, 2, 3, 4, 5, 6, 7], 3, 2), [2.0, 5.0, 7.0])
 
-        self.assertEqual(get_averages([1000, 2000, 3000, 4000, 5000], 2), [1500.0, 3500.0, 5000.0])
-        self.assertEqual(get_averages([1, 2, 3, 4], 5), [2.5])
+        self.assertEqual(get_averages([1000, 2000, 3000, 4000, 5000], 2, 2), [1500.0, 3500.0, 5000.0])
+        self.assertEqual(get_averages([1, 2, 3, 4], 5, 2), [2.5])
 
     def test_make_monotonic(self):
         list0 = []
