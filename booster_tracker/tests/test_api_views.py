@@ -34,11 +34,11 @@ class FilteredLaunchDaysApiViewTest(APITestCase):
         response_data = response.json()
 
         # Add further assertions to check if the response data is correct
-        self.assertEqual(response_data["numDaysWithLaunches"], 5)
-        self.assertEqual(response_data["percentageDaysWithLaunches"], 1.37)
-        self.assertEqual(response_data["mostLaunches"], 1)
+        self.assertEqual(response_data["num_days_with_launches"], 5)
+        self.assertEqual(response_data["percentage_days_with_launches"], 1.37)
+        self.assertEqual(response_data["most_launches"], 1)
         self.assertEqual(
-            response_data["daysWithMostLaunches"], "May 01, April 01, March 01, February 01, and January 01"
+            response_data["days_with_most_launches"], "May 01, April 01, March 01, February 01, and January 01"
         )
 
         Launch.objects.create(
@@ -59,10 +59,10 @@ class FilteredLaunchDaysApiViewTest(APITestCase):
         response_data = response.json()
 
         # Add further assertions to check if the response data is correct
-        self.assertEqual(response_data["numDaysWithLaunches"], 5)
-        self.assertEqual(response_data["percentageDaysWithLaunches"], 1.37)
-        self.assertEqual(response_data["mostLaunches"], 2)
-        self.assertEqual(response_data["daysWithMostLaunches"], "January 01")
+        self.assertEqual(response_data["num_days_with_launches"], 5)
+        self.assertEqual(response_data["percentage_days_with_launches"], 1.37)
+        self.assertEqual(response_data["most_launches"], 2)
+        self.assertEqual(response_data["days_with_most_launches"], "January 01")
 
 
 class ListApiTestCases(APITestCase):

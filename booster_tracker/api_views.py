@@ -175,10 +175,10 @@ class FilteredLaunchDaysApiView(APIView):
                 break
 
         data = {
-            "numDaysWithLaunches": num_days_with_launches,
-            "percentageDaysWithLaunches": percentage_days_with_launch,
-            "mostLaunches": max_launches,
-            "daysWithMostLaunches": concatenated_list(days_with_most_launches),
+            "num_days_with_launches": num_days_with_launches,
+            "percentage_days_with_launches": percentage_days_with_launch,
+            "most_launches": max_launches,
+            "days_with_most_launches": concatenated_list(days_with_most_launches),
             "launches": filtered_launches,
         }
 
@@ -942,11 +942,9 @@ class EDAApiView(APIView):
 
         launch_table = build_table_html(launch.create_launch_table())
 
-        print(launch_table)
-
         # Compile all collected data into a single dictionary
         data = {
-            "launchTable": launch_table,
+            "launch_table": launch_table,
         }
 
         # Serialize the data

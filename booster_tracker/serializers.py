@@ -250,15 +250,15 @@ class FamilyInformationSerializer(serializers.Serializer):
 
 
 class CalendarStatsSerializer(serializers.Serializer):
-    numDaysWithLaunches = serializers.IntegerField()
-    percentageDaysWithLaunches = serializers.FloatField()
-    mostLaunches = serializers.IntegerField()
-    daysWithMostLaunches = serializers.CharField()
+    num_days_with_launches = serializers.IntegerField()
+    percentage_days_with_launches = serializers.FloatField()
+    most_launches = serializers.IntegerField()
+    days_with_most_launches = serializers.CharField()
     launches = serializers.ListField(child=LaunchOnlySerializer())
 
 
 class EDATableSerializer(serializers.Serializer):
-    launchTable = serializers.CharField()
+    launch_table = serializers.CharField()
 
 
 class AdditionalGraphSerializer(serializers.Serializer):
