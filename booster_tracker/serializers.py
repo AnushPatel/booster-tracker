@@ -259,3 +259,7 @@ class CalendarStatsSerializer(serializers.Serializer):
 
 class EDATableSerializer(serializers.Serializer):
     launchTable = serializers.CharField()
+
+
+class AdditionalGraphSerializer(serializers.Serializer):
+    mass_per_year = serializers.DictField(child=serializers.CharField())

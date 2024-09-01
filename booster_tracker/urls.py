@@ -22,6 +22,7 @@ from booster_tracker.api_views import (
     FamilyInformationApiView,
     FilteredLaunchDaysApiView,
     EDAApiView,
+    AdditionalGraphsApiView,
 )
 
 app_name = "booster_tracker"
@@ -49,4 +50,5 @@ urlpatterns = [
     path("stageandrecoveries/", StageAndRecoveryApiView.as_view(), name="stage_and_recoveries"),
     path("calendarstats/", FilteredLaunchDaysApiView.as_view(), name="filter_calendar_stats"),
     path("edatable/", EDAApiView.as_view(), name="EDA table"),
+    path("additional-graph-info/", AdditionalGraphsApiView.as_view(), name="additional graphs"),
 ]

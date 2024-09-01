@@ -222,7 +222,7 @@ class Launch(models.Model):
     rocket = models.ForeignKey(Rocket, on_delete=models.CASCADE)
     name = models.CharField(max_length=200, unique=True)
     orbit = models.ForeignKey(Orbit, on_delete=models.CASCADE, null=True, blank=True)
-    mass = models.CharField(max_length=200)
+    mass = models.IntegerField(blank=True, null=True, verbose_name="Mass (kg)")
     customer = models.CharField(max_length=200)
     launch_outcome = models.CharField(max_length=200, choices=LAUNCH_OUTCOMES, blank=True, null=True)
     pad_turnaround = models.IntegerField(blank=True, null=True, editable=False)
@@ -742,7 +742,7 @@ class Launch(models.Model):
         data["Customer <br /> (Who's paying for this?)"] = [self.customer]
         data["Rocket"] = [f"{self.rocket}{boosters_display}"]
         data["Launch Location"] = [launch_location]
-        data["Payload mass"] = [self.mass]
+        data["Payload mass"] = [f"{self.mass:,} kg ({int(round(self.mass * 2.2, -2)):,} lb)"]
         data["Where are the satellites going?"] = [self.orbit.name] if self.orbit else ["Unknown"]
         data["Where will the first stage land?"] = [launch_landings]
 

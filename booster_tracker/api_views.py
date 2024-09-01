@@ -1,5 +1,5 @@
-from django.db.models import Q, Count, Max, Avg
-from django.db.models.functions import ExtractYear
+from django.db.models import Q, Count, Max, Avg, Sum, Value
+from django.db.models.functions import ExtractYear, Coalesce
 from booster_tracker.home_utils import (
     get_model_objects_with_filter,
     launches_per_day,
@@ -74,6 +74,7 @@ from booster_tracker.serializers import (
     CalendarStatsSerializer,
     StageListSerializer,
     EDATableSerializer,
+    AdditionalGraphSerializer,
 )
 import json
 
@@ -953,3 +954,44 @@ class EDAApiView(APIView):
 
         # Return the serialized data as a response
         return Response(serializer.data)
+
+
+class AdditionalGraphsApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        self.now = datetime.now(pytz.utc)
+        mass_per_year = self._get_mass_to_orbit_per_year(provider=Operator.objects.get(name="SpaceX"))
+
+        data = {"mass_per_year": mass_per_year}
+
+        serializer = AdditionalGraphSerializer(data)
+        return Response(serializer.data)
+
+    def _get_mass_to_orbit_per_year(self, provider):
+        mass_per_year = (
+            Launch.objects.filter(
+                rocket__family__provider=provider, time__lte=self.now, launch_outcome__in=["SUCCESS", "PARTIAL_FAILURE"]
+            )
+            .annotate(year=ExtractYear("time"))
+            .values("year")
+            .annotate(sum=Coalesce(Sum("mass") / 1000, Value(0)))
+            .order_by("year")
+        )
+
+        global_min_year = self.now.year
+
+        if mass_per_year.exists():
+            min_year = min(entry["year"] for entry in mass_per_year)
+            global_min_year = min(global_min_year, min_year)
+
+        # Convert the queryset to a dictionary
+        formatted_dict = {entry["year"]: entry["sum"] for entry in mass_per_year}
+
+        # Fill in missing years with zeros from global_min_year to current_year
+        for year in range(global_min_year, self.now.year + 1):
+            if year not in formatted_dict:
+                formatted_dict[year] = 0
+
+        # Sort the dictionary by year
+        mass_per_year = dict(sorted(formatted_dict.items()))
+
+        return mass_per_year

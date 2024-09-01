@@ -33,7 +33,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 1",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="FAILURE",
         )
@@ -44,7 +44,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon Heavy"),
             name="Falcon 9 Temp Launch 2",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -64,7 +64,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 1",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="FAILURE",
         )
@@ -75,7 +75,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon Heavy"),
             name="Falcon 9 Temp Launch 2",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -100,7 +100,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 1",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -128,7 +128,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 2",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -165,7 +165,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 1",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -209,7 +209,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 2",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -292,7 +292,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon Heavy"),
             name="Falcon Heavy Temp Launch 1",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -417,7 +417,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 1",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -428,7 +428,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 2",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -439,7 +439,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon Heavy"),
             name="Falcon Heavy Temp Launch 1",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -592,7 +592,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 1",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1046,7 +1046,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 1",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1231,7 +1231,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 1",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1257,7 +1257,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 2",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1283,7 +1283,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon Heavy"),
             name="Falcon Heavy Temp Launch 1",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1330,7 +1330,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon Heavy"),
             name="Falcon Heavy Temp Launch 2",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1377,7 +1377,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon Heavy"),
             name="Falcon Heavy Temp Launch 3",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1425,7 +1425,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 3",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1460,7 +1460,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 1",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1484,7 +1484,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 1",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1513,7 +1513,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 1",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1553,7 +1553,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 1",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1579,7 +1579,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 2",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1605,7 +1605,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 3",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1622,7 +1622,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 4",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1710,7 +1710,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 1",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1765,7 +1765,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 2",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1776,7 +1776,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 3",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -1859,7 +1859,7 @@ class TestCases(TestCase):
                 "Customer <br /> (Who paid for this?)": ["SpaceX"],
                 "Rocket": ["Falcon 9 B1062-1; N/A-day turnaround"],
                 "Launch Location": ["Space Launch Complex 40 (SLC-40), CCSFS"],
-                "Payload mass": ["1000 kg"],
+                "Payload mass": ["1,000 kg (2,200 lb)"],
                 "Where did the satellites go?": ["low-Earth Orbit"],
                 "Where did the first stage land?": ["B1062 successfully completed a landing on Landing Zone 1 (LZ-1)"],
                 "Did they attempt to recover the fairings?": ["There are no fairings on this flight"],
@@ -1884,7 +1884,7 @@ class TestCases(TestCase):
                 "Customer <br /> (Who paid for this?)": ["SpaceX"],
                 "Rocket": ["Falcon 9 B1062-2; 31.00-day turnaround"],
                 "Launch Location": ["Space Launch Complex 40 (SLC-40), CCSFS"],
-                "Payload mass": ["1000 kg"],
+                "Payload mass": ["1,000 kg (2,200 lb)"],
                 "Where did the satellites go?": ["low-Earth Orbit"],
                 "Where did the first stage land?": ["B1062 successfully completed a landing on Landing Zone 1 (LZ-1)"],
                 "Did they attempt to recover the fairings?": ["There are no fairings on this flight"],
@@ -1916,7 +1916,7 @@ class TestCases(TestCase):
                 "Customer <br /> (Who paid for this?)": ["SpaceX"],
                 "Rocket": ["Falcon 9 B1080-1; N/A-day turnaround"],
                 "Launch Location": ["Space Launch Complex 40 (SLC-40), CCSFS"],
-                "Payload mass": ["1000 kg"],
+                "Payload mass": ["1,000 kg (2,200 lb)"],
                 "Where did the satellites go?": ["low-Earth Orbit"],
                 "Where did the first stage land?": ["B1080 successfully completed a landing on Landing Zone 1 (LZ-1)"],
                 "Did they attempt to recover the fairings?": ["There are no fairings on this flight"],
@@ -1944,7 +1944,7 @@ class TestCases(TestCase):
                 "Customer <br /> (Who paid for this?)": ["SpaceX"],
                 "Rocket": ["Falcon Heavy B1084-1, B1080-2, B1062-3; N/A, 31.00, 60.00-day turnaround"],
                 "Launch Location": ["Space Launch Complex 40 (SLC-40), CCSFS"],
-                "Payload mass": ["1000 kg"],
+                "Payload mass": ["1,000 kg (2,200 lb)"],
                 "Where did the satellites go?": ["low-Earth Orbit"],
                 "Where did the first stage land?": [
                     "B1084 successfully completed a landing on Just Read the Instructions (JRtI); B1080 successfully completed a landing on Landing Zone 1 (LZ-1); B1062 successfully completed a landing on Landing Zone 2 (LZ-2)",
@@ -1975,7 +1975,7 @@ class TestCases(TestCase):
                 "Customer <br /> (Who paid for this?)": ["SpaceX"],
                 "Rocket": ["Falcon 9 B1080-3; 30.00-day turnaround"],
                 "Launch Location": ["Space Launch Complex 40 (SLC-40), CCSFS"],
-                "Payload mass": ["1000 kg"],
+                "Payload mass": ["1,000 kg (2,200 lb)"],
                 "Where did the satellites go?": ["low-Earth Orbit"],
                 "Where did the first stage land?": ["B1080 was expended"],
                 "Did they attempt to recover the fairings?": ["There are no fairings on this flight"],
@@ -1998,7 +1998,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 1",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
@@ -2041,7 +2041,7 @@ class TestCases(TestCase):
                 "Customer <br /> (Who's paying for this?)": ["SpaceX"],
                 "Rocket": ["Falcon 9 B1062-4; 395.00-day turnaround"],
                 "Launch Location": ["Space Launch Complex 40 (SLC-40), CCSFS"],
-                "Payload mass": ["1000 kg"],
+                "Payload mass": ["1,000 kg (2,200 lb)"],
                 "Where are the satellites going?": ["low-Earth Orbit"],
                 "Where will the first stage land?": ["B1062 will attempt a soft landing on the ocean surface"],
                 "Will they be attempting to recover the fairings?": ["There are no fairings on this flight"],
@@ -2062,7 +2062,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 2",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
         )
 
@@ -2103,7 +2103,7 @@ class TestCases(TestCase):
                 "Customer <br /> (Who paid for this?)": ["SpaceX"],
                 "Rocket": ["Falcon 9 B1062-4; 39.00-day turnaround"],
                 "Launch Location": ["Space Launch Complex 40 (SLC-40), CCSFS"],
-                "Payload mass": ["1000 kg"],
+                "Payload mass": ["1,000 kg (2,200 lb)"],
                 "Where did the satellites go?": ["low-Earth Orbit"],
                 "Where did the first stage land?": [
                     "B1062 successfully completed a landing on Landing Zone 1 (LZ-1)",

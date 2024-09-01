@@ -76,7 +76,7 @@ class TestCases(TestCase):
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 2",
             orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )

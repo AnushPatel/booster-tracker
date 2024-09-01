@@ -98,7 +98,7 @@ def initialize_test_data():
         rocket=falcon_9,
         name="Falcon 9 Launch 1",
         orbit=low_earth_orbit,
-        mass="1000 kg",
+        mass=1000,
         customer="SpaceX",
         launch_outcome="SUCCESS",
     )
@@ -108,7 +108,7 @@ def initialize_test_data():
         rocket=falcon_9,
         name="Falcon 9 Launch 2",
         orbit=low_earth_orbit,
-        mass="1000 kg",
+        mass=1000,
         customer="SpaceX",
         launch_outcome="SUCCESS",
     )
@@ -118,7 +118,7 @@ def initialize_test_data():
         rocket=falcon_9,
         name="Falcon 9 Launch 3",
         orbit=low_earth_orbit,
-        mass="1000 kg",
+        mass=1000,
         customer="SpaceX",
         launch_outcome="SUCCESS",
     )
@@ -128,7 +128,7 @@ def initialize_test_data():
         rocket=falcon_heavy,
         name="Falcon Heavy Launch 1",
         orbit=low_earth_orbit,
-        mass="1000 kg",
+        mass=1000,
         customer="SpaceX",
         launch_outcome="SUCCESS",
     )
@@ -138,7 +138,7 @@ def initialize_test_data():
         rocket=falcon_9,
         name="Falcon 9 Launch 4",
         orbit=low_earth_orbit,
-        mass="1000 kg",
+        mass=1000,
         customer="SpaceX",
         launch_outcome="SUCCESS",
     )

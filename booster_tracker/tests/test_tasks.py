@@ -23,7 +23,7 @@ class TestCases(TestCase):
             rocket=self.test_data["falcon_9"],
             name="Falcon 9 Temp Launch 1",
             orbit=self.test_data["low_earth_orbit"],
-            mass="1000 kg",
+            mass=1000,
             customer="SpaceX",
             launch_outcome="SUCCESS",
         )
