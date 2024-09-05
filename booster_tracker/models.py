@@ -799,7 +799,10 @@ class Launch(models.Model):
         data["Customer <br /> (Who's paying for this?)"] = [self.customer]
         data["Rocket"] = [f"{self.rocket}{boosters_display}"]
         data["Launch Location"] = [launch_location]
-        data["Payload mass"] = [f"{self.mass:,} kg ({int(round(self.mass * 2.2, -2)):,} lb)"]
+        if self.mass:
+            data["Payload mass"] = [f"{self.mass:,} kg ({int(round(self.mass * 2.2, -2)):,} lb)"]
+        else:
+            data["Payload mass"] = ["Unknown"]
         data["Where are the satellites going?"] = [self.orbit.name] if self.orbit else ["Unknown"]
         data["Where will the first stage land?"] = [launch_landings]
 
