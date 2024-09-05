@@ -20,10 +20,16 @@ from booster_tracker.models import (
     Orbit,
     Operator,
     RocketFamily,
+    LaunchStat,
 )
 
 # Register your models here.
 # pylint: disable=consider-using-set-comprehension
+
+
+class LaunchStatInLine(admin.TabularInline):
+    model = LaunchStat
+    extra = 0
 
 
 class StageRecoveryInLine(admin.TabularInline):
@@ -332,6 +338,7 @@ class LaunchAdmin(admin.ModelAdmin):
         FairingRecoveryInLine,
         TugInLine,
         SupportInLine,
+        LaunchStatInLine,
         DragonInLine,
     ]
 

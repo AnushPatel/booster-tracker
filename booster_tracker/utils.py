@@ -178,8 +178,15 @@ def parse_start_time(query_params, default_start_date: datetime) -> datetime:
     return default_start_date
 
 
-from datetime import datetime
-import pytz
+def is_significant(nums) -> bool:
+    significant_nums = {1, 10, 25, 50}
+
+    if isinstance(nums, list):
+        return any(num % 100 == 0 or num in significant_nums for num in nums)
+    elif isinstance(nums, int):
+        return nums % 100 == 0 or nums in significant_nums
+
+    return False
 
 
 def get_start_date(last_object):

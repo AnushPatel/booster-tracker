@@ -529,61 +529,63 @@ class TestCases(TestCase):
         later_time = datetime(2024, 2, 2, 0, 0, tzinfo=pytz.utc)
         # Test perm launch objects for all time
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Launch 1").get_total_reflights(start=past_time),
-            "N/A",
+            Launch.objects.get(name="Falcon 9 Launch 1").get_total_reflights(stage_type="BOOSTER", start=past_time),
+            [],
         )
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Launch 2").get_total_reflights(start=past_time),
-            "1st",
+            Launch.objects.get(name="Falcon 9 Launch 2").get_total_reflights(stage_type="BOOSTER", start=past_time),
+            [1],
         )
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Launch 3").get_total_reflights(start=past_time),
-            "N/A",
+            Launch.objects.get(name="Falcon 9 Launch 3").get_total_reflights(stage_type="BOOSTER", start=past_time),
+            [],
         )
         self.assertEqual(
-            Launch.objects.get(name="Falcon Heavy Launch 1").get_total_reflights(start=past_time),
-            "2nd and 3rd",
+            Launch.objects.get(name="Falcon Heavy Launch 1").get_total_reflights(stage_type="BOOSTER", start=past_time),
+            [2, 3],
         )
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Launch 4").get_total_reflights(start=past_time),
-            "4th",
+            Launch.objects.get(name="Falcon 9 Launch 4").get_total_reflights(stage_type="BOOSTER", start=past_time),
+            [4],
         )
 
         # later_time is after first launch but before all launches after; ensure that the numbers above drop by one
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Launch 3").get_total_reflights(start=later_time),
-            "N/A",
+            Launch.objects.get(name="Falcon 9 Launch 3").get_total_reflights(stage_type="BOOSTER", start=later_time),
+            [],
         )
         self.assertEqual(
-            Launch.objects.get(name="Falcon Heavy Launch 1").get_total_reflights(start=later_time),
-            "1st and 2nd",
+            Launch.objects.get(name="Falcon Heavy Launch 1").get_total_reflights(
+                stage_type="BOOSTER", start=later_time
+            ),
+            [1, 2],
         )
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Launch 4").get_total_reflights(start=later_time),
-            "3rd",
+            Launch.objects.get(name="Falcon 9 Launch 4").get_total_reflights(stage_type="BOOSTER", start=later_time),
+            [3],
         )
 
     def test_get_num_booster_landings(self):
         # Test on perm launch objects
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Launch 1").get_num_booster_landings(),
-            "1st",
+            Launch.objects.get(name="Falcon 9 Launch 1").get_num_stage_landings(stage_type="BOOSTER"),
+            [1],
         )
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Launch 2").get_num_booster_landings(),
-            "2nd",
+            Launch.objects.get(name="Falcon 9 Launch 2").get_num_stage_landings(stage_type="BOOSTER"),
+            [2],
         )
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Launch 3").get_num_booster_landings(),
-            "3rd",
+            Launch.objects.get(name="Falcon 9 Launch 3").get_num_stage_landings(stage_type="BOOSTER"),
+            [3],
         )
         self.assertEqual(
-            Launch.objects.get(name="Falcon Heavy Launch 1").get_num_booster_landings(),
-            "4th, 5th, and 6th",
+            Launch.objects.get(name="Falcon Heavy Launch 1").get_num_stage_landings(stage_type="BOOSTER"),
+            [4, 5, 6],
         )
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Launch 4").get_num_booster_landings(),
-            None,
+            Launch.objects.get(name="Falcon 9 Launch 4").get_num_stage_landings(stage_type="BOOSTER"),
+            [],
         )
 
         Launch.objects.create(
@@ -608,8 +610,8 @@ class TestCases(TestCase):
 
         # Ensure function responds accordingly
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Temp Launch 1").get_num_booster_landings(),
-            "7th",
+            Launch.objects.get(name="Falcon 9 Temp Launch 1").get_num_stage_landings(stage_type="BOOSTER"),
+            [7],
         )
 
     def test_calculate_turnarounds(self):
@@ -1216,14 +1218,14 @@ class TestCases(TestCase):
 
     def test_get_consec_landings(self):
         # Test on perm launch objects
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").get_consec_landings(), "1st")
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").get_consec_landings(), "2nd")
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 3").get_consec_landings(), "3rd")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").get_consec_landings(stage_type="BOOSTER"), [1])
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").get_consec_landings(stage_type="BOOSTER"), [2])
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 3").get_consec_landings(stage_type="BOOSTER"), [3])
         self.assertEqual(
-            Launch.objects.get(name="Falcon Heavy Launch 1").get_consec_landings(),
-            "4th, 5th, and 6th",
+            Launch.objects.get(name="Falcon Heavy Launch 1").get_consec_landings(stage_type="BOOSTER"),
+            [4, 5, 6],
         )
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").get_consec_landings(), "N/A")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").get_consec_landings(stage_type="BOOSTER"), [])
 
         Launch.objects.create(
             time=datetime(2024, 5, 2, 0, 0, tzinfo=pytz.utc),
@@ -1247,8 +1249,8 @@ class TestCases(TestCase):
 
         # Ensure a landing failure resets count
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Temp Launch 1").get_consec_landings(),
-            "N/A",
+            Launch.objects.get(name="Falcon 9 Temp Launch 1").get_consec_landings(stage_type="BOOSTER"),
+            [],
         )
 
         Launch.objects.create(
@@ -1273,8 +1275,8 @@ class TestCases(TestCase):
 
         # Ensure landing after failure is 1st success
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Temp Launch 2").get_consec_landings(),
-            "1st",
+            Launch.objects.get(name="Falcon 9 Temp Launch 2").get_consec_landings(stage_type="BOOSTER"),
+            [1],
         )
 
         Launch.objects.create(
@@ -1320,8 +1322,8 @@ class TestCases(TestCase):
 
         # Ensure FH with booster that fails to land first resets as expected
         self.assertEqual(
-            Launch.objects.get(name="Falcon Heavy Temp Launch 1").get_consec_landings(),
-            "1st and 2nd",
+            Launch.objects.get(name="Falcon Heavy Temp Launch 1").get_consec_landings(stage_type="BOOSTER"),
+            [1, 2],
         )
 
         Launch.objects.create(
@@ -1367,8 +1369,8 @@ class TestCases(TestCase):
 
         # Ensure if middle booster fails to land the function returns 1st
         self.assertEqual(
-            Launch.objects.get(name="Falcon Heavy Temp Launch 2").get_consec_landings(),
-            "1st",
+            Launch.objects.get(name="Falcon Heavy Temp Launch 2").get_consec_landings(stage_type="BOOSTER"),
+            [1],
         )
 
         Launch.objects.create(
@@ -1414,8 +1416,8 @@ class TestCases(TestCase):
 
         # Ensure if last booster fails to land the function returns N/A
         self.assertEqual(
-            Launch.objects.get(name="Falcon Heavy Temp Launch 3").get_consec_landings(),
-            "N/A",
+            Launch.objects.get(name="Falcon Heavy Temp Launch 3").get_consec_landings(stage_type="BOOSTER"),
+            [],
         )
 
         today = datetime.now(pytz.utc)
@@ -1440,8 +1442,8 @@ class TestCases(TestCase):
 
         # Ensure that launch in the future is assumed to have successful landings
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Temp Launch 3").get_consec_landings(),
-            "1st",
+            Launch.objects.get(name="Falcon 9 Temp Launch 3").get_consec_landings(stage_type="BOOSTER"),
+            [1],
         )
 
     def test_get_boosters(self):
@@ -1638,69 +1640,66 @@ class TestCases(TestCase):
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 1").make_stats(),
             [
-                "– 1st Falcon 9 mission",
-                "– 1st booster landing",
-                "– 1st consecutive booster landing",
-                "– 1st SpaceX launch of 2024",
-                "– 1st SpaceX launch from Space Launch Complex 40",
+                (True, "– 1st Falcon 9 mission"),
+                (True, "– 1st booster landing"),
+                (True, "– 1st consecutive booster landing"),
+                (True, "– 1st SpaceX launch of 2024"),
+                (True, "– 1st SpaceX launch from SLC-40"),
             ],
         )
+
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 2").make_stats(),
             [
-                "– 2nd Falcon 9 mission",
-                "– 1st Falcon 9 flight with a flight-proven booster",
-                "– 1st reflight of a booster",
-                "– 1st reflight of a booster in 2024",
-                "– 2nd booster landing",
-                "– 2nd consecutive booster landing",
-                "– 2nd SpaceX launch of 2024",
-                "– 2nd SpaceX launch from Space Launch Complex 40",
-                "– Quickest turnaround of a booster to date at 31 days",
-                "– Quickest turnaround time of a landing zone to date at 31 days",
-                "– Shortest time between any two SpaceX launches at 31 days",
-                "– Quickest turnaround of a SpaceX pad to date at 31 days",
+                (False, "– 2nd Falcon 9 mission"),
+                (True, "– 1st Falcon 9 flight with a flight-proven booster"),
+                (True, "– 1st reflight of a Falcon booster"),
+                (True, "– 1st reflight of a Falcon booster in 2024"),
+                (False, "– 2nd booster landing"),
+                (False, "– 2nd consecutive booster landing"),
+                (False, "– 2nd SpaceX launch of 2024"),
+                (False, "– 2nd SpaceX launch from SLC-40"),
             ],
         )
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 3").make_stats(),
             [
-                "– 3rd Falcon 9 mission",
-                "– 3rd booster landing",
-                "– 3rd consecutive booster landing",
-                "– 3rd SpaceX launch of 2024",
-                "– 3rd SpaceX launch from Space Launch Complex 40",
-                "– Quickest turnaround time of a landing zone to date at 29 days. Previous record: LZ-1 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
-                "– Shortest time between any two SpaceX launches at 29 days. Previous record: 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
-                "– Quickest turnaround of a SpaceX pad to date at 29 days. Previous record: SLC-40 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
+                (False, "– 3rd Falcon 9 mission"),
+                (False, "– 3rd booster landing"),
+                (False, "– 3rd consecutive booster landing"),
+                (False, "– 3rd SpaceX launch of 2024"),
+                (False, "– 3rd SpaceX launch from SLC-40"),
+                (True, "– Fastest turnaround of SLC-40 to date at 29 days. Previous record: SLC-40 at 31 days"),
+                (True, "– Fastest turnaround of SpaceX to date at 29 days. Previous record: 31 days"),
             ],
         )
         self.assertEqual(
             Launch.objects.get(name="Falcon Heavy Launch 1").make_stats(),
             [
-                "– 1st Falcon Heavy mission",
-                "– 1st Falcon Heavy flight with a flight-proven booster",
-                "– 2nd and 3rd reflight of a booster",
-                "– 2nd and 3rd reflight of a booster in 2024",
-                "– 4th, 5th, and 6th booster landings",
-                "– 4th, 5th, and 6th consecutive booster landings",
-                "– 4th SpaceX launch of 2024",
-                "– 4th SpaceX launch from Space Launch Complex 40",
-                "– Quickest turnaround of B1080 to date at 31 days",
+                (True, "– 1st Falcon Heavy mission"),
+                (True, "– 1st Falcon Heavy flight with a flight-proven booster"),
+                (False, "– 2nd and 3rd reflight of a Falcon booster"),
+                (False, "– 2nd and 3rd reflight of a Falcon booster in 2024"),
+                (False, "– 4th, 5th, and 6th booster landings"),
+                (False, "– 4th, 5th, and 6th consecutive booster landings"),
+                (False, "– 4th SpaceX launch of 2024"),
+                (False, "– 4th SpaceX launch from SLC-40"),
             ],
         )
 
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 4").make_stats(),
             [
-                "– 4th Falcon 9 mission",
-                "– 2nd Falcon 9 flight with a flight-proven booster",
-                "– 4th reflight of a booster",
-                "– 4th reflight of a booster in 2024",
-                "– 5th SpaceX launch of 2024",
-                "– 5th SpaceX launch from Space Launch Complex 40",
-                "– Quickest turnaround of a booster to date at 30 days. Previous record: B1062 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
-                "– Quickest turnaround of JRtI to date at 30 days",
+                (False, "– 4th Falcon 9 mission"),
+                (False, "– 2nd Falcon 9 flight with a flight-proven booster"),
+                (False, "– 4th reflight of a Falcon booster"),
+                (False, "– 4th reflight of a Falcon booster in 2024"),
+                (False, "– 5th SpaceX launch of 2024"),
+                (False, "– 5th SpaceX launch from SLC-40"),
+                (
+                    True,
+                    "– Fastest turnaround of a Falcon booster to date at 30 days. Previous record: B1062 at 31 days",
+                ),
             ],
         )
 
@@ -1744,18 +1743,17 @@ class TestCases(TestCase):
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Temp Launch 1").make_stats(),
             [
-                "– 5th Falcon 9 mission",
-                "– 3rd Falcon 9 flight with a flight-proven booster",
-                "– 5th reflight of a booster",
-                "– 5th reflight of a booster in 2024",
-                "– 7th booster landing",
-                "– 7th consecutive booster landing",
-                "– 6th SpaceX launch of 2024",
-                "– 6th SpaceX launch from Space Launch Complex 40",
-                "– Quickest turnaround of B1062 to date at 30 days and 1 minute. Previous record: 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
-                "– Quickest turnaround time of a landing zone to date at 1 minute. Previous record: LZ-1 at 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
-                "– Shortest time between any two SpaceX launches at 1 minute. Previous record: 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
-                "– Quickest turnaround of a SpaceX pad to date at 1 minute. Previous record: SLC-40 at 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
+                (False, "– 5th Falcon 9 mission"),
+                (False, "– 3rd Falcon 9 flight with a flight-proven booster"),
+                (False, "– 5th reflight of a Falcon booster"),
+                (False, "– 5th reflight of a Falcon booster in 2024"),
+                (False, "– 7th booster landing"),
+                (False, "– 7th consecutive booster landing"),
+                (False, "– 6th SpaceX launch of 2024"),
+                (False, "– 6th SpaceX launch from SLC-40"),
+                (False, "– Fastest turnaround of B1062 to date at 30 days and 1 minute. Previous record: 31 days"),
+                (True, "– Fastest turnaround of SLC-40 to date at 1 minute. Previous record: SLC-40 at 29 days"),
+                (True, "– Fastest turnaround of SpaceX to date at 1 minute. Previous record: 29 days"),
             ],
         )
 
@@ -1819,29 +1817,31 @@ class TestCases(TestCase):
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Temp Launch 2").make_stats(),
             [
-                "– 6th Falcon 9 mission",
-                "– 4th Falcon 9 flight with a flight-proven booster",
-                "– 6th reflight of a booster",
-                "– 6th reflight of a booster in 2024",
-                "– 8th booster landing",
-                "– 8th consecutive booster landing",
-                "– 7th SpaceX launch of 2024",
-                "– 1st SpaceX launch from Launch Complex 39A",
-                "– Quickest turnaround of a booster to date at 23 hours and 59 minutes. Previous record: B1080 at 30 days between Falcon Heavy Launch 1 and Falcon 9 Launch 4",
+                (False, "– 6th Falcon 9 mission"),
+                (False, "– 4th Falcon 9 flight with a flight-proven booster"),
+                (False, "– 6th reflight of a Falcon booster"),
+                (False, "– 6th reflight of a Falcon booster in 2024"),
+                (False, "– 8th booster landing"),
+                (False, "– 8th consecutive booster landing"),
+                (False, "– 7th SpaceX launch of 2024"),
+                (True, "– 1st SpaceX launch from LC-39A"),
+                (
+                    True,
+                    "– Fastest turnaround of a Falcon booster to date at 23 hours and 59 minutes. Previous record: B1080 at 30 days",
+                ),
             ],
         )
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Temp Launch 3").make_stats(),
             [
-                "– 7th Falcon 9 mission",
-                "– 5th Falcon 9 flight with a flight-proven booster",
-                "– 7th reflight of a booster",
-                "– 7th reflight of a booster in 2024",
-                "– 9th booster landing",
-                "– 9th consecutive booster landing",
-                "– 8th SpaceX launch of 2024",
-                "– 2nd SpaceX launch from Launch Complex 39A",
-                "– Quickest turnaround of LC-39A to date at 10 days",
+                (False, "– 7th Falcon 9 mission"),
+                (False, "– 5th Falcon 9 flight with a flight-proven booster"),
+                (False, "– 7th reflight of a Falcon booster"),
+                (False, "– 7th reflight of a Falcon booster in 2024"),
+                (False, "– 9th booster landing"),
+                (False, "– 9th consecutive booster landing"),
+                (False, "– 8th SpaceX launch of 2024"),
+                (False, "– 2nd SpaceX launch from LC-39A"),
             ],
         )
 
@@ -1850,10 +1850,7 @@ class TestCases(TestCase):
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 1").create_launch_table(),
             {
-                "Liftoff Time": [
-                    "January 01, 2024 - 00:00 UTC",
-                    "December 31, 2023 - 19:00 EST",
-                ],
+                "Liftoff Time": ["January 01, 2024 - 00:00 UTC", "December 31, 2023 - 19:00 EST"],
                 "Mission Name": ["Falcon 9 Launch 1"],
                 "Launch Provider <br /> (What rocket company launched it?)": ["SpaceX"],
                 "Customer <br /> (Who paid for this?)": ["SpaceX"],
@@ -1868,17 +1865,14 @@ class TestCases(TestCase):
                     "– 1st booster landing",
                     "– 1st consecutive booster landing",
                     "– 1st SpaceX launch of 2024",
-                    "– 1st SpaceX launch from Space Launch Complex 40",
+                    "– 1st SpaceX launch from SLC-40",
                 ],
             },
         )
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 2").create_launch_table(),
             {
-                "Liftoff Time": [
-                    "February 01, 2024 - 00:00 UTC",
-                    "January 31, 2024 - 19:00 EST",
-                ],
+                "Liftoff Time": ["February 01, 2024 - 00:00 UTC", "January 31, 2024 - 19:00 EST"],
                 "Mission Name": ["Falcon 9 Launch 2"],
                 "Launch Provider <br /> (What rocket company launched it?)": ["SpaceX"],
                 "Customer <br /> (Who paid for this?)": ["SpaceX"],
@@ -1889,28 +1883,21 @@ class TestCases(TestCase):
                 "Where did the first stage land?": ["B1062 successfully completed a landing on Landing Zone 1 (LZ-1)"],
                 "Did they attempt to recover the fairings?": ["There are no fairings on this flight"],
                 "This was the": [
-                    "– 2nd Falcon 9 mission",
                     "– 1st Falcon 9 flight with a flight-proven booster",
-                    "– 1st reflight of a booster",
-                    "– 1st reflight of a booster in 2024",
+                    "– 1st reflight of a Falcon booster",
+                    "– 1st reflight of a Falcon booster in 2024",
+                    "– 2nd Falcon 9 mission",
                     "– 2nd booster landing",
                     "– 2nd consecutive booster landing",
                     "– 2nd SpaceX launch of 2024",
-                    "– 2nd SpaceX launch from Space Launch Complex 40",
-                    "– Quickest turnaround of a booster to date at 31 days",
-                    "– Quickest turnaround time of a landing zone to date at 31 days",
-                    "– Shortest time between any two SpaceX launches at 31 days",
-                    "– Quickest turnaround of a SpaceX pad to date at 31 days",
+                    "– 2nd SpaceX launch from SLC-40",
                 ],
             },
         )
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 3").create_launch_table(),
             {
-                "Liftoff Time": [
-                    "March 01, 2024 - 00:00 UTC",
-                    "February 29, 2024 - 19:00 EST",
-                ],
+                "Liftoff Time": ["March 01, 2024 - 00:00 UTC", "February 29, 2024 - 19:00 EST"],
                 "Mission Name": ["Falcon 9 Launch 3"],
                 "Launch Provider <br /> (What rocket company launched it?)": ["SpaceX"],
                 "Customer <br /> (Who paid for this?)": ["SpaceX"],
@@ -1921,24 +1908,20 @@ class TestCases(TestCase):
                 "Where did the first stage land?": ["B1080 successfully completed a landing on Landing Zone 1 (LZ-1)"],
                 "Did they attempt to recover the fairings?": ["There are no fairings on this flight"],
                 "This was the": [
+                    "– Fastest turnaround of SLC-40 to date at 29 days. Previous record: SLC-40 at 31 days",
+                    "– Fastest turnaround of SpaceX to date at 29 days. Previous record: 31 days",
                     "– 3rd Falcon 9 mission",
                     "– 3rd booster landing",
                     "– 3rd consecutive booster landing",
                     "– 3rd SpaceX launch of 2024",
-                    "– 3rd SpaceX launch from Space Launch Complex 40",
-                    "– Quickest turnaround time of a landing zone to date at 29 days. Previous record: LZ-1 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
-                    "– Shortest time between any two SpaceX launches at 29 days. Previous record: 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
-                    "– Quickest turnaround of a SpaceX pad to date at 29 days. Previous record: SLC-40 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
+                    "– 3rd SpaceX launch from SLC-40",
                 ],
             },
         )
         self.assertEqual(
             Launch.objects.get(name="Falcon Heavy Launch 1").create_launch_table(),
             {
-                "Liftoff Time": [
-                    "April 01, 2024 - 00:00 UTC",
-                    "March 31, 2024 - 20:00 EDT",
-                ],
+                "Liftoff Time": ["April 01, 2024 - 00:00 UTC", "March 31, 2024 - 20:00 EDT"],
                 "Mission Name": ["Falcon Heavy Launch 1"],
                 "Launch Provider <br /> (What rocket company launched it?)": ["SpaceX"],
                 "Customer <br /> (Who paid for this?)": ["SpaceX"],
@@ -1955,13 +1938,12 @@ class TestCases(TestCase):
                 "This was the": [
                     "– 1st Falcon Heavy mission",
                     "– 1st Falcon Heavy flight with a flight-proven booster",
-                    "– 2nd and 3rd reflight of a booster",
-                    "– 2nd and 3rd reflight of a booster in 2024",
+                    "– 2nd and 3rd reflight of a Falcon booster",
+                    "– 2nd and 3rd reflight of a Falcon booster in 2024",
                     "– 4th, 5th, and 6th booster landings",
                     "– 4th, 5th, and 6th consecutive booster landings",
                     "– 4th SpaceX launch of 2024",
-                    "– 4th SpaceX launch from Space Launch Complex 40",
-                    "– Quickest turnaround of B1080 to date at 31 days",
+                    "– 4th SpaceX launch from SLC-40",
                 ],
             },
         )
@@ -1980,14 +1962,13 @@ class TestCases(TestCase):
                 "Where did the first stage land?": ["B1080 was expended"],
                 "Did they attempt to recover the fairings?": ["There are no fairings on this flight"],
                 "This was the": [
+                    "– Fastest turnaround of a Falcon booster to date at 30 days. Previous record: B1062 at 31 days",
                     "– 4th Falcon 9 mission",
                     "– 2nd Falcon 9 flight with a flight-proven booster",
-                    "– 4th reflight of a booster",
-                    "– 4th reflight of a booster in 2024",
+                    "– 4th reflight of a Falcon booster",
+                    "– 4th reflight of a Falcon booster in 2024",
                     "– 5th SpaceX launch of 2024",
-                    "– 5th SpaceX launch from Space Launch Complex 40",
-                    "– Quickest turnaround of a booster to date at 30 days. Previous record: B1062 at 31 days between Falcon 9 Launch 1 and Falcon 9 Launch 2",
-                    "– Quickest turnaround of JRtI to date at 30 days",
+                    "– 5th SpaceX launch from SLC-40",
                 ],
             },
         )
@@ -2032,10 +2013,7 @@ class TestCases(TestCase):
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Temp Launch 1").create_launch_table(),
             {
-                "Liftoff Time": [
-                    "May 01, 2025 - 00:00 UTC",
-                    "April 30, 2025 - 20:00 EDT",
-                ],
+                "Liftoff Time": ["May 01, 2025 - 00:00 UTC", "April 30, 2025 - 20:00 EDT"],
                 "Mission Name": ["Falcon 9 Temp Launch 1"],
                 "Launch Provider <br /> (What rocket company is launching it?)": ["SpaceX"],
                 "Customer <br /> (Who's paying for this?)": ["SpaceX"],
@@ -2046,12 +2024,12 @@ class TestCases(TestCase):
                 "Where will the first stage land?": ["B1062 will attempt a soft landing on the ocean surface"],
                 "Will they be attempting to recover the fairings?": ["There are no fairings on this flight"],
                 "This will be the": [
+                    "– 1st reflight of a Falcon booster in 2025",
+                    "– 1st SpaceX launch of 2025",
                     "– 5th Falcon 9 mission",
                     "– 3rd Falcon 9 flight with a flight-proven booster",
-                    "– 5th reflight of a booster",
-                    "– 1st reflight of a booster in 2025",
-                    "– 1st SpaceX launch of 2025",
-                    "– 6th SpaceX launch from Space Launch Complex 40",
+                    "– 5th reflight of a Falcon booster",
+                    "– 6th SpaceX launch from SLC-40",
                 ],
             },
         )
@@ -2094,10 +2072,7 @@ class TestCases(TestCase):
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Temp Launch 2").create_launch_table(),
             {
-                "Liftoff Time": [
-                    "May 10, 2024 - 00:00 UTC",
-                    "May 09, 2024 - 20:00 EDT",
-                ],
+                "Liftoff Time": ["May 10, 2024 - 00:00 UTC", "May 09, 2024 - 20:00 EDT"],
                 "Mission Name": ["Falcon 9 Temp Launch 2"],
                 "Launch Provider <br /> (What rocket company launched it?)": ["SpaceX"],
                 "Customer <br /> (Who paid for this?)": ["SpaceX"],
@@ -2112,14 +2087,14 @@ class TestCases(TestCase):
                 ],
                 "Did they attempt to recover the fairings?": ["There are no fairings on this flight"],
                 "This was the": [
+                    "– Fastest turnaround of SLC-40 to date at 9 days. Previous record: SLC-40 at 29 days",
+                    "– Fastest turnaround of SpaceX to date at 9 days. Previous record: 29 days",
                     "– 5th Falcon 9 mission",
                     "– 3rd Falcon 9 flight with a flight-proven booster",
-                    "– 5th reflight of a booster",
-                    "– 5th reflight of a booster in 2024",
+                    "– 5th reflight of a Falcon booster",
+                    "– 5th reflight of a Falcon booster in 2024",
                     "– 6th SpaceX launch of 2024",
-                    "– 6th SpaceX launch from Space Launch Complex 40",
-                    "– Shortest time between any two SpaceX launches at 9 days. Previous record: 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
-                    "– Quickest turnaround of a SpaceX pad to date at 9 days. Previous record: SLC-40 at 29 days between Falcon 9 Launch 2 and Falcon 9 Launch 3",
+                    "– 6th SpaceX launch from SLC-40",
                 ],
             },
         )

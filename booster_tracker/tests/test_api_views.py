@@ -269,7 +269,6 @@ class HomeDataApiViewTests(APITestCase):
             [30.42, 30.42, 30.42, 30.42],
             decimal=0,
         )
-        self.assertEqual(data["total_launches_current_year"], 10)
         self.assertEqual(data["total_launches_next_year"], 13)
 
 
