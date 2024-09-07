@@ -25,8 +25,6 @@ from booster_tracker.api_views import (
     AdditionalGraphsApiView,
 )
 
-from booster_tracker.views import compare_launch_times
-
 app_name = "booster_tracker"
 urlpatterns = [
     # API Endpoints
@@ -53,5 +51,4 @@ urlpatterns = [
     path("calendarstats/", FilteredLaunchDaysApiView.as_view(), name="filter_calendar_stats"),
     path("edatable/", EDAApiView.as_view(), name="EDA table"),
     path("additional-graph-info/", AdditionalGraphsApiView.as_view(), name="additional graphs"),
-    path("compare-launch-times/", compare_launch_times, name="compare_launch_times"),
 ]

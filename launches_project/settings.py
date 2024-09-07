@@ -18,6 +18,7 @@ import socket
 import requests
 from requests.exceptions import RequestException
 from django.core.exceptions import ImproperlyConfigured
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -239,7 +240,7 @@ if DEBUG and not TESTING:
     }
 
 
-CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 
 AWS_REGION = "us-west-2"

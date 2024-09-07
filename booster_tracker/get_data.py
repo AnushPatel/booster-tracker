@@ -63,11 +63,9 @@ for launch in filtered_nxsf_launches:
 sorted_launches = sorted(filtered_launches_2, key=lambda x: parse_time(x["t"]))
 print("BREAK")
 # Print the sorted launches
-for index, launch in enumerate(Launch.objects.all().order_by("time")):
-    if launch.time > datetime(2024, 6, 2, 0, 0, tzinfo=pytz.utc):
-        continue
+for index, launch in enumerate(list(reversed(my_data))):
     nxsf_launch_time = parse_time(sorted_launches[index]["t"])
-    db_launch_time = launch.time
+    db_launch_time = parse_time(launch["time"])
 
     nxsf_launch = sorted_launches[index]
 
@@ -77,5 +75,8 @@ for index, launch in enumerate(Launch.objects.all().order_by("time")):
     if nxsf_launch_time.hour != db_launch_time.hour:
         print(launch["name"], "Hour different")
 
-    if nxsf_launch_time.hour != db_launch_time.hour:
+    if nxsf_launch_time.minute != db_launch_time.minute:
         print(launch["name"], "Minute different")
+
+    if nxsf_launch_time.second != db_launch_time.second:
+        print(launch["name"], "Second different")
