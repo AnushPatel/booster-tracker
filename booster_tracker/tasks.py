@@ -5,6 +5,7 @@ from django.db.models import Q
 import logging
 import requests
 from datetime import datetime, timedelta
+from dateutil import parser
 import pytz
 
 
@@ -69,38 +70,30 @@ def update_cached_spacecraftonlaunch_value_task(spacecraft_id_list):
 
 @shared_task
 def update_launch_times():
-    # API endpoints
+    # API endpoint
     url = "https://nextspaceflight.com/api/launches/"
     now = datetime.now(pytz.utc)
     time_threshold = now - timedelta(hours=24)
-    logger.info("this ran")
 
     # Fetch data from the API
     response = requests.get(url)
     nxsf_data = response.json()["list"]
 
-    def parse_time(time_str):
-        try:
-            # Try to parse the time with microseconds
-            return pytz.utc.localize(datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S.%fZ"))
-        except ValueError:
-            # Fallback to parsing without microseconds
-            return pytz.utc.localize(datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%SZ"))
+    # Filter and parse launches where 'l' is 1 (SpaceX) and within the last 24 hours or in the future
+    filtered_launches = []
+    for launch in nxsf_data:
+        if launch.get("l") == 1:
+            launch_time = parser.parse(launch["t"]).astimezone(pytz.utc)
+            if launch_time >= time_threshold:
+                filtered_launches.append(launch)
 
-    # Filter launches where 'l' is 1 (SpaceX) and that are within the last 24 hours, or in the future
-    filtered_nxsf_launches = [launch for launch in nxsf_data if launch.get("l") == 1]
-    filtered_launches_2 = []
-    for launch in filtered_nxsf_launches:
-        launch_time = parse_time(launch["t"])
-        if launch_time >= time_threshold:
-            filtered_launches_2.append(launch)
-
-    # Compare the launches
+    # Compare the launches and update the times
     for launch in Launch.objects.filter(time__gte=time_threshold).order_by("time"):
         nxsf_launch = next(
-            (nxsf_launch for nxsf_launch in filtered_launches_2 if nxsf_launch.get("n") == launch.name), None
+            (nxsf_launch for nxsf_launch in filtered_launches if nxsf_launch.get("n") == launch.name), None
         )
         if nxsf_launch:
-            nxsf_launch_time = parse_time(nxsf_launch["t"])
-            launch.time = nxsf_launch_time
-            launch.save(update_fields=["time"])
+            nxsf_launch_time = parser.parse(nxsf_launch["t"]).astimezone(pytz.utc)
+            if nxsf_launch_time != launch.time:
+                launch.time = nxsf_launch_time
+                launch.save(update_fields=["time"])

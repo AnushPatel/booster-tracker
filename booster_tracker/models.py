@@ -15,6 +15,7 @@ from django.urls import reverse
 from colorfield.fields import ColorField
 import pytz
 import urllib.parse
+import random
 
 # Choices for fields
 RECOVERY_METHODS = [
@@ -292,23 +293,6 @@ class Launch(models.Model):
             return (self.time - last_launch.time).total_seconds()
         return None
 
-    @property
-    def after_anamoly(self):
-        if (
-            last_launch := Launch.objects.filter(
-                rocket__family__provider=self.rocket.family.provider, time__lt=self.time
-            )
-            .order_by("time")
-            .last()
-        ):
-
-            if (
-                last_launch.launch_outcome in ["FAILURE", "PARTIAL_FAILURE"]
-                and last_launch.rocket.family == self.rocket.family
-            ):
-                return True
-        return False
-
     def get_stage_flights_and_turnaround(self, stage: Stage) -> tuple:
         """Takes in a stage that is on the launch and returns the number of times it's flown (including this launch) and the turnaround time between this launch and last"""
         flights = 0
@@ -568,7 +552,9 @@ class Launch(models.Model):
 
         # Cycle through all previous launches to check for failures
         for landing in (
-            StageAndRecovery.objects.filter(launch__time__lt=self.time, stage__type=stage_type)
+            StageAndRecovery.objects.filter(
+                launch__time__lt=self.time, stage__type=stage_type, launch__rocket__family=self.rocket.family
+            )
             .filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD"))
             .order_by("-launch__time", "-id")
             .all()
@@ -725,7 +711,7 @@ class Launch(models.Model):
             stats.append(
                 (
                     is_significant(consec_booster_landings),
-                    f"– {consec_booster_landing_string} consecutive booster landing{make_plural}",
+                    f"– {consec_booster_landing_string} consecutive {self.rocket.family} booster landing{make_plural}",
                 )
             )
 
@@ -771,6 +757,40 @@ class Launch(models.Model):
             stats.append((stat.significant, f"– {stat.string}"))
 
         return stats
+
+    def make_x_post(self):
+        stats = self.make_stats()
+
+        significant_stats = []
+        other_stats = []
+
+        def first_lower(string: str):
+            if string:
+                return string[0].lower() + string[1:]
+            return string
+
+        for stat in stats:
+            if stat[0]:
+                significant_stats.append(first_lower(stat[1].replace("– ", "")))
+            else:
+                other_stats.append(first_lower(stat[1].replace("– ", "")))
+
+        def get_random_stat(stat_list):
+            return stat_list.pop(random.randint(0, len(stat_list) - 1)) if stat_list else None
+
+        stat = get_random_stat(significant_stats) or get_random_stat(other_stats)
+        if not stat:
+            return None
+
+        additional_stat = get_random_stat(significant_stats) or get_random_stat(other_stats)
+
+        if additional_stat:
+            new_stat_string = f"{additional_stat} and {stat}"
+            new_post_string = f"{self.name} will mark {self.rocket.family.provider}'s {new_stat_string}./nLearn more: https://boostertracker.com/launch/{self.id}"
+            if len(new_post_string) <= 280:
+                return new_post_string
+
+        return f"{self.name} will mark {self.rocket.family.provider}'s {stat}./nLearn more: https://boostertracker.com/launch/{self.id}"
 
     def set_timezone(self):
         if self.pad.nickname == "SLC-4E":

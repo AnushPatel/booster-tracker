@@ -1,4 +1,5 @@
 from django.test import TestCase
+from unittest.mock import patch
 from .test_helpers import initialize_test_data
 from booster_tracker.models import (
     Operator,
@@ -1642,7 +1643,7 @@ class TestCases(TestCase):
             [
                 (True, "– 1st Falcon 9 mission"),
                 (True, "– 1st booster landing"),
-                (True, "– 1st consecutive booster landing"),
+                (True, "– 1st consecutive Falcon booster landing"),
                 (True, "– 1st SpaceX launch of 2024"),
                 (True, "– 1st SpaceX launch from SLC-40"),
             ],
@@ -1656,7 +1657,7 @@ class TestCases(TestCase):
                 (True, "– 1st reflight of a Falcon booster"),
                 (True, "– 1st reflight of a Falcon booster in 2024"),
                 (False, "– 2nd booster landing"),
-                (False, "– 2nd consecutive booster landing"),
+                (False, "– 2nd consecutive Falcon booster landing"),
                 (False, "– 2nd SpaceX launch of 2024"),
                 (False, "– 2nd SpaceX launch from SLC-40"),
             ],
@@ -1666,7 +1667,7 @@ class TestCases(TestCase):
             [
                 (False, "– 3rd Falcon 9 mission"),
                 (False, "– 3rd booster landing"),
-                (False, "– 3rd consecutive booster landing"),
+                (False, "– 3rd consecutive Falcon booster landing"),
                 (False, "– 3rd SpaceX launch of 2024"),
                 (False, "– 3rd SpaceX launch from SLC-40"),
                 (True, "– Fastest turnaround of SLC-40 to date at 29 days. Previous record: SLC-40 at 31 days"),
@@ -1681,7 +1682,7 @@ class TestCases(TestCase):
                 (False, "– 2nd and 3rd reflight of a Falcon booster"),
                 (False, "– 2nd and 3rd reflight of a Falcon booster in 2024"),
                 (False, "– 4th, 5th, and 6th booster landings"),
-                (False, "– 4th, 5th, and 6th consecutive booster landings"),
+                (False, "– 4th, 5th, and 6th consecutive Falcon booster landings"),
                 (False, "– 4th SpaceX launch of 2024"),
                 (False, "– 4th SpaceX launch from SLC-40"),
             ],
@@ -1748,7 +1749,7 @@ class TestCases(TestCase):
                 (False, "– 5th reflight of a Falcon booster"),
                 (False, "– 5th reflight of a Falcon booster in 2024"),
                 (False, "– 7th booster landing"),
-                (False, "– 7th consecutive booster landing"),
+                (False, "– 7th consecutive Falcon booster landing"),
                 (False, "– 6th SpaceX launch of 2024"),
                 (False, "– 6th SpaceX launch from SLC-40"),
                 (False, "– Fastest turnaround of B1062 to date at 30 days and 1 minute. Previous record: 31 days"),
@@ -1822,7 +1823,7 @@ class TestCases(TestCase):
                 (False, "– 6th reflight of a Falcon booster"),
                 (False, "– 6th reflight of a Falcon booster in 2024"),
                 (False, "– 8th booster landing"),
-                (False, "– 8th consecutive booster landing"),
+                (False, "– 8th consecutive Falcon booster landing"),
                 (False, "– 7th SpaceX launch of 2024"),
                 (True, "– 1st SpaceX launch from LC-39A"),
                 (
@@ -1839,11 +1840,39 @@ class TestCases(TestCase):
                 (False, "– 7th reflight of a Falcon booster"),
                 (False, "– 7th reflight of a Falcon booster in 2024"),
                 (False, "– 9th booster landing"),
-                (False, "– 9th consecutive booster landing"),
+                (False, "– 9th consecutive Falcon booster landing"),
                 (False, "– 8th SpaceX launch of 2024"),
                 (False, "– 2nd SpaceX launch from LC-39A"),
             ],
         )
+
+    def test_create_x_post(self):
+        launch = Launch.objects.get(name="Falcon 9 Launch 1")
+        with patch("random.randint", side_effect=[0, 1]):  # Force random number generation
+            result = launch.make_x_post()
+
+        expected = f"{launch.name} will mark SpaceX's 1st consecutive Falcon booster landing and 1st Falcon 9 mission./nLearn more: https://boostertracker.com/launch/{launch.id}"
+
+        self.assertEqual(result, expected)
+        self.assertTrue(len(result) <= 280)
+
+        # Test with a different random selection
+        with patch("random.randint", side_effect=[2, 3]):  # Force random number generation
+            result = Launch.objects.get(name="Falcon 9 Launch 1").make_x_post()
+
+        expected = f"{launch.name} will mark SpaceX's 1st SpaceX launch from SLC-40 and 1st consecutive Falcon booster landing./nLearn more: https://boostertracker.com/launch/{launch.id}"
+
+        self.assertEqual(result, expected)
+        self.assertTrue(len(result) <= 280)
+
+        launch = Launch.objects.get(name="Falcon 9 Launch 4")
+        with patch("random.randint", side_effect=[0, 0]):  # Force random number generation
+            result = launch.make_x_post()
+
+        expected = f"{launch.name} will mark SpaceX's 4th Falcon 9 mission and fastest turnaround of a Falcon booster to date at 30 days. Previous record: B1062 at 31 days./nLearn more: https://boostertracker.com/launch/{launch.id}"
+
+        self.assertEqual(result, expected)
+        self.assertTrue(len(result) <= 280)
 
     def test_create_launch_table(self):
         # Test for perm objects
@@ -1863,7 +1892,7 @@ class TestCases(TestCase):
                 "This was the": [
                     "– 1st Falcon 9 mission",
                     "– 1st booster landing",
-                    "– 1st consecutive booster landing",
+                    "– 1st consecutive Falcon booster landing",
                     "– 1st SpaceX launch of 2024",
                     "– 1st SpaceX launch from SLC-40",
                 ],
@@ -1888,7 +1917,7 @@ class TestCases(TestCase):
                     "– 1st reflight of a Falcon booster in 2024",
                     "– 2nd Falcon 9 mission",
                     "– 2nd booster landing",
-                    "– 2nd consecutive booster landing",
+                    "– 2nd consecutive Falcon booster landing",
                     "– 2nd SpaceX launch of 2024",
                     "– 2nd SpaceX launch from SLC-40",
                 ],
@@ -1912,7 +1941,7 @@ class TestCases(TestCase):
                     "– Fastest turnaround of SpaceX to date at 29 days. Previous record: 31 days",
                     "– 3rd Falcon 9 mission",
                     "– 3rd booster landing",
-                    "– 3rd consecutive booster landing",
+                    "– 3rd consecutive Falcon booster landing",
                     "– 3rd SpaceX launch of 2024",
                     "– 3rd SpaceX launch from SLC-40",
                 ],
@@ -1941,7 +1970,7 @@ class TestCases(TestCase):
                     "– 2nd and 3rd reflight of a Falcon booster",
                     "– 2nd and 3rd reflight of a Falcon booster in 2024",
                     "– 4th, 5th, and 6th booster landings",
-                    "– 4th, 5th, and 6th consecutive booster landings",
+                    "– 4th, 5th, and 6th consecutive Falcon booster landings",
                     "– 4th SpaceX launch of 2024",
                     "– 4th SpaceX launch from SLC-40",
                 ],
