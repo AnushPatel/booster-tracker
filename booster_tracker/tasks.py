@@ -1,15 +1,25 @@
 # tasks.py
 from celery import shared_task
+from django.conf import settings
 from booster_tracker.models import StageAndRecovery, Launch, Stage, SpacecraftOnLaunch
 from django.db.models import Q
 import logging
-import requests
+from booster_tracker.fetch_data import fetch_nxsf_launches
 from datetime import datetime, timedelta
 from dateutil import parser
 import pytz
-
+import tweepy
+from dotenv import load_dotenv
+import os
 
 logger = logging.getLogger(__name__)
+load_dotenv()
+
+# Read the API credentials from the environment variables
+consumer_key = os.getenv("X_API_KEY")
+consumer_secret = os.getenv("X_API_SECRET_KEY")
+access_token = os.getenv("X_ACCESS_TOKEN")
+access_token_secret = os.getenv("X_ACCESS_TOKEN_SECRET")
 
 
 @shared_task
@@ -70,14 +80,9 @@ def update_cached_spacecraftonlaunch_value_task(spacecraft_id_list):
 
 @shared_task
 def update_launch_times():
-    # API endpoint
-    url = "https://nextspaceflight.com/api/launches/"
+    nxsf_data = fetch_nxsf_launches()
     now = datetime.now(pytz.utc)
     time_threshold = now - timedelta(hours=24)
-
-    # Fetch data from the API
-    response = requests.get(url)
-    nxsf_data = response.json()["list"]
 
     # Filter and parse launches where 'l' is 1 (SpaceX) and within the last 24 hours or in the future
     filtered_launches = []
@@ -95,5 +100,37 @@ def update_launch_times():
         if nxsf_launch:
             nxsf_launch_time = parser.parse(nxsf_launch["t"]).astimezone(pytz.utc)
             if nxsf_launch_time != launch.time:
+                if nxsf_launch_time > launch.time + timedelta(hours=20):
+                    launch.x_post_sent = False
                 launch.time = nxsf_launch_time
-                launch.save(update_fields=["time"])
+                launch.save(update_fields=["time", "x_post_sent"])
+
+
+@shared_task
+def post_on_x(launch_id):
+    launch = Launch.objects.get(id=launch_id)
+    nxsf_launch = next((item for item in fetch_nxsf_launches() if item.get("n") == launch.name), None)
+    logger.info(launch.x_post_sent)
+
+    if launch.x_post_sent or not nxsf_launch or launch.time == parser.parse(nxsf_launch["t"]).astimezone(pytz.utc):
+        return
+
+    post_string = launch.make_x_post()
+
+    if settings.DEBUG:
+        logger.info(f"Tweet: {post_string}")
+    else:
+        client = tweepy.Client(
+            consumer_key=consumer_key,
+            consumer_secret=consumer_secret,
+            access_token=access_token,
+            access_token_secret=access_token_secret,
+        )
+        client.create_tweet(text=post_string)
+
+    launch._from_task = True
+    launch._is_updating_scheduled_post = True
+    launch.x_post_sent = True
+    launch.save(update_fields=["x_post_sent"])
+    launch._from_task = False
+    launch._is_updating_scheduled_post = False

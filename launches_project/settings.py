@@ -241,6 +241,7 @@ if DEBUG and not TESTING:
 
 
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+CELERY_TASK_ALWAYS_EAGER = False
 
 
 AWS_REGION = "us-west-2"

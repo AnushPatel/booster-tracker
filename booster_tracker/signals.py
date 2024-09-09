@@ -1,13 +1,15 @@
 # signals.py
-from django.db.models.signals import post_save, post_delete, pre_save
+from django.db.models.signals import post_save, post_delete, pre_save, pre_delete
 from django.dispatch import receiver
-from django.conf import settings
-from django.db.models import Q
+from datetime import timedelta, datetime
+import pytz
+from celery import current_app
 from booster_tracker.models import Stage, StageAndRecovery, Pad, Boat, Rocket, LandingZone, Launch, SpacecraftOnLaunch
 from booster_tracker.tasks import (
     update_cached_stageandrecovery_value_task,
     update_cached_launch_value_task,
     update_cached_spacecraftonlaunch_value_task,
+    post_on_x,
 )
 
 
@@ -51,15 +53,6 @@ def updated_cached_stageandrecovery_values(sender, instance, **kwargs):
     update_cached_stageandrecovery_value_task.delay(stage_ids, landing_zone_ids)
 
 
-@receiver(post_save, sender=Launch)
-@receiver(post_delete, sender=Launch)
-def updated_cached_launch_values(sender, instance, **kwargs):
-    if getattr(instance, "_from_task", True):
-        return
-
-    update_cached_launch_value_task.delay()
-
-
 @receiver(pre_save, sender=SpacecraftOnLaunch)
 def cache_old_spacecraftonlaunch_values(sender, instance, **kwargs):
     if instance.pk:
@@ -81,6 +74,58 @@ def updated_cached_spacecraftonlaunch_values(sender, instance, **kwargs):
         update_cached_spacecraftonlaunch_value_task.delay([instance._old_spacecraft_id, instance.spacecraft.id])
     else:
         update_cached_spacecraftonlaunch_value_task.delay([instance.spacecraft.id])
+
+
+@receiver(pre_save, sender=Launch)
+def store_original_time(sender, instance, **kwargs):
+    if instance.pk:
+        try:
+            # Fetch the current instance from the database to get the original time
+            old_instance = sender.objects.get(pk=instance.pk)
+            instance._original_time = old_instance.time
+        except sender.DoesNotExist:
+            instance._original_time = None
+    else:
+        instance._original_time = None
+
+
+@receiver([post_save, post_delete], sender=Launch)
+def handle_launch_signals(sender, instance, **kwargs):
+    # Avoid infinite loop by skipping if already processing from a task
+    if not instance._from_task:
+        update_cached_launch_value_task.delay()
+
+    if instance._is_updating_scheduled_post:
+        return
+
+    if kwargs.get("signal") == post_save:
+        # Check if the time field has changed
+        if hasattr(instance, "_original_time") and instance._original_time == instance.time:
+            return  # Time has not changed, so skip scheduling logic
+
+        # Handle cache update and scheduling
+        if instance.time >= datetime.now(pytz.utc) - timedelta(hours=1):
+            instance._from_task = True
+            instance._is_updating_scheduled_post = True
+
+            # Cancel the existing scheduled task, if any
+            if instance.celery_task_id:
+                current_app.control.revoke(instance.celery_task_id, terminate=True)
+
+            # Schedule a new task 15 minutes before launch time
+            post_time = instance.time - timedelta(minutes=15)
+            task = post_on_x.apply_async((instance.id,), eta=post_time)
+
+            # Store the task ID for future reference
+            instance.celery_task_id = task.id
+            instance.save(update_fields=["celery_task_id"])
+            instance._from_task = False
+            instance._is_updating_scheduled_post = False
+
+    elif kwargs.get("signal") == post_delete:
+        # Handle task revocation for deletions
+        if instance.celery_task_id:
+            current_app.control.revoke(instance.celery_task_id, terminate=True)
 
 
 """ @receiver(post_save, sender=Launch)

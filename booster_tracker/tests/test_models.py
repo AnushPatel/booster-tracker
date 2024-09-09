@@ -1846,30 +1846,31 @@ class TestCases(TestCase):
             ],
         )
 
-    def test_create_x_post(self):
+    @patch("random.randint")
+    def test_create_x_post(self, mock_randint):
+        mock_randint.side_effect = [0, 1]
         launch = Launch.objects.get(name="Falcon 9 Launch 1")
-        with patch("random.randint", side_effect=[0, 1]):  # Force random number generation
-            result = launch.make_x_post()
+        result = launch.make_x_post()
 
-        expected = f"{launch.name} will mark SpaceX's 1st consecutive Falcon booster landing and 1st Falcon 9 mission./nLearn more: https://boostertracker.com/launch/{launch.id}"
+        expected = f"{launch.name} will mark SpaceX's 1st consecutive Falcon booster landing and 1st Falcon 9 mission.\n\nLearn more: https://boostertracker.com/launch/{launch.id}"
 
         self.assertEqual(result, expected)
         self.assertTrue(len(result) <= 280)
 
         # Test with a different random selection
-        with patch("random.randint", side_effect=[2, 3]):  # Force random number generation
-            result = Launch.objects.get(name="Falcon 9 Launch 1").make_x_post()
+        mock_randint.side_effect = [2, 3]
+        result = Launch.objects.get(name="Falcon 9 Launch 1").make_x_post()
 
-        expected = f"{launch.name} will mark SpaceX's 1st SpaceX launch from SLC-40 and 1st consecutive Falcon booster landing./nLearn more: https://boostertracker.com/launch/{launch.id}"
+        expected = f"{launch.name} will mark SpaceX's 1st SpaceX launch from SLC-40 and 1st consecutive Falcon booster landing.\n\nLearn more: https://boostertracker.com/launch/{launch.id}"
 
         self.assertEqual(result, expected)
         self.assertTrue(len(result) <= 280)
 
         launch = Launch.objects.get(name="Falcon 9 Launch 4")
-        with patch("random.randint", side_effect=[0, 0]):  # Force random number generation
-            result = launch.make_x_post()
+        mock_randint.side_effect = [0, 0]
+        result = launch.make_x_post()
 
-        expected = f"{launch.name} will mark SpaceX's 4th Falcon 9 mission and fastest turnaround of a Falcon booster to date at 30 days. Previous record: B1062 at 31 days./nLearn more: https://boostertracker.com/launch/{launch.id}"
+        expected = f"{launch.name} will mark SpaceX's 4th Falcon 9 mission and fastest turnaround of a Falcon booster to date at 30 days. Previous record: B1062 at 31 days.\n\nLearn more: https://boostertracker.com/launch/{launch.id}"
 
         self.assertEqual(result, expected)
         self.assertTrue(len(result) <= 280)

@@ -231,6 +231,8 @@ class Launch(models.Model):
     company_turnaround = models.IntegerField(blank=True, null=True, editable=False)
     image = models.CharField(max_length=200, blank=True, null=True, editable=False)
     stages_string = models.CharField(max_length=500, blank=True, null=True, editable=False)
+    celery_task_id = models.CharField(max_length=255, null=True, blank=True, editable=False)
+    x_post_sent = models.BooleanField(default=False, editable=False)
 
     class Meta:
         verbose_name_plural = "Launches"
@@ -240,6 +242,7 @@ class Launch(models.Model):
         return self.name
 
     _from_task = False
+    _is_updating_scheduled_post = False
 
     @property
     def get_image(self) -> str:
@@ -786,11 +789,11 @@ class Launch(models.Model):
 
         if additional_stat:
             new_stat_string = f"{additional_stat} and {stat}"
-            new_post_string = f"{self.name} will mark {self.rocket.family.provider}'s {new_stat_string}./nLearn more: https://boostertracker.com/launch/{self.id}"
+            new_post_string = f"{self.name} will mark {self.rocket.family.provider}'s {new_stat_string}.\n\nLearn more: https://boostertracker.com/launch/{self.id}"
             if len(new_post_string) <= 280:
                 return new_post_string
 
-        return f"{self.name} will mark {self.rocket.family.provider}'s {stat}./nLearn more: https://boostertracker.com/launch/{self.id}"
+        return f"{self.name} will mark {self.rocket.family.provider}'s {stat}.\n\nLearn more: https://boostertracker.com/launch/{self.id}"
 
     def set_timezone(self):
         if self.pad.nickname == "SLC-4E":
