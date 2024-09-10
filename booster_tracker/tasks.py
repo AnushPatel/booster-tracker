@@ -2,6 +2,7 @@
 from celery import shared_task
 from django.conf import settings
 from booster_tracker.models import StageAndRecovery, Launch, Stage, SpacecraftOnLaunch
+from booster_tracker.utils import make_x_post
 from django.db.models import Q
 import logging
 from booster_tracker.fetch_data import fetch_nxsf_launches
@@ -9,17 +10,9 @@ from datetime import datetime, timedelta
 from dateutil import parser
 import pytz
 import tweepy
-from dotenv import load_dotenv
-import os
+
 
 logger = logging.getLogger(__name__)
-load_dotenv()
-
-# Read the API credentials from the environment variables
-consumer_key = os.getenv("X_API_KEY")
-consumer_secret = os.getenv("X_API_SECRET_KEY")
-access_token = os.getenv("X_ACCESS_TOKEN")
-access_token_secret = os.getenv("X_ACCESS_TOKEN_SECRET")
 
 
 @shared_task
@@ -110,9 +103,8 @@ def update_launch_times():
 def post_on_x(launch_id):
     launch = Launch.objects.get(id=launch_id)
     nxsf_launch = next((item for item in fetch_nxsf_launches() if item.get("n") == launch.name), None)
-    logger.info(launch.x_post_sent)
 
-    if launch.x_post_sent or not nxsf_launch or launch.time == parser.parse(nxsf_launch["t"]).astimezone(pytz.utc):
+    if launch.x_post_sent or not nxsf_launch or launch.time != parser.parse(nxsf_launch["t"]).astimezone(pytz.utc):
         return
 
     post_string = launch.make_x_post()
@@ -120,13 +112,7 @@ def post_on_x(launch_id):
     if settings.DEBUG:
         logger.info(f"Tweet: {post_string}")
     else:
-        client = tweepy.Client(
-            consumer_key=consumer_key,
-            consumer_secret=consumer_secret,
-            access_token=access_token,
-            access_token_secret=access_token_secret,
-        )
-        client.create_tweet(text=post_string)
+        make_x_post(post_string=post_string)
 
     launch._from_task = True
     launch._is_updating_scheduled_post = True

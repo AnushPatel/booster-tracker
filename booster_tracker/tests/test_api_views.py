@@ -155,7 +155,7 @@ class ListApiTestCases(APITestCase):
         response = self.client.get(self.url, {"filter": json.dumps(filter_data), "query": "", "family": "dragon"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
-        self.assertEqual(len(response_data["spacecraft"]), 0)
+        self.assertEqual(len(response_data["spacecraft"]), 2)
 
     def test_launch_information_view(self):
         launch = Launch.objects.get(name="Falcon 9 Launch 1")
@@ -206,8 +206,7 @@ class ListApiTestCases(APITestCase):
         self.assertEqual(response_data["stage_and_recoveries"][0]["stage"], stage.id)
 
     def test_spacecraft_information_view(self):
-        spacecraft_family = SpacecraftFamily.objects.get(name="Dragon")
-        spacecraft = Spacecraft.objects.create(family=spacecraft_family, name="C207")
+        spacecraft = self.test_data["c207"]
         self.url = reverse("booster_tracker:spacecraft_information")
         response = self.client.get(self.url, {"id": spacecraft.id})
 

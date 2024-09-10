@@ -7,7 +7,9 @@ from booster_tracker.models import (
 
 from .test_helpers import initialize_test_data
 from django.test import TestCase
-from datetime import datetime
+from django.conf import settings
+from datetime import datetime, timedelta
+from unittest import mock
 import pytz
 
 
@@ -82,3 +84,31 @@ class TestCases(TestCase):
         self.assertEqual(stage_and_recovery2.zone_turnaround, 2505600)
         self.assertEqual(stage_and_recovery2.num_flights, 2)
         self.assertEqual(stage_and_recovery2.num_recoveries, 4)
+
+    @mock.patch("booster_tracker.tasks.fetch_nxsf_launches")
+    @mock.patch("booster_tracker.tasks.make_x_post")
+    def test_post_on_x_task(self, mock_make_x_post, mock_fetch_nxsf_launches):
+        temp_launch = Launch.objects.create(
+            time=datetime.now(pytz.utc) + timedelta(hours=2),
+            pad=self.test_data["slc40"],
+            rocket=self.test_data["falcon_9"],
+            name="Falcon 9 Temp Launch 10",
+            orbit=self.test_data["low_earth_orbit"],
+            mass=1000,
+            customer="SpaceX",
+            launch_outcome="SUCCESS",
+        )
+
+        temp_launch.x_post_sent = True
+        temp_launch.save()
+
+        mock_make_x_post.assert_not_called()
+
+        mock_fetch_nxsf_launches.return_value = []
+        mock_make_x_post.assert_not_called()
+
+        nxsf_launch = {"n": temp_launch.name, "t": (temp_launch.time + timedelta(minutes=10)).isoformat()}
+        mock_fetch_nxsf_launches.return_value = [nxsf_launch]
+
+        post_string = "This is a test X post."
+        mock_make_x_post.side_effect = post_string

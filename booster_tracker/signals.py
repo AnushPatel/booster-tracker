@@ -64,13 +64,12 @@ def cache_old_spacecraftonlaunch_values(sender, instance, **kwargs):
             instance._old_spacecraft_id = None
 
 
-@receiver(post_save, sender=SpacecraftOnLaunch)
-@receiver(post_delete, sender=SpacecraftOnLaunch)
+@receiver([post_save, post_delete], sender=SpacecraftOnLaunch)
 def updated_cached_spacecraftonlaunch_values(sender, instance, **kwargs):
     if getattr(instance, "_from_task", True):
         return
 
-    if hasattr(instance, "old_spacecraft_id"):
+    if hasattr(instance, "_old_spacecraft_id"):
         update_cached_spacecraftonlaunch_value_task.delay([instance._old_spacecraft_id, instance.spacecraft.id])
     else:
         update_cached_spacecraftonlaunch_value_task.delay([instance.spacecraft.id])
@@ -81,7 +80,7 @@ def store_original_time(sender, instance, **kwargs):
     if instance.pk:
         try:
             # Fetch the current instance from the database to get the original time
-            old_instance = sender.objects.get(pk=instance.pk)
+            old_instance = Launch.objects.get(pk=instance.pk)
             instance._original_time = old_instance.time
         except sender.DoesNotExist:
             instance._original_time = None
@@ -105,6 +104,7 @@ def handle_launch_signals(sender, instance, **kwargs):
 
         # Handle cache update and scheduling
         if instance.time >= datetime.now(pytz.utc) - timedelta(hours=1):
+            pre_save.disconnect(store_original_time, sender=Launch)
             instance._from_task = True
             instance._is_updating_scheduled_post = True
 
@@ -121,6 +121,7 @@ def handle_launch_signals(sender, instance, **kwargs):
             instance.save(update_fields=["celery_task_id"])
             instance._from_task = False
             instance._is_updating_scheduled_post = False
+            pre_save.connect(store_original_time, sender=Launch)
 
     elif kwargs.get("signal") == post_delete:
         # Handle task revocation for deletions

@@ -13,6 +13,8 @@ from booster_tracker.models import (
     Launch,
     StageAndRecovery,
     SpacecraftFamily,
+    SpacecraftOnLaunch,
+    Spacecraft,
 )
 
 
@@ -27,6 +29,8 @@ def initialize_test_data():
 
     # Create spacecraft data
     dragon = SpacecraftFamily.objects.create(name="Dragon", provider=spacex)
+    c206 = Spacecraft.objects.create(name="C206", type="CARGO", family=dragon)
+    c207 = Spacecraft.objects.create(name="C207", type="CARGO", family=dragon)
 
     # Create pads
     slc40 = Pad.objects.create(
@@ -144,7 +148,7 @@ def initialize_test_data():
     )
 
     # Create stage and recovery
-    StageAndRecovery.objects.create(
+    launch1_sr = StageAndRecovery.objects.create(
         launch=Launch.objects.get(name="Falcon 9 Launch 1"),
         stage=b1062,
         landing_zone=lz1,
@@ -152,7 +156,7 @@ def initialize_test_data():
         method_success="SUCCESS",
         recovery_success=True,
     )
-    StageAndRecovery.objects.create(
+    launch2_sr = StageAndRecovery.objects.create(
         launch=Launch.objects.get(name="Falcon 9 Launch 2"),
         stage=b1062,
         landing_zone=lz1,
@@ -204,6 +208,8 @@ def initialize_test_data():
         recovery_success=False,
     )
 
+    SpacecraftOnLaunch
+
     for stage_and_recovery in StageAndRecovery.objects.all():
         stage_and_recovery.stage_turnaround = stage_and_recovery.get_stage_turnaround
         stage_and_recovery.zone_turnaround = stage_and_recovery.get_zone_turnaround
@@ -234,8 +240,12 @@ def initialize_test_data():
         "b1080": b1080,
         "b1084": b1084,
         "launch1": launch1,
+        "launch1_sr": launch1_sr,
         "launch2": launch2,
+        "launch2_sr": launch2_sr,
         "launch3": launch3,
         "launch4": launch4,
         "launch5": launch5,
+        "c206": c206,
+        "c207": c207,
     }

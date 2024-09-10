@@ -3,6 +3,16 @@ from collections import defaultdict
 import re
 from datetime import datetime
 import pytz
+import tweepy
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+# Read the API credentials from the environment variables
+consumer_key = os.getenv("X_API_KEY")
+consumer_secret = os.getenv("X_API_SECRET_KEY")
+access_token = os.getenv("X_ACCESS_TOKEN")
+access_token_secret = os.getenv("X_ACCESS_TOKEN_SECRET")
 
 # This section we create StrEnums to limit options in functions. While not used in this document, these are often used in models.py
 
@@ -208,3 +218,13 @@ def build_table_html(data):
         table_html += "</td></tr>"
     table_html += "</table>"
     return table_html
+
+
+def make_x_post(post_string):
+    client = tweepy.Client(
+        consumer_key=consumer_key,
+        consumer_secret=consumer_secret,
+        access_token=access_token,
+        access_token_secret=access_token_secret,
+    )
+    client.create_tweet(text=post_string)
