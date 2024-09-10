@@ -232,7 +232,7 @@ class Launch(models.Model):
     image = models.CharField(max_length=200, blank=True, null=True, editable=False)
     stages_string = models.CharField(max_length=500, blank=True, null=True, editable=False)
     celery_task_id = models.CharField(max_length=255, null=True, blank=True, editable=False)
-    x_post_sent = models.BooleanField(default=False, editable=False)
+    x_post_sent = models.BooleanField(default=False, editable=True)
 
     class Meta:
         verbose_name_plural = "Launches"
