@@ -6,6 +6,7 @@ import pytz
 import tweepy
 from dotenv import load_dotenv
 import os
+import tweepy
 
 load_dotenv()
 # Read the API credentials from the environment variables
