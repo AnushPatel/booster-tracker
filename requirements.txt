@@ -94,8 +94,8 @@ pytz==2024.1
 PyYAML==6.0.1
 pyzmq==26.0.3
 referencing==0.35.1
-requests==2.31.0
-requests-oauthlib==2.0.0
+requests==2.32.3
+requests-oauthlib==1.2.0
 requirements-detector==1.2.2
 rpds-py==0.18.1
 rsa==4.9
@@ -134,4 +134,4 @@ django-cors-headers==4.4.0
 django-colorfield==0.11.0
 scipy==1.14.0
 django-debug-toolbar==4.4.2
-tweepy
+tweepy==4.14
