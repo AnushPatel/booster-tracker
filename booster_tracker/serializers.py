@@ -160,6 +160,38 @@ class StageSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "version", "type", "image", "status", "rocket", "num_launches"]
 
 
+class StageAndRecoveryOnlySerializer(serializers.ModelSerializer):
+    stage = StageSerializer(read_only=True)
+    landing_zone = LandingZoneSerializer(read_only=True)
+    stage_stats = serializers.SerializerMethodField()
+    landing_zone_stats = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StageAndRecovery
+        fields = [
+            "id",
+            "stage_position",
+            "method",
+            "method_success",
+            "recovery_success",
+            "latitude",
+            "longitude",
+            "stage",
+            "num_flights",
+            "stage_turnaround",
+            "stage_stats",
+            "landing_zone",
+            "landing_zone_stats",
+            "num_recoveries",
+        ]
+
+    def get_stage_stats(self, obj):
+        return obj.get_stage_stats()
+
+    def get_landing_zone_stats(self, obj):
+        return obj.get_landing_zone_stats()
+
+
 class StageListSerializer(serializers.Serializer):
     start_filter = serializers.DictField(child=serializers.CharField(), required=True)
     stages = serializers.ListField(child=StageSerializer())
@@ -195,6 +227,17 @@ class SpacecraftOnLaunchSerializer(serializers.ModelSerializer):
     class Meta:
         model = SpacecraftOnLaunch
         fields = "__all__"
+
+
+class SpacecraftOnLaunchOnlySerializer(serializers.ModelSerializer):
+    spacecraft_stats = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SpacecraftOnLaunch
+        fields = "__all__"
+
+    def get_spacecraft_stats(self, obj: SpacecraftOnLaunch):
+        return obj.get_spacecraft_stats()
 
 
 class SpacecraftInformationSerializer(serializers.Serializer):
@@ -263,3 +306,28 @@ class EDATableSerializer(serializers.Serializer):
 
 class AdditionalGraphSerializer(serializers.Serializer):
     mass_per_year = serializers.DictField(child=serializers.CharField())
+
+
+class LaunchInformation2Serializer(serializers.ModelSerializer):
+    stage_and_recoveries = StageAndRecoveryOnlySerializer(many=True, read_only=True, source="stageandrecovery_set")
+    spacecraft_on_launch = SpacecraftOnLaunchOnlySerializer(many=True, read_only=True, source="spacecraftonlaunch_set")
+    rocket_stats = serializers.SerializerMethodField()
+    launch_provider_stats = serializers.SerializerMethodField()
+    launch_pad_stats = serializers.SerializerMethodField()
+    significant_stats = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Launch
+        fields = "__all__"
+
+    def get_rocket_stats(self, obj: Launch):
+        return obj.get_rocket_stats()
+
+    def get_launch_provider_stats(self, obj: Launch):
+        return obj.get_launch_provider_stats()
+
+    def get_launch_pad_stats(self, obj: Launch):
+        return obj.get_launch_pad_stats()
+
+    def get_significant_stats(self, obj: Launch):
+        return obj.make_stats()

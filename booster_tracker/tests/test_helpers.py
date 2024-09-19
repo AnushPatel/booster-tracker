@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from booster_tracker.models import (
     Operator,
@@ -46,6 +46,8 @@ def initialize_test_data():
         status="ACTIVE",
     )
 
+    slc4e = Pad.objects.create(name="Space Launch Complex 4 East", nickname="SLC-4E", location="Vandy", status="ACTIVE")
+
     # Create orbit
     low_earth_orbit = Orbit.objects.create(name="low-Earth Orbit")
 
@@ -75,6 +77,13 @@ def initialize_test_data():
     )
     b1084 = Stage.objects.create(
         name="B1084",
+        rocket=falcon_heavy,
+        version="v1.2 Block 5.5",
+        type="BOOSTER",
+        status="ACTIVE",
+    )
+    b1085 = Stage.objects.create(
+        name="B1085",
         rocket=falcon_heavy,
         version="v1.2 Block 5.5",
         type="BOOSTER",
@@ -164,7 +173,7 @@ def initialize_test_data():
         method_success="SUCCESS",
         recovery_success=True,
     )
-    StageAndRecovery.objects.create(
+    launch3_sr = StageAndRecovery.objects.create(
         launch=Launch.objects.get(name="Falcon 9 Launch 3"),
         stage=b1080,
         landing_zone=lz1,
@@ -172,7 +181,7 @@ def initialize_test_data():
         method_success="SUCCESS",
         recovery_success=True,
     )
-    StageAndRecovery.objects.create(
+    launch4_sr1 = StageAndRecovery.objects.create(
         launch=Launch.objects.get(name="Falcon Heavy Launch 1"),
         stage=b1080,
         stage_position="MY",
@@ -181,7 +190,7 @@ def initialize_test_data():
         method_success="SUCCESS",
         recovery_success=True,
     )
-    StageAndRecovery.objects.create(
+    launch4_sr2 = StageAndRecovery.objects.create(
         launch=Launch.objects.get(name="Falcon Heavy Launch 1"),
         stage=b1062,
         stage_position="PY",
@@ -190,7 +199,7 @@ def initialize_test_data():
         method_success="SUCCESS",
         recovery_success=True,
     )
-    StageAndRecovery.objects.create(
+    launch4_sr3 = StageAndRecovery.objects.create(
         launch=Launch.objects.get(name="Falcon Heavy Launch 1"),
         stage=b1084,
         stage_position="CENTER",
@@ -199,17 +208,57 @@ def initialize_test_data():
         method_success="SUCCESS",
         recovery_success=True,
     )
-    StageAndRecovery.objects.create(
+    launch5_sr = StageAndRecovery.objects.create(
         launch=Launch.objects.get(name="Falcon 9 Launch 4"),
         stage=b1080,
         landing_zone=jrti,
-        method="EXPENDED",
+        method="DRONE_SHIP",
         method_success="SUCCESS",
         recovery_success=False,
     )
 
-    SpacecraftOnLaunch
+    SpacecraftOnLaunch.objects.create(
+        launch=launch1, spacecraft=c206, splashdown_time=launch1.time + timedelta(days=14)
+    )
+    SpacecraftOnLaunch.objects.create(launch=launch2, spacecraft=c206)
 
+    update_data()
+
+    return {
+        "spacex": spacex,
+        "falcon_family": falcon_family,
+        "falcon_9": falcon_9,
+        "falcon_heavy": falcon_heavy,
+        "dragon": dragon,
+        "slc40": slc40,
+        "lc39a": lc39a,
+        "slc4e": slc4e,
+        "low_earth_orbit": low_earth_orbit,
+        "lz1": lz1,
+        "lz2": lz2,
+        "jrti": jrti,
+        "b1062": b1062,
+        "b1080": b1080,
+        "b1084": b1084,
+        "b1085": b1085,
+        "launch1": launch1,
+        "launch1_sr": launch1_sr,
+        "launch2": launch2,
+        "launch2_sr": launch2_sr,
+        "launch3": launch3,
+        "launch3_sr": launch3_sr,
+        "launch4": launch4,
+        "launch4_sr1": launch4_sr1,
+        "launch4_sr2": launch4_sr2,
+        "launch4_sr3": launch4_sr3,
+        "launch5": launch5,
+        "launch5_sr": launch5_sr,
+        "c206": c206,
+        "c207": c207,
+    }
+
+
+def update_data():
     for stage_and_recovery in StageAndRecovery.objects.all():
         stage_and_recovery.stage_turnaround = stage_and_recovery.get_stage_turnaround
         stage_and_recovery.zone_turnaround = stage_and_recovery.get_zone_turnaround
@@ -224,28 +273,10 @@ def initialize_test_data():
         launch.image = launch.get_image
         launch.save(update_fields=["company_turnaround", "pad_turnaround", "image", "stages_string"])
 
-    return {
-        "spacex": spacex,
-        "falcon_family": falcon_family,
-        "falcon_9": falcon_9,
-        "falcon_heavy": falcon_heavy,
-        "dragon": dragon,
-        "slc40": slc40,
-        "lc39a": lc39a,
-        "low_earth_orbit": low_earth_orbit,
-        "lz1": lz1,
-        "lz2": lz2,
-        "jrti": jrti,
-        "b1062": b1062,
-        "b1080": b1080,
-        "b1084": b1084,
-        "launch1": launch1,
-        "launch1_sr": launch1_sr,
-        "launch2": launch2,
-        "launch2_sr": launch2_sr,
-        "launch3": launch3,
-        "launch4": launch4,
-        "launch5": launch5,
-        "c206": c206,
-        "c207": c207,
-    }
+    for spacecraft_on_launch in SpacecraftOnLaunch.objects.all():
+        spacecraft_on_launch._from_task = True
+        spacecraft_on_launch.num_flights = spacecraft_on_launch.get_num_flights()
+        spacecraft_on_launch.spacecraft_turnaround = spacecraft_on_launch.get_turnaround()
+        spacecraft_on_launch.save(update_fields=["num_flights", "spacecraft_turnaround"])
+        # Reset flag:
+        spacecraft_on_launch._from_task = False

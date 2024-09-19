@@ -115,7 +115,7 @@ class ListApiTestCases(APITestCase):
         response = self.client.get(self.url, {"filter": json.dumps(filter_data)})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
-        self.assertEqual(len(response_data), 2)
+        self.assertEqual(len(response_data), 3)
 
     def test_filtered_landing_zones(self):
         self.url = reverse("booster_tracker:landing_zones")
@@ -143,7 +143,7 @@ class ListApiTestCases(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
-        self.assertEqual(len(response_data["stages"]), 3)
+        self.assertEqual(len(response_data["stages"]), 4)
 
     def test_filtered_spacecraft(self):
         filter_data = {}
@@ -292,7 +292,7 @@ class FamilyInformationApiViewTests(APITestCase):
         # Example assertion: Check stats
         expected_stats = {
             "Missions": "5",
-            "Landings": "6",
+            "Landings": "7",
             "Reuses": "4",
         }
         self.assertEqual(data["stats"], expected_stats)

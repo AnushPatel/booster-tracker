@@ -47,7 +47,7 @@ def format_time(time_obj: datetime) -> str:
 def convert_seconds(x) -> str:
     """Converts from seconds to a human readable format in days, hours, minutes, and seconds. If any are zero, they are removed."""
     if x is None:
-        return None
+        return "N/A"
     d = int(x / 86400)
     x -= d * 86400
     h = int(x / 3600)

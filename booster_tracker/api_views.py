@@ -74,6 +74,7 @@ from booster_tracker.serializers import (
     StageListSerializer,
     EDATableSerializer,
     AdditionalGraphSerializer,
+    LaunchInformation2Serializer,
 )
 import json
 
@@ -294,6 +295,15 @@ class LaunchInformationApiView(RetrieveAPIView):
         return Launch.objects.get(id=id)
 
 
+class LaunchInformation2ApiView(RetrieveAPIView):
+    serializer_class = LaunchInformation2Serializer
+
+    def get_object(self):
+        """Get launch by ID"""
+        id = self.request.query_params.get("id", "")
+        return Launch.objects.get(id=id)
+
+
 class LandingZoneInformationApiView(RetrieveAPIView):
     def get(self, request, *args, **kwargs):
         """Get stage by ID"""
@@ -411,14 +421,11 @@ class HomeDataApiView(APIView):
         launches_per_rocket_per_year, years = self._get_launches_per_vehicle_per_year()
 
         # Get filtered launches
-        filtered_launches = (
-            get_model_objects_with_filter(Launch, filter={}, search_query="")
-            .filter(time__gte=start_time, time__lte=self.now)
-            .order_by("time")
-        )
+        filtered_launches = Launch.objects.filter(time__gte=start_time, time__lte=self.now).order_by("time")
 
         # Fetch basic stats
-        next_launch, last_launch = get_next_and_last_launches()
+        next_launch = Launch.objects.filter(time__gt=datetime.now(pytz.utc)).last()
+        last_launch = Launch.objects.filter(time__lte=datetime.now(pytz.utc)).first()
         num_missions = Launch.objects.filter(rocket__family__provider__name="SpaceX").count()
         num_successes = Launch.objects.filter(rocket__family__provider__name="SpaceX", launch_outcome="SUCCESS").count()
         num_landings = (
@@ -427,9 +434,10 @@ class HomeDataApiView(APIView):
             .count()
         )
         shortest_time_between_launches = convert_seconds(
-            last_launch.calculate_turnarounds(turnaround_object=TurnaroundObjects.ALL)["ordered_turnarounds"][0][
-                "turnaround_time"
-            ]
+            Launch.objects.filter(rocket__family__provider__name="SpaceX")
+            .order_by("company_turnaround")
+            .first()
+            .company_turnaround
         )
         num_stage_reflights = self._calculate_num_stage_reflights()
 
@@ -850,7 +858,11 @@ class FamilyInformationApiView(APIView):
             ).count()
             launches = Launch.objects.filter(rocket=rocket).count()
             successes = Launch.objects.filter(rocket=rocket, launch_outcome="SUCCESS").count()
-            flight_proven_launches = last_launch.get_rocket_flights_reused_vehicle()
+            flight_proven_launches = (
+                Launch.objects.filter(rocket=rocket, time__lte=self.now, stageandrecovery__num_flights__gt=1)
+                .distinct()
+                .count()
+            )
 
             family_children_stats[rocket.name] = {
                 "Launches": str(launches),
