@@ -128,7 +128,7 @@ class TestPadModel(TestCase):
         self.assertEqual(self.test_data["slc4e"].num_launches, 0)
 
     def test_fastest_turnaround(self):
-        self.assertEqual(self.test_data["slc40"].fastest_turnaround, "30 days")
+        self.assertEqual(self.test_data["slc40"].fastest_turnaround, "29 days")
         self.assertEqual(self.test_data["lc39a"].fastest_turnaround, "N/A")
         self.assertEqual(self.test_data["slc4e"].fastest_turnaround, "N/A")
 
@@ -343,33 +343,34 @@ class TestLaunchModel(TestCase):
         )
 
     def test_calculate_turnaround_stats(self):
-        pad_stats = self.test_data["launch1"].calculate_turnaround_stats(TurnaroundObjects.PAD)
-        company_stats = self.test_data["launch1"].calculate_turnaround_stats(TurnaroundObjects.ALL)
+        pad_stats = self.test_data["launch1"].calculate_pad_turnaround_stats()
+        company_stats = self.test_data["launch1"].calculate_company_turnaround_stats()
         self.assertEqual(pad_stats, [])
         self.assertEqual(company_stats, [])
 
-        pad_stats = self.test_data["launch2"].calculate_turnaround_stats(TurnaroundObjects.PAD)
-        company_stats = self.test_data["launch2"].calculate_turnaround_stats(TurnaroundObjects.ALL)
+        pad_stats = self.test_data["launch2"].calculate_pad_turnaround_stats()
+        company_stats = self.test_data["launch2"].calculate_company_turnaround_stats()
         self.assertEqual(pad_stats, [])
         self.assertEqual(company_stats, [])
 
-        pad_stats = self.test_data["launch3"].calculate_turnaround_stats(TurnaroundObjects.PAD)
-        company_stats = self.test_data["launch3"].calculate_turnaround_stats(TurnaroundObjects.ALL)
+        pad_stats = self.test_data["launch3"].calculate_pad_turnaround_stats()
+        company_stats = self.test_data["launch3"].calculate_company_turnaround_stats()
         self.assertEqual(
             pad_stats,
             [(True, "Fastest turnaround of a SpaceX pad to date at 29 days. Previous record: SLC-40 at 31 days")],
         )
         self.assertEqual(
-            company_stats, [(True, "Fastest turnaround of SpaceX to date at 29 days. Previous record: 31 days")]
+            company_stats,
+            [(True, "Shortest time between two SpaceX launches to date at 29 days. Previous record: 31 days")],
         )
 
-        pad_stats = self.test_data["launch4"].calculate_turnaround_stats(TurnaroundObjects.PAD)
-        company_stats = self.test_data["launch4"].calculate_turnaround_stats(TurnaroundObjects.ALL)
+        pad_stats = self.test_data["launch4"].calculate_pad_turnaround_stats()
+        company_stats = self.test_data["launch4"].calculate_company_turnaround_stats()
         self.assertEqual(pad_stats, [])
         self.assertEqual(company_stats, [])
 
-        pad_stats = self.test_data["launch5"].calculate_turnaround_stats(TurnaroundObjects.PAD)
-        company_stats = self.test_data["launch5"].calculate_turnaround_stats(TurnaroundObjects.ALL)
+        pad_stats = self.test_data["launch5"].calculate_pad_turnaround_stats()
+        company_stats = self.test_data["launch5"].calculate_company_turnaround_stats()
         self.assertEqual(pad_stats, [])
         self.assertEqual(company_stats, [])
 
@@ -395,14 +396,15 @@ class TestLaunchModel(TestCase):
 
         update_data()
 
-        pad_stats = temp_launch_1.calculate_turnaround_stats(TurnaroundObjects.PAD)
-        company_stats = temp_launch_1.calculate_turnaround_stats(TurnaroundObjects.ALL)
+        pad_stats = temp_launch_1.calculate_pad_turnaround_stats()
+        company_stats = temp_launch_1.calculate_company_turnaround_stats()
         self.assertEqual(
             pad_stats,
             [(True, "Fastest turnaround of a SpaceX pad to date at 14 days. Previous record: SLC-40 at 29 days")],
         )
         self.assertEqual(
-            company_stats, [(True, "Fastest turnaround of SpaceX to date at 14 days. Previous record: 29 days")]
+            company_stats,
+            [(True, "Shortest time between two SpaceX launches to date at 14 days. Previous record: 29 days")],
         )
 
         # Ensure pad-specific stats work:
@@ -441,8 +443,8 @@ class TestLaunchModel(TestCase):
 
         update_data()
 
-        pad_stats = temp_launch_4.calculate_turnaround_stats(TurnaroundObjects.PAD)
-        company_stats = temp_launch_4.calculate_turnaround_stats(TurnaroundObjects.ALL)
+        pad_stats = temp_launch_4.calculate_pad_turnaround_stats()
+        company_stats = temp_launch_4.calculate_company_turnaround_stats()
         self.assertEqual(
             pad_stats, [(True, "Fastest turnaround of LC-39A to date at 25 days. Previous record: 30 days")]
         )
@@ -723,7 +725,7 @@ class TestLaunchModel(TestCase):
         launch = Launch.objects.get(name="Falcon 9 Launch 3")
         result = launch.make_x_post()
 
-        expected = f"{launch.name} will mark SpaceX's fastest turnaround of a SpaceX pad to date at 29 days and fastest turnaround of SpaceX to date at 29 days.\n\nLearn more: https://boostertracker.com/launch/{launch.id}"
+        expected = f"{launch.name} will mark SpaceX's fastest turnaround of a SpaceX pad to date at 29 days and shortest time between two SpaceX launches to date at 29 days.\n\nLearn more: https://boostertracker.com/launch/{launch.id}"
 
         self.assertEqual(result, expected)
         self.assertTrue(len(result) <= 280)

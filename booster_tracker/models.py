@@ -213,7 +213,11 @@ class Pad(models.Model):
     @property
     def fastest_turnaround(self):
         """Returns the fastest turnaround of landing zone"""
-        if launch := Launch.objects.filter(pad=self, time__lte=datetime.now(pytz.utc)).first():
+        if (
+            launch := Launch.objects.filter(pad=self, time__lte=datetime.now(pytz.utc))
+            .order_by("pad_turnaround")
+            .first()
+        ):
             return convert_seconds(launch.pad_turnaround)
         return "N/A"
 
@@ -265,7 +269,8 @@ class Launch(models.Model):
         return StageAndRecovery.objects.filter(launch=self, num_flights__gt=1).exists()
 
     @property
-    def get_company_turnaround(self):
+    def get_company_turnaround(self) -> int:
+        """Returns the time between this launch and the last launch from the launch provider in total seconds"""
         if (
             last_launch := Launch.objects.filter(
                 rocket__family__provider=self.rocket.family.provider, time__lt=self.time
@@ -323,7 +328,7 @@ class Launch(models.Model):
         # Filter and order the stage and recovery objects
         stage_and_recoveries = StageAndRecovery.objects.filter(q_objects).order_by(order_by)
 
-        # Return None if less than 3 records are found
+        # Return empty list if less than 3 records are found
         if stage_and_recoveries.count() < 3:
             return stats
 
@@ -362,67 +367,58 @@ class Launch(models.Model):
 
         return stats
 
-    def calculate_turnaround_stats(self, turnaround_object: TurnaroundObjects):
-        # Define common query filters
-        q_objects = Q(
-            time__lte=self.time,
-            rocket__family=self.rocket.family,
+    def calculate_company_turnaround_stats(self):
+        launches = Launch.objects.filter(
+            time__lte=self.time, rocket__family__provider=self.rocket.family.provider
+        ).order_by("company_turnaround")
+
+        if launches.count() < 3 or launches.first() != self:
+            return []
+
+        return [
+            (
+                True,
+                f"Shortest time between two {self.rocket.family.provider} launches to date at {convert_seconds(launches[0].company_turnaround)}. Previous record: {convert_seconds(launches[1].company_turnaround)}",
+            )
+        ]
+
+    def calculate_pad_turnaround_stats(self):
+        # Fetch and order launches based on the criteria
+        launches = Launch.objects.filter(time__lte=self.time, rocket__family=self.rocket.family).order_by(
+            "pad_turnaround"
         )
 
-        stats = []
-
-        # Set order_by and item based on turnaround_object
-        if turnaround_object == TurnaroundObjects.ALL:
-            order_by = "company_turnaround"
-            item = f"{self.rocket.family.provider}"
-        elif turnaround_object == TurnaroundObjects.PAD:
-            order_by = "pad_turnaround"
-            item = f"a {self.rocket.family.provider} pad"
-
-        # Fetch and order launches based on the criteria
-        launches = Launch.objects.filter(q_objects).order_by(order_by)
-
-        # If fewer than 3 launches are found, return None
+        # If fewer than 3 launches are found, return empty list
         if launches.count() < 3:
-            return stats
+            return []
 
         if launches.first() == self:
             # Calculate turnaround times
-            turnaround = convert_seconds(getattr(launches.first(), order_by))
-            old_turnaround = convert_seconds(getattr(launches[1], order_by))
+            turnaround = convert_seconds(launches[0].pad_turnaround)
+            old_turnaround = convert_seconds(launches[1].pad_turnaround)
 
-            # Add pad-specific details if applicable
-            if turnaround_object == TurnaroundObjects.PAD:
-                old_turnaround = f"{launches[1].pad.nickname} at {old_turnaround}"
-
-            stats.append(
+            return [
                 (
                     True,
-                    f"Fastest turnaround of {item} to date at {turnaround}. Previous record: {old_turnaround}",
+                    f"Fastest turnaround of a {self.rocket.family.provider} pad to date at {turnaround}. Previous record: {launches[1].pad.nickname} at {old_turnaround}",
                 )
+            ]
+
+        # Get pad-specific record
+        launches = launches.filter(pad=self.pad)
+        if launches.count() < 3 or launches.first() != self:
+            return []
+
+        # Calculate turnaround times
+        turnaround = convert_seconds(launches[0].pad_turnaround)
+        old_turnaround = convert_seconds(launches[1].pad_turnaround)
+
+        return [
+            (
+                True,
+                f"Fastest turnaround of {self.pad.nickname} to date at {turnaround}. Previous record: {old_turnaround}",
             )
-
-            return stats
-
-        # Handle specific case for PAD turnaround
-        if turnaround_object == TurnaroundObjects.PAD:
-            launches = launches.filter(pad=self.pad)
-            if launches.count() < 3 or launches.first() != self:
-                return stats
-            item = self.pad.nickname
-
-            # Calculate turnaround times
-            turnaround = convert_seconds(getattr(launches.first(), order_by))
-            old_turnaround = convert_seconds(getattr(launches[1], order_by))
-
-            stats.append(
-                (
-                    True,
-                    f"Fastest turnaround of {item} to date at {turnaround}. Previous record: {old_turnaround}",
-                )
-            )
-
-        return stats
+        ]
 
     @property
     def boosters(self) -> str:
@@ -452,8 +448,8 @@ class Launch(models.Model):
             turnaround_string += ", "
 
         # Format string to be readable
-        stages_string = stages_string.rstrip(" ").rstrip(",")
-        turnaround_string = turnaround_string.rstrip(" ").rstrip(",")
+        stages_string = stages_string.rstrip(", ")
+        turnaround_string = turnaround_string.rstrip(", ")
         if stage_known:
             turnaround_string += "-day turnaround"
             return " " + stages_string + "; " + turnaround_string
@@ -466,20 +462,17 @@ class Launch(models.Model):
         launch_landings = ""
 
         for item in StageAndRecovery.objects.filter(launch=self).order_by("stage_position"):
-            if item.stage:
-                name = item.stage.name
-            else:
-                name = "The booster"
+            name = item.stage.name if item.stage else "The booster"
+
             if self.time > datetime.now(pytz.utc):
                 if item.method == "EXPENDED":
                     launch_landings += f"{name} will be expended; "
                 elif item.method == "OCEAN_SURFACE":
                     launch_landings += f"{name} will attempt a soft landing on the ocean surface; "
-                else:
-                    if item.landing_zone:
-                        launch_landings += (
-                            f"{name} will be recovered on {item.landing_zone.name} ({item.landing_zone.nickname}); "
-                        )
+                elif item.landing_zone:
+                    launch_landings += (
+                        f"{name} will be recovered on {item.landing_zone.name} ({item.landing_zone.nickname}); "
+                    )
             else:
                 if item.method == "EXPENDED":
                     launch_landings += f"{name} was expended; "
@@ -514,8 +507,8 @@ class Launch(models.Model):
         # Adding turnaround stats
         stats += self.calculate_stage_and_recovery_turnaround_stats(turnaround_object="booster")
         stats += self.calculate_stage_and_recovery_turnaround_stats(turnaround_object="second stage")
-        stats += self.calculate_turnaround_stats(turnaround_object=TurnaroundObjects.PAD)
-        stats += self.calculate_turnaround_stats(turnaround_object=TurnaroundObjects.ALL)
+        stats += self.calculate_pad_turnaround_stats()
+        stats += self.calculate_company_turnaround_stats()
 
         for stat in LaunchStat.objects.filter(launch=self):
             stats.append((stat.significant, f"{stat.string}"))
@@ -523,7 +516,7 @@ class Launch(models.Model):
         if return_significant_only:
             return [stat[1] for stat in stats if stat[0]]
 
-        return stats[:10]
+        return stats[:10]  # Only return first 10 elements for looks
 
     def make_stats_for_post(self):
         stats: list[tuple] = []
@@ -537,8 +530,8 @@ class Launch(models.Model):
         # Adding turnaround stats
         stats += self.calculate_stage_and_recovery_turnaround_stats(turnaround_object="booster")
         stats += self.calculate_stage_and_recovery_turnaround_stats(turnaround_object="second stage")
-        stats += self.calculate_turnaround_stats(turnaround_object=TurnaroundObjects.PAD)
-        stats += self.calculate_turnaround_stats(turnaround_object=TurnaroundObjects.ALL)
+        stats += self.calculate_pad_turnaround_stats()
+        stats += self.calculate_company_turnaround_stats()
 
         for stat in LaunchStat.objects.filter(launch=self):
             stats.append((stat.significant, f"{stat.string}"))
