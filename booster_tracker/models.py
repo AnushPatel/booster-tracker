@@ -769,7 +769,7 @@ class Launch(models.Model):
             stats.append((is_significant(mission_num), f"{make_ordinal(mission_num)} mission"))
 
         # Add mission outcome stats
-        if self.launch_outcome:
+        if self.launch_outcome and not self.exclude_from_missions:
             stats.append(
                 (
                     is_significant(mission_outcome_num),
