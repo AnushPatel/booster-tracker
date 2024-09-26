@@ -75,13 +75,7 @@ class LaunchSerializer(serializers.ModelSerializer):
 class RocketSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rocket
-        fields = "__all__"
-
-
-class RocketOnlySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Rocket
-        fields = "__all__"
+        fields = ["id", "name", "status", "color", "family", "image"]
 
 
 class RocketFamilySerializer(serializers.ModelSerializer):
@@ -179,6 +173,7 @@ class StageAndRecoveryOnlySerializer(serializers.ModelSerializer):
             "stage",
             "num_flights",
             "stage_turnaround",
+            "zone_turnaround",
             "stage_stats",
             "landing_zone",
             "landing_zone_stats",

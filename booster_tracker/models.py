@@ -63,6 +63,8 @@ BOOSTER_TYPES = [
 
 class Operator(models.Model):
     name = models.CharField(max_length=100, unique=True)
+    image = models.ImageField(upload_to="operator_photos/", default="stage_photos/default_booster.jpg")
+    credit = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -83,6 +85,8 @@ class Rocket(models.Model):
     name = models.CharField(max_length=100, unique=True)
     family = models.ForeignKey(RocketFamily, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=LIFE_OPTIONS, default="ACTIVE")
+    image = models.ImageField(upload_to="rocket_photos/", default="stage_photos/default_booster.jpg")
+    credit = models.CharField(max_length=100, null=True, blank=True)
     color = ColorField(default="#218243")
 
     def __str__(self):
@@ -496,7 +500,6 @@ class Launch(models.Model):
         """Returns a list of stats for the mission; non-trivial stats not returned"""
         stats: list[tuple] = []
 
-        stats += self.get_launch_provider_stats()
         stats += self.get_rocket_stats()
         stats += self.get_launch_pad_stats()
 
@@ -515,6 +518,8 @@ class Launch(models.Model):
 
         if return_significant_only:
             return [stat[1] for stat in stats if stat[0]]
+
+        stats += self.get_launch_provider_stats()
 
         return stats[:10]  # Only return first 10 elements for looks
 
@@ -554,9 +559,9 @@ class Launch(models.Model):
 
         for stat in stats:
             if stat[0]:
-                significant_stats.append(first_lower(stat[1].replace("– ", "")))
+                significant_stats.append(first_lower(stat[1]))
             else:
-                other_stats.append(first_lower(stat[1].replace("– ", "")))
+                other_stats.append(first_lower(stat[1]))
 
         def get_random_stat(stat_list):
             return stat_list.pop(random.randint(0, len(stat_list) - 1)) if stat_list else None
@@ -761,24 +766,24 @@ class Launch(models.Model):
 
         # Add mission-related stats (if not excluded from missions)
         if not self.exclude_from_missions:
-            stats.append((is_significant(mission_num), f"{make_ordinal(mission_num)} {provider} mission"))
+            stats.append((is_significant(mission_num), f"{make_ordinal(mission_num)} mission"))
 
         # Add mission outcome stats
         if self.launch_outcome:
             stats.append(
                 (
                     is_significant(mission_outcome_num),
-                    f"{make_ordinal(mission_outcome_num)} {provider} mission {self.launch_outcome.lower().replace('_', ' ')}",
+                    f"{make_ordinal(mission_outcome_num)} mission {self.launch_outcome.lower().replace('_', ' ')}",
                 )
             )
 
         # Add launch-related stats (if not precluded)
         if not self.launch_precluded:
-            stats.append((is_significant(launch_num), f"{make_ordinal(launch_num)} {provider} launch"))
+            stats.append((is_significant(launch_num), f"{make_ordinal(launch_num)} launch"))
             stats.append(
                 (
                     is_significant(launch_num_year),
-                    f"{make_ordinal(launch_num_year)} {provider} launch of {self.time.year}",
+                    f"{make_ordinal(launch_num_year)} launch of {self.time.year}",
                 )
             )
 

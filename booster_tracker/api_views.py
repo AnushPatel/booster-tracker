@@ -53,7 +53,7 @@ from rest_framework import status
 from booster_tracker.serializers import (
     LaunchSerializer,
     LaunchOnlySerializer,
-    RocketOnlySerializer,
+    RocketSerializer,
     RocketFamilySerializer,
     OperatorSerializer,
     OrbitSerializer,
@@ -106,7 +106,7 @@ class RocketApiView(APIView):
     def get(self, request, *args, **kwargs):
         """List all the Rocket items for given requested user"""
         rockets = Rocket.objects.all()
-        serializer = RocketOnlySerializer(rockets, many=True)
+        serializer = RocketSerializer(rockets, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -272,9 +272,12 @@ class SpacecraftApiView(ListAPIView):
 
         # Prepare information
         start_filter = build_filter(model=Spacecraft, family=family, type=None)
-        filtered_spacecraft = (
-            get_model_objects_with_filter(Spacecraft, filter, query).filter(family=family).order_by("-name")
-        )
+        if family_str:
+            filtered_spacecraft = (
+                get_model_objects_with_filter(Spacecraft, filter, query).filter(family=family).order_by("-name")
+            )
+        else:
+            filtered_spacecraft = get_model_objects_with_filter(Spacecraft, filter, query).order_by("-name")
 
         data = {"start_filter": start_filter, "spacecraft": filtered_spacecraft}
 

@@ -44,7 +44,7 @@ def format_time(time_obj: datetime) -> str:
     return formatted_str
 
 
-def convert_seconds(x) -> str:
+def convert_seconds(x: int) -> str:
     """Converts from seconds to a human readable format in days, hours, minutes, and seconds. If any are zero, they are removed."""
     if x is None:
         return "N/A"
@@ -190,7 +190,7 @@ def parse_start_time(query_params, default_start_date: datetime) -> datetime:
 
 
 def is_significant(nums) -> bool:
-    significant_nums = {1, 10, 25, 50}
+    significant_nums = {10, 25, 50}
 
     if isinstance(nums, list):
         return any(num % 100 == 0 or num in significant_nums for num in nums)

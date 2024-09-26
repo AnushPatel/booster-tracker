@@ -619,93 +619,83 @@ class TestLaunchModel(TestCase):
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 1").make_stats(return_significant_only=False),
             [
-                (True, "1st SpaceX mission"),
-                (True, "1st SpaceX mission success"),
-                (True, "1st SpaceX launch"),
-                (True, "1st SpaceX launch of 2024"),
-                (True, "1st Falcon 9 launch"),
-                (True, "1st Falcon 9 launch in 2024"),
-                (True, "1st Falcon 9 launch success"),
-                (True, "1st SpaceX launch from SLC-40"),
-                (True, "1st Falcon booster landing success on a ground pad"),
-                (True, "1st landing attempt of a Falcon booster"),
+                (False, "1st Falcon 9 launch"),
+                (False, "1st Falcon 9 launch in 2024"),
+                (False, "1st Falcon 9 launch success"),
+                (False, "1st SpaceX launch from SLC-40"),
+                (False, "1st Falcon booster landing success on a ground pad"),
+                (False, "1st landing attempt of a Falcon booster"),
+                (False, "1st successful landing of a Falcon booster"),
+                (False, "1st consecutive landing of a Falcon booster"),
+                (False, "1st landing success on Landing Zone 1"),
+                (False, "1st landing attempt on Landing Zone 1"),
             ],
         )
 
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 2").make_stats(return_significant_only=False),
             [
-                (False, "2nd SpaceX mission"),
-                (False, "2nd SpaceX mission success"),
-                (False, "2nd SpaceX launch"),
-                (False, "2nd SpaceX launch of 2024"),
                 (False, "2nd Falcon 9 launch"),
                 (False, "2nd Falcon 9 launch in 2024"),
                 (False, "2nd Falcon 9 launch success"),
-                (True, "1st Falcon 9 launch with a flight-proven stage"),
+                (False, "1st Falcon 9 launch with a flight-proven stage"),
                 (False, "2nd SpaceX launch from SLC-40"),
                 (False, "2nd Falcon booster landing success on a ground pad"),
+                (False, "2nd landing attempt of a Falcon booster"),
+                (False, "2nd successful landing of a Falcon booster"),
+                (False, "2nd consecutive landing of a Falcon booster"),
+                (False, "1st reflight of a Falcon booster"),
             ],
         )
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 3").make_stats(return_significant_only=False),
             [
-                (False, "3rd SpaceX mission"),
-                (False, "3rd SpaceX mission success"),
-                (False, "3rd SpaceX launch"),
-                (False, "3rd SpaceX launch of 2024"),
                 (False, "3rd Falcon 9 launch"),
                 (False, "3rd Falcon 9 launch in 2024"),
                 (False, "3rd Falcon 9 launch success"),
                 (False, "3rd SpaceX launch from SLC-40"),
                 (False, "3rd Falcon booster landing success on a ground pad"),
                 (False, "3rd landing attempt of a Falcon booster"),
+                (False, "3rd successful landing of a Falcon booster"),
+                (False, "3rd consecutive landing of a Falcon booster"),
+                (False, "3rd landing success on Landing Zone 1"),
+                (False, "3rd landing attempt on Landing Zone 1"),
             ],
         )
         self.assertEqual(
             Launch.objects.get(name="Falcon Heavy Launch 1").make_stats(return_significant_only=False),
             [
-                (False, "4th SpaceX mission"),
-                (False, "4th SpaceX mission success"),
-                (False, "4th SpaceX launch"),
-                (False, "4th SpaceX launch of 2024"),
-                (True, "1st Falcon Heavy launch"),
-                (True, "1st Falcon Heavy launch in 2024"),
-                (True, "1st Falcon Heavy launch success"),
-                (True, "1st Falcon Heavy launch with a flight-proven stage"),
+                (False, "1st Falcon Heavy launch"),
+                (False, "1st Falcon Heavy launch in 2024"),
+                (False, "1st Falcon Heavy launch success"),
+                (False, "1st Falcon Heavy launch with a flight-proven stage"),
                 (False, "4th SpaceX launch from SLC-40"),
                 (False, "4th Falcon booster landing success on a ground pad"),
+                (False, "4th landing attempt of a Falcon booster"),
+                (False, "4th successful landing of a Falcon booster"),
+                (False, "4th consecutive landing of a Falcon booster"),
+                (False, "2nd reflight of a Falcon booster"),
             ],
         )
 
         self.assertEqual(
             Launch.objects.get(name="Falcon Heavy Launch 1").make_stats(return_significant_only=True),
-            [
-                "1st Falcon Heavy launch",
-                "1st Falcon Heavy launch in 2024",
-                "1st Falcon Heavy launch success",
-                "1st Falcon Heavy launch with a flight-proven stage",
-                "1st landing success on Landing Zone 2",
-                "1st landing attempt on Landing Zone 2",
-                "1st Falcon booster landing success on a drone ship",
-                "1st landing success on Just Read the Instructions",
-                "1st landing attempt on Just Read the Instructions",
-            ],
+            [],
         )
 
         self.assertEqual(
             Launch.objects.get(name="Falcon 9 Launch 4").make_stats(return_significant_only=False),
             [
-                (False, "5th SpaceX mission"),
-                (False, "5th SpaceX mission success"),
-                (False, "5th SpaceX launch"),
-                (False, "5th SpaceX launch of 2024"),
                 (False, "4th Falcon 9 launch"),
                 (False, "4th Falcon 9 launch in 2024"),
                 (False, "4th Falcon 9 launch success"),
                 (False, "2nd Falcon 9 launch with a flight-proven stage"),
                 (False, "5th SpaceX launch from SLC-40"),
                 (False, "2nd Falcon booster landing success on a drone ship"),
+                (False, "7th landing attempt of a Falcon booster"),
+                (False, "7th successful landing of a Falcon booster"),
+                (False, "7th consecutive landing of a Falcon booster"),
+                (False, "4th reflight of a Falcon booster"),
             ],
         )
 
@@ -755,16 +745,16 @@ class TestLaunchModel(TestCase):
                 "Where did the first stage land?": ["B1062 successfully completed a landing on Landing Zone 1 (LZ-1)"],
                 "Did they attempt to recover the fairings?": ["There are no fairings on this flight"],
                 "This was the": [
-                    "– 1st SpaceX mission",
-                    "– 1st SpaceX mission success",
-                    "– 1st SpaceX launch",
-                    "– 1st SpaceX launch of 2024",
                     "– 1st Falcon 9 launch",
                     "– 1st Falcon 9 launch in 2024",
                     "– 1st Falcon 9 launch success",
                     "– 1st SpaceX launch from SLC-40",
                     "– 1st Falcon booster landing success on a ground pad",
                     "– 1st landing attempt of a Falcon booster",
+                    "– 1st successful landing of a Falcon booster",
+                    "– 1st consecutive landing of a Falcon booster",
+                    "– 1st landing success on Landing Zone 1",
+                    "– 1st landing attempt on Landing Zone 1",
                 ],
             },
         )
@@ -782,16 +772,16 @@ class TestLaunchModel(TestCase):
                 "Where did the first stage land?": ["B1062 successfully completed a landing on Landing Zone 1 (LZ-1)"],
                 "Did they attempt to recover the fairings?": ["There are no fairings on this flight"],
                 "This was the": [
-                    "– 1st Falcon 9 launch with a flight-proven stage",
-                    "– 2nd SpaceX mission",
-                    "– 2nd SpaceX mission success",
-                    "– 2nd SpaceX launch",
-                    "– 2nd SpaceX launch of 2024",
                     "– 2nd Falcon 9 launch",
                     "– 2nd Falcon 9 launch in 2024",
                     "– 2nd Falcon 9 launch success",
+                    "– 1st Falcon 9 launch with a flight-proven stage",
                     "– 2nd SpaceX launch from SLC-40",
                     "– 2nd Falcon booster landing success on a ground pad",
+                    "– 2nd landing attempt of a Falcon booster",
+                    "– 2nd successful landing of a Falcon booster",
+                    "– 2nd consecutive landing of a Falcon booster",
+                    "– 1st reflight of a Falcon booster",
                 ],
             },
         )
@@ -809,16 +799,16 @@ class TestLaunchModel(TestCase):
                 "Where did the first stage land?": ["B1080 successfully completed a landing on Landing Zone 1 (LZ-1)"],
                 "Did they attempt to recover the fairings?": ["There are no fairings on this flight"],
                 "This was the": [
-                    "– 3rd SpaceX mission",
-                    "– 3rd SpaceX mission success",
-                    "– 3rd SpaceX launch",
-                    "– 3rd SpaceX launch of 2024",
                     "– 3rd Falcon 9 launch",
                     "– 3rd Falcon 9 launch in 2024",
                     "– 3rd Falcon 9 launch success",
                     "– 3rd SpaceX launch from SLC-40",
                     "– 3rd Falcon booster landing success on a ground pad",
                     "– 3rd landing attempt of a Falcon booster",
+                    "– 3rd successful landing of a Falcon booster",
+                    "– 3rd consecutive landing of a Falcon booster",
+                    "– 3rd landing success on Landing Zone 1",
+                    "– 3rd landing attempt on Landing Zone 1",
                 ],
             },
         )
@@ -845,12 +835,12 @@ class TestLaunchModel(TestCase):
                     "– 1st Falcon Heavy launch in 2024",
                     "– 1st Falcon Heavy launch success",
                     "– 1st Falcon Heavy launch with a flight-proven stage",
-                    "– 4th SpaceX mission",
-                    "– 4th SpaceX mission success",
-                    "– 4th SpaceX launch",
-                    "– 4th SpaceX launch of 2024",
                     "– 4th SpaceX launch from SLC-40",
                     "– 4th Falcon booster landing success on a ground pad",
+                    "– 4th landing attempt of a Falcon booster",
+                    "– 4th successful landing of a Falcon booster",
+                    "– 4th consecutive landing of a Falcon booster",
+                    "– 2nd reflight of a Falcon booster",
                 ],
             },
         )
@@ -873,16 +863,16 @@ class TestLaunchModel(TestCase):
                 ],
                 "Did they attempt to recover the fairings?": ["There are no fairings on this flight"],
                 "This was the": [
-                    "– 5th SpaceX mission",
-                    "– 5th SpaceX mission success",
-                    "– 5th SpaceX launch",
-                    "– 5th SpaceX launch of 2024",
                     "– 4th Falcon 9 launch",
                     "– 4th Falcon 9 launch in 2024",
                     "– 4th Falcon 9 launch success",
                     "– 2nd Falcon 9 launch with a flight-proven stage",
                     "– 5th SpaceX launch from SLC-40",
                     "– 2nd Falcon booster landing success on a drone ship",
+                    "– 7th landing attempt of a Falcon booster",
+                    "– 7th successful landing of a Falcon booster",
+                    "– 7th consecutive landing of a Falcon booster",
+                    "– 4th reflight of a Falcon booster",
                 ],
             },
         )
@@ -911,9 +901,9 @@ class TestLaunchModel(TestCase):
         self.assertEqual(
             self.test_data["launch1"].get_rocket_stats(),
             [
-                (True, "1st Falcon 9 launch"),
-                (True, "1st Falcon 9 launch in 2024"),
-                (True, "1st Falcon 9 launch success"),
+                (False, "1st Falcon 9 launch"),
+                (False, "1st Falcon 9 launch in 2024"),
+                (False, "1st Falcon 9 launch success"),
             ],
         )
 
@@ -923,7 +913,7 @@ class TestLaunchModel(TestCase):
                 (False, "2nd Falcon 9 launch"),
                 (False, "2nd Falcon 9 launch in 2024"),
                 (False, "2nd Falcon 9 launch success"),
-                (True, "1st Falcon 9 launch with a flight-proven stage"),
+                (False, "1st Falcon 9 launch with a flight-proven stage"),
             ],
         )
 
@@ -939,10 +929,10 @@ class TestLaunchModel(TestCase):
         self.assertEqual(
             self.test_data["launch4"].get_rocket_stats(),
             [
-                (True, "1st Falcon Heavy launch"),
-                (True, "1st Falcon Heavy launch in 2024"),
-                (True, "1st Falcon Heavy launch success"),
-                (True, "1st Falcon Heavy launch with a flight-proven stage"),
+                (False, "1st Falcon Heavy launch"),
+                (False, "1st Falcon Heavy launch in 2024"),
+                (False, "1st Falcon Heavy launch success"),
+                (False, "1st Falcon Heavy launch with a flight-proven stage"),
             ],
         )
 
@@ -960,55 +950,55 @@ class TestLaunchModel(TestCase):
         self.assertEqual(
             self.test_data["launch1"].get_launch_provider_stats(),
             [
-                (True, "1st SpaceX mission"),
-                (True, "1st SpaceX mission success"),
-                (True, "1st SpaceX launch"),
-                (True, "1st SpaceX launch of 2024"),
+                (False, "1st mission"),
+                (False, "1st mission success"),
+                (False, "1st launch"),
+                (False, "1st launch of 2024"),
             ],
         )
 
         self.assertEqual(
             self.test_data["launch2"].get_launch_provider_stats(),
             [
-                (False, "2nd SpaceX mission"),
-                (False, "2nd SpaceX mission success"),
-                (False, "2nd SpaceX launch"),
-                (False, "2nd SpaceX launch of 2024"),
+                (False, "2nd mission"),
+                (False, "2nd mission success"),
+                (False, "2nd launch"),
+                (False, "2nd launch of 2024"),
             ],
         )
 
         self.assertEqual(
             self.test_data["launch3"].get_launch_provider_stats(),
             [
-                (False, "3rd SpaceX mission"),
-                (False, "3rd SpaceX mission success"),
-                (False, "3rd SpaceX launch"),
-                (False, "3rd SpaceX launch of 2024"),
+                (False, "3rd mission"),
+                (False, "3rd mission success"),
+                (False, "3rd launch"),
+                (False, "3rd launch of 2024"),
             ],
         )
 
         self.assertEqual(
             self.test_data["launch4"].get_launch_provider_stats(),
             [
-                (False, "4th SpaceX mission"),
-                (False, "4th SpaceX mission success"),
-                (False, "4th SpaceX launch"),
-                (False, "4th SpaceX launch of 2024"),
+                (False, "4th mission"),
+                (False, "4th mission success"),
+                (False, "4th launch"),
+                (False, "4th launch of 2024"),
             ],
         )
 
         self.assertEqual(
             self.test_data["launch5"].get_launch_provider_stats(),
             [
-                (False, "5th SpaceX mission"),
-                (False, "5th SpaceX mission success"),
-                (False, "5th SpaceX launch"),
-                (False, "5th SpaceX launch of 2024"),
+                (False, "5th mission"),
+                (False, "5th mission success"),
+                (False, "5th launch"),
+                (False, "5th launch of 2024"),
             ],
         )
 
     def test_get_launch_pad_stats(self):
-        self.assertEqual(self.test_data["launch1"].get_launch_pad_stats(), [(True, "1st SpaceX launch from SLC-40")])
+        self.assertEqual(self.test_data["launch1"].get_launch_pad_stats(), [(False, "1st SpaceX launch from SLC-40")])
         self.assertEqual(self.test_data["launch2"].get_launch_pad_stats(), [(False, "2nd SpaceX launch from SLC-40")])
         self.assertEqual(self.test_data["launch3"].get_launch_pad_stats(), [(False, "3rd SpaceX launch from SLC-40")])
         self.assertEqual(self.test_data["launch4"].get_launch_pad_stats(), [(False, "4th SpaceX launch from SLC-40")])
@@ -1072,10 +1062,10 @@ class TestStageAndRecoveryModel(TestCase):
 
     def test_get_stage_stats(self):
         expected = [
-            (True, "1st Falcon booster landing success on a ground pad"),
-            (True, "1st landing attempt of a Falcon booster"),
-            (True, "1st successful landing of a Falcon booster"),
-            (True, "1st consecutive landing of a Falcon booster"),
+            (False, "1st Falcon booster landing success on a ground pad"),
+            (False, "1st landing attempt of a Falcon booster"),
+            (False, "1st successful landing of a Falcon booster"),
+            (False, "1st consecutive landing of a Falcon booster"),
         ]
         self.assertEqual(StageAndRecovery.objects.get(launch=self.test_data["launch1"]).get_stage_stats(), expected)
 
@@ -1084,8 +1074,8 @@ class TestStageAndRecoveryModel(TestCase):
             (False, "2nd landing attempt of a Falcon booster"),
             (False, "2nd successful landing of a Falcon booster"),
             (False, "2nd consecutive landing of a Falcon booster"),
-            (True, "1st reflight of a Falcon booster"),
-            (True, "1st reflight of a Falcon booster in 2024"),
+            (False, "1st reflight of a Falcon booster"),
+            (False, "1st reflight of a Falcon booster in 2024"),
         ]
         self.assertEqual(StageAndRecovery.objects.get(launch=self.test_data["launch2"]).get_stage_stats(), expected)
 
@@ -1124,7 +1114,7 @@ class TestStageAndRecoveryModel(TestCase):
         )
 
         expected = [
-            (True, "1st Falcon booster landing success on a drone ship"),
+            (False, "1st Falcon booster landing success on a drone ship"),
             (False, "6th landing attempt of a Falcon booster"),
             (False, "6th successful landing of a Falcon booster"),
             (False, "6th consecutive landing of a Falcon booster"),
@@ -1145,7 +1135,7 @@ class TestStageAndRecoveryModel(TestCase):
         self.assertEqual(StageAndRecovery.objects.get(launch=self.test_data["launch5"]).get_stage_stats(), expected)
 
     def test_get_landing_zone_stats(self):
-        expected = [(True, "1st landing success on Landing Zone 1"), (True, "1st landing attempt on Landing Zone 1")]
+        expected = [(False, "1st landing success on Landing Zone 1"), (False, "1st landing attempt on Landing Zone 1")]
         self.assertEqual(
             StageAndRecovery.objects.get(launch=self.test_data["launch1"]).get_landing_zone_stats(), expected
         )
@@ -1169,7 +1159,7 @@ class TestStageAndRecoveryModel(TestCase):
             expected,
         )
 
-        expected = [(True, "1st landing success on Landing Zone 2"), (True, "1st landing attempt on Landing Zone 2")]
+        expected = [(False, "1st landing success on Landing Zone 2"), (False, "1st landing attempt on Landing Zone 2")]
         self.assertEqual(
             StageAndRecovery.objects.filter(launch=self.test_data["launch4"])
             .order_by("id")[1]
@@ -1178,8 +1168,8 @@ class TestStageAndRecoveryModel(TestCase):
         )
 
         expected = [
-            (True, "1st landing success on Just Read the Instructions"),
-            (True, "1st landing attempt on Just Read the Instructions"),
+            (False, "1st landing success on Just Read the Instructions"),
+            (False, "1st landing attempt on Just Read the Instructions"),
         ]
         self.assertEqual(
             StageAndRecovery.objects.filter(launch=self.test_data["launch4"])
@@ -1212,7 +1202,11 @@ class TestSpacecraftOnLaunchModel(TestCase):
     def test_get_spacecraft_stats(self):
         self.assertEqual(
             SpacecraftOnLaunch.objects.get(launch=self.test_data["launch1"]).get_spacecraft_stats(),
-            [(True, "1st launch of Dragon"), (True, "1st launch of Dragon None"), (True, "1st launch of Cargo Dragon")],
+            [
+                (False, "1st launch of Dragon"),
+                (False, "1st launch of Dragon None"),
+                (False, "1st launch of Cargo Dragon"),
+            ],
         )
         self.assertEqual(
             SpacecraftOnLaunch.objects.get(launch=self.test_data["launch2"]).get_spacecraft_stats(),
@@ -1220,6 +1214,6 @@ class TestSpacecraftOnLaunchModel(TestCase):
                 (False, "2nd launch of Dragon"),
                 (False, "2nd launch of Dragon None"),
                 (False, "2nd launch of Cargo Dragon"),
-                (True, "1st reuse of a Dragon spacecraft"),
+                (False, "1st reuse of a Dragon spacecraft"),
             ],
         )
