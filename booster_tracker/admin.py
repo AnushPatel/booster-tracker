@@ -220,7 +220,9 @@ class LandingOutcomeFilter(admin.SimpleListFilter):
 
     def lookups(self, request, model_admin):
         # Get distinct recovery outcomes
-        recovery_outcomes = StageAndRecovery.objects.values_list("recovery_success", flat=True).distinct()
+        recovery_outcomes = (
+            StageAndRecovery.objects.values_list("recovery_success", flat=True).order_by("recovery_success").distinct()
+        )
         # Convert boolean values to human-readable strings
         return [(str(outcome), "Success" if outcome else "Failure") for outcome in recovery_outcomes]
 
@@ -237,7 +239,9 @@ class MethodSuccessFilter(admin.SimpleListFilter):
 
     def lookups(self, request, model_admin):
         # Get distinct method success values
-        method_success_values = StageAndRecovery.objects.values_list("method_success", flat=True).distinct()
+        method_success_values = (
+            StageAndRecovery.objects.values_list("method_success", flat=True).order_by("method_success").distinct()
+        )
         # Convert boolean values to human-readable strings
         return [
             (
