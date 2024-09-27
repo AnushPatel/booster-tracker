@@ -304,9 +304,7 @@ class AdditionalGraphSerializer(serializers.Serializer):
 
 
 class LaunchInformation2Serializer(serializers.ModelSerializer):
-    stage_and_recoveries = StageAndRecoveryOnlySerializer(
-        many=True, read_only=True, source="stageandrecovery_set.order_by('id')"
-    )
+    stage_and_recoveries = StageAndRecoveryOnlySerializer(many=True, read_only=True, source="stageandrecovery_set")
     spacecraft_on_launch = SpacecraftOnLaunchOnlySerializer(many=True, read_only=True, source="spacecraftonlaunch_set")
     rocket_stats = serializers.SerializerMethodField()
     launch_provider_stats = serializers.SerializerMethodField()

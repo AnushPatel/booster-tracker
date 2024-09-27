@@ -884,7 +884,7 @@ class StageAndRecovery(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["launch", "stage"], name="unique_launch_stage")]
-
+        ordering = ["id"]
         verbose_name_plural = "Stage Recoveries"
 
     @property
