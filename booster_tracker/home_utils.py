@@ -46,7 +46,7 @@ def get_most_flown_stages(family: RocketFamily, stage_type: StageObjects, before
         }
     max_launch_count = stage_and_launch_count[0].num_flights
 
-    most_flown_stages = list(set(item.stage for item in stage_and_launch_count.filter(num_flights=max_launch_count)))
+    most_flown_stages = list(item.stage for item in stage_and_launch_count.filter(num_flights=max_launch_count))
 
     return {
         "stages": most_flown_stages,
