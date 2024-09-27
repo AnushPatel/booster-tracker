@@ -34,10 +34,10 @@ class StageObjects(StrEnum):
 
 
 def get_most_flown_stages(family: RocketFamily, stage_type: StageObjects, before_date: datetime):
-    """Returns the booster(s) with the highest number of flights, and how many flights that is"""
+    """Returns the stage(s) with the highest number of flights, and how many flights that is"""
     stage_and_launch_count = StageAndRecovery.objects.filter(
         launch__time__lte=before_date, stage__type=stage_type, stage__rocket__family=family
-    ).order_by("-num_flights")
+    ).order_by("-num_flights", "stage__name")
 
     if not stage_and_launch_count:
         return {
