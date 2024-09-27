@@ -95,7 +95,7 @@ class Rocket(models.Model):
     @property
     def num_launches(self):
         """Returns number of launches"""
-        return Launch.objects.filter(rocket=self, time__lte=datetime.now(pytz.utc)).count()
+        return Launch.objects.filter(rocket=self, time__lte=datetime.now(pytz.utc), launch_precluded=False).count()
 
     @property
     def num_successes(self):
@@ -212,7 +212,7 @@ class Pad(models.Model):
 
     @property
     def num_launches(self):
-        return Launch.objects.filter(pad=self, time__lte=datetime.now(pytz.utc)).count()
+        return Launch.objects.filter(pad=self, time__lte=datetime.now(pytz.utc), launch_precluded=False).count()
 
     @property
     def fastest_turnaround(self):
@@ -798,7 +798,7 @@ class Launch(models.Model):
         """
         provider = self.rocket.family.provider
         num_launches_from_pad = Launch.objects.filter(
-            time__lte=self.time, pad=self.pad, rocket__family__provider=provider
+            time__lte=self.time, pad=self.pad, rocket__family__provider=provider, launch_precluded=False
         ).count()
 
         return [
