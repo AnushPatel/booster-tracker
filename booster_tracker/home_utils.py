@@ -1,4 +1,5 @@
-from django.db.models import Q, Count, Max, Avg
+from django.db.models import Q, F, Func, FloatField
+from django.db.models.functions import Substr, Length, Cast
 from django.db import models
 from django.apps import apps
 from booster_tracker.models import (
@@ -33,11 +34,21 @@ class StageObjects(StrEnum):
     SECOND_STAGE = "SECOND_STAGE"
 
 
+class RegexpReplace(Func):
+    function = "REGEXP_REPLACE"
+    template = "%(function)s(%(expressions)s, '^[^0-9]*([0-9]+(\\.[0-9]+)?)', '\\1', 'g')"
+
+
 def get_most_flown_stages(family: RocketFamily, stage_type: StageObjects, before_date: datetime):
     """Returns the stage(s) with the highest number of flights, and how many flights that is"""
-    stage_and_launch_count = StageAndRecovery.objects.filter(
-        launch__time__lte=before_date, stage__type=stage_type, stage__rocket__family=family
-    ).order_by("-num_flights", "stage__name")
+    # Fetch the records and annotate the numeric part of the stage name
+    stage_and_launch_count = (
+        StageAndRecovery.objects.filter(
+            launch__time__lte=before_date, stage__type=stage_type, stage__rocket__family=family
+        )
+        .annotate(stage_number=Cast(RegexpReplace(F("stage__name")), FloatField()))
+        .order_by("-num_flights", "stage_number")
+    )
 
     if not stage_and_launch_count:
         return {
