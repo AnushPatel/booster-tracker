@@ -246,14 +246,13 @@ CELERY_TASK_ALWAYS_EAGER = False
 
 AWS_REGION = "us-west-2"
 
+user = os.getenv("CELERY_BROKER_USER")
+password = os.getenv("CELERY_BROKER_PASSWORD")
+host = os.getenv("CELERY_BROKER_HOST")
+port = os.getenv("CELERY_BROKER_PORT")
+
 if not DEBUG:
-    CELERY_BROKER_URL = "sqs://"
-    CELERY_BROKER_TRANSPORT_OPTIONS = {
-        "region": AWS_REGION,
-        "polling_interval": 3,
-        "queue_name_prefix": "",
-        "visibility_timeout": 3600,
-    }
+    CELERY_BROKER_URL = f"amqps://{user}:{password}@{host}:{port}/"
 else:
     CELERY_BROKER_URL = "redis://127.0.0.1:6379"
 
