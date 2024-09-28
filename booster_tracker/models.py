@@ -559,9 +559,9 @@ class Launch(models.Model):
 
         for stat in stats:
             if stat[0]:
-                significant_stats.append(first_lower(stat[1]))
+                significant_stats.append(first_lower(stat[1]).replace(f" {self.rocket.family.provider}", ""))
             else:
-                other_stats.append(first_lower(stat[1]))
+                other_stats.append(first_lower(stat[1]).replace(f" {self.rocket.family.provider}", ""))
 
         def get_random_stat(stat_list):
             return stat_list.pop(random.randint(0, len(stat_list) - 1)) if stat_list else None
@@ -977,10 +977,10 @@ class StageAndRecovery(models.Model):
                 launch__rocket__family=rocket_family,
                 id__lte=self.id,
             )
-            .filter(Q(method__in=["DRONE_SHIP", "GROUND_PAD", "CATCH"]) | Q(method__isnull=True))
+            .filter(Q(method__in=["DRONE_SHIP", "GROUND_PAD", "CATCH"]) | Q(method_success__isnull=True))
             .order_by("-launch__time", "-id")
         ):
-            if landing.method_success == "SUCCESS" or landing.launch.time > datetime.now(pytz.utc):
+            if landing.method_success == "SUCCESS" or landing.method_success is None:
                 consec_count += 1
             else:
                 break

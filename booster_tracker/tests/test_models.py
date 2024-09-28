@@ -715,7 +715,7 @@ class TestLaunchModel(TestCase):
         launch = Launch.objects.get(name="Falcon 9 Launch 3")
         result = launch.make_x_post()
 
-        expected = f"{launch.name} will mark SpaceX's fastest turnaround of a SpaceX pad to date at 29 days and shortest time between two SpaceX launches to date at 29 days.\n\nLearn more: https://boostertracker.com/launch/{launch.id}"
+        expected = f"{launch.name} will mark SpaceX's fastest turnaround of a pad to date at 29 days and shortest time between two launches to date at 29 days.\n\nLearn more: https://boostertracker.com/launch/{launch.id}"
 
         self.assertEqual(result, expected)
         self.assertTrue(len(result) <= 280)
