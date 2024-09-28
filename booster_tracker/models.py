@@ -970,20 +970,35 @@ class StageAndRecovery(models.Model):
 
         # Calculate consecutive successful landings
         consec_count = 0
+
         for landing in (
             StageAndRecovery.objects.filter(
-                launch__time__lte=self.launch.time,
+                launch__time__lt=self.launch.time,
                 stage__type=stage_type,
                 launch__rocket__family=rocket_family,
-                id__lte=self.id,
             )
-            .filter(Q(method__in=["DRONE_SHIP", "GROUND_PAD", "CATCH"]) | Q(method_success__isnull=True))
+            .filter(Q(method__in=["DRONE_SHIP", "GROUND_PAD", "CATCH"]))
             .order_by("-launch__time", "-id")
         ):
             if landing.method_success == "SUCCESS" or landing.method_success is None:
                 consec_count += 1
             else:
                 break
+
+        for landing in (
+            StageAndRecovery.objects.filter(
+                launch=self.launch,
+                stage__type=stage_type,
+                launch__rocket__family=rocket_family,
+                id__lte=self.id,
+            )
+            .filter(Q(method__in=["DRONE_SHIP", "GROUND_PAD", "CATCH"]))
+            .order_by("-id")
+        ):
+            if landing.method_success == "SUCCESS" or landing.method_success is None:
+                consec_count += 1
+            else:
+                consec_count = 0
 
         # Determine the method outcome
         method_outcome = self.method_success or "SUCCESS"
@@ -1056,15 +1071,19 @@ class StageAndRecovery(models.Model):
                 )
             )
 
-        if self.method_success == "SUCCESS":
-            stats.append(
-                (
-                    is_significant(landing_success_on_launch),
-                    f"{make_ordinal(landing_success_on_launch)} successful landing of a {rocket_family} {stage_type.lower()}",
+            if self.method_success == "SUCCESS":
+                stats.append(
+                    (
+                        is_significant(landing_success_on_launch),
+                        f"{make_ordinal(landing_success_on_launch)} successful landing of a {rocket_family} {stage_type.lower()}",
+                    )
                 )
-            )
 
-        if consec_count:
+        if (self.method_success is None or self.method_success == "SUCCESS") and self.method in [
+            "GROUND_PAD",
+            "CATCH",
+            "DRONE_SHIP",
+        ]:
             stats.append(
                 (
                     is_significant(consec_count),
