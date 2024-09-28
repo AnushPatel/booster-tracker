@@ -1,4 +1,4 @@
-from django.db.models import Q, F, Func, FloatField
+from django.db.models import Q, F, Func, FloatField, Case, When
 from django.db.models.functions import Substr, Length, Cast
 from django.db import models
 from django.apps import apps
@@ -36,7 +36,7 @@ class StageObjects(StrEnum):
 
 class RegexpReplace(Func):
     function = "REGEXP_REPLACE"
-    template = "%(function)s(%(expressions)s, '^[^0-9]*([0-9]+(\\.[0-9]+)?)', '\\1', 'g')"
+    template = "%(function)s(NULLIF(%(expressions)s, ''), '^[^0-9]*([0-9]+(\\.[0-9]+)?)', '\\1', 'g')"
 
 
 def get_most_flown_stages(family: RocketFamily, stage_type: StageObjects, before_date: datetime):
@@ -46,7 +46,18 @@ def get_most_flown_stages(family: RocketFamily, stage_type: StageObjects, before
         StageAndRecovery.objects.filter(
             launch__time__lte=before_date, stage__type=stage_type, stage__rocket__family=family
         )
-        .annotate(stage_number=Cast(RegexpReplace(F("stage__name")), FloatField()))
+        .annotate(
+            extracted_value=RegexpReplace(F("stage__name")),
+            # Cast only valid floats, otherwise return NULL
+            stage_number=Cast(
+                Case(
+                    When(extracted_value__regex=r"^[0-9]+(\.[0-9]+)?$", then=F("extracted_value")),
+                    default=None,
+                    output_field=FloatField(),
+                ),
+                FloatField(),
+            ),
+        )
         .order_by("-num_flights", "stage_number")
     )
 
