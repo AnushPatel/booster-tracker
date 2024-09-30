@@ -1,12 +1,12 @@
 from django.db.models import Q, Count, Max, Avg, Sum, Value
 from django.db.models.functions import ExtractYear, Coalesce
+from django.db.models.query import QuerySet
 from booster_tracker.home_utils import (
     get_model_objects_with_filter,
     launches_per_day,
     launch_turnaround_times,
     line_of_best_fit,
     launches_in_time_interval,
-    get_next_and_last_launches,
     get_most_flown_stages,
     StageObjects,
     build_filter,
@@ -14,7 +14,6 @@ from booster_tracker.home_utils import (
 from booster_tracker.utils import (
     concatenated_list,
     convert_seconds,
-    TurnaroundObjects,
     all_zeros,
     parse_start_time,
     get_start_date,
@@ -86,7 +85,8 @@ class StandardPagination(PageNumberPagination):
 
 # APIViews without any additional logic
 class OrbitApiView(APIView):
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> Response:
+        """Get list of all orbits"""
         orbits = Orbit.objects.all()
         serializer = OrbitSerializer(orbits, many=True)
 
@@ -94,8 +94,8 @@ class OrbitApiView(APIView):
 
 
 class LaunchOnlyApiView(APIView):
-    def get(self, request, *args, **kwargs):
-        """List all the Launch items (without recoveries) for given requested user"""
+    def get(self, request, *args, **kwargs) -> Response:
+        """List all the Launch items (without recoveries) for given user request"""
         launches = Launch.objects.all()
         serializer = LaunchOnlySerializer(launches, many=True)
 
@@ -103,8 +103,8 @@ class LaunchOnlyApiView(APIView):
 
 
 class RocketApiView(APIView):
-    def get(self, request, *args, **kwargs):
-        """List all the Rocket items for given requested user"""
+    def get(self, request, *args, **kwargs) -> Response:
+        """List all the Rocket items for given user request"""
         rockets = Rocket.objects.all()
         serializer = RocketSerializer(rockets, many=True)
 
@@ -112,16 +112,17 @@ class RocketApiView(APIView):
 
 
 class RocketFamilyApiView(APIView):
-    def get(self, request, *args, **kwargs):
-        """List all the RocketFamily items for given requested user"""
+    def get(self, request, *args, **kwargs) -> Response:
+        """List all the RocketFamily items for given user request"""
         rocketfamilies = RocketFamily.objects.all()
         serializer = RocketFamilySerializer(rocketfamilies, many=True)
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class OperatorApiView(APIView):
-    def get(self, request, *args, **kwargs):
-        """List all the Operator items for given requested user"""
+    def get(self, request, *args, **kwargs) -> Response:
+        """List all the Operator items for given user request"""
         operators = Operator.objects.all()
         serializer = OperatorSerializer(operators, many=True)
 
@@ -129,8 +130,8 @@ class OperatorApiView(APIView):
 
 
 class BoatApiView(APIView):
-    def get(self, request, *args, **kwargs):
-        """List of all boats"""
+    def get(self, request, *args, **kwargs) -> Response:
+        """list all of the boats for given user request"""
         boats = Boat.objects.all()
         serializer = BoatSerializer(boats, many=True)
 
@@ -138,7 +139,7 @@ class BoatApiView(APIView):
 
 
 class StageAndRecoveryApiView(APIView):
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> Response:
         """List of all stage and recoveries"""
         stage_and_recoveries = StageAndRecovery.objects.all()
         serializer = StageAndRecoverySerializer(stage_and_recoveries, many=True)
@@ -147,7 +148,7 @@ class StageAndRecoveryApiView(APIView):
 
 
 class SpacecraftFamilyApiView(APIView):
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> Response:
         """List of all spacecraft families"""
         spacecraft_families = SpacecraftFamily.objects.all()
         serializer = SpacecraftFamilySerializer(spacecraft_families, many=True)
@@ -157,7 +158,8 @@ class SpacecraftFamilyApiView(APIView):
 
 # Launch Calendar Stats
 class FilteredLaunchDaysApiView(APIView):
-    def get(self, request):
+    def get(self, request) -> Response:
+        """Get launch stats and launches for historical launch calendar"""
         filter = json.loads(request.query_params.get("filter"))
         filtered_launches = get_model_objects_with_filter(Launch, filter).filter(time__lte=datetime.now(pytz.utc))
         launches_on_day = launches_per_day(filtered_launches)
@@ -165,12 +167,12 @@ class FilteredLaunchDaysApiView(APIView):
         num_days_with_launches = len(launches_on_day)
         percentage_days_with_launch = round(num_days_with_launches / 3.66, 2)
 
-        max_launches = list(launches_on_day)[0][1]
+        max_launches = launches_on_day[0]["count"]
 
         days_with_most_launches = []
         for day in launches_on_day:
-            if day[1] == max_launches:
-                days_with_most_launches.append(day[0])
+            if day["count"] == max_launches:
+                days_with_most_launches.append(day["date"])
             else:
                 break
 
@@ -194,40 +196,40 @@ class LaunchApiView(ListAPIView):
     serializer_class = LaunchSerializer
     pagination_class = StandardPagination
 
-    def get_queryset(self):
-        """Return the list of items for this view."""
+    def get_queryset(self) -> QuerySet:
+        """Return the list of launches for this view."""
         filter_param = self.request.query_params.get("filter", "{}")
         filter = json.loads(filter_param)
         query = self.request.query_params.get("query", "")
-        filtered_launches = get_model_objects_with_filter(Launch, filter, query)
-        return filtered_launches
 
-    def get(self, request, *args, **kwargs):
+        return get_model_objects_with_filter(Launch, filter, query)
+
+    def get(self, request, *args, **kwargs) -> Response:
         """List all the Launch items for given requested user"""
         queryset = self.get_queryset()
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
+
             return self.get_paginated_response(serializer.data)
 
 
 class PadApiView(APIView):
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> Response:
         """List of all pads"""
         filter_param = self.request.query_params.get("filter", "{}")
-
         filter = json.loads(filter_param)
         query = self.request.query_params.get("query", "")
         filtered_pads = get_model_objects_with_filter(Pad, filter, query).order_by("-name")
         serializer = PadSerializer(filtered_pads, many=True)
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class LandingZoneApiView(APIView):
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> Response:
         """List of all landing zones"""
         filter_param = self.request.query_params.get("filter", "{}")
-
         filter = json.loads(filter_param)
         query = self.request.query_params.get("query", "")
         filtered_zones = get_model_objects_with_filter(LandingZone, filter, query).order_by("-name")
@@ -237,7 +239,7 @@ class LandingZoneApiView(APIView):
 
 
 class StageApiView(APIView):
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> Response:
         # Get information from URL
         filter_param = self.request.query_params.get("filter", "{}")
         filter = json.loads(filter_param)
@@ -255,14 +257,13 @@ class StageApiView(APIView):
         )
 
         data = {"start_filter": start_filter, "stages": filtered_stages}
-
         serializer = StageListSerializer(data)
 
         return Response(serializer.data)
 
 
 class SpacecraftApiView(ListAPIView):
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> Response:
         # Get information from URL
         filter_param = self.request.query_params.get("filter", "{}")
         filter = json.loads(filter_param)
@@ -280,7 +281,6 @@ class SpacecraftApiView(ListAPIView):
             filtered_spacecraft = get_model_objects_with_filter(Spacecraft, filter, query).order_by("-name")
 
         data = {"start_filter": start_filter, "spacecraft": filtered_spacecraft}
-
         serializer = SpacecraftListSerializer(data)
 
         return Response(serializer.data)
@@ -292,7 +292,7 @@ class SpacecraftApiView(ListAPIView):
 class LaunchInformationApiView(RetrieveAPIView):
     serializer_class = LaunchInformationSerializer
 
-    def get_object(self):
+    def get_object(self) -> Launch:
         """Get launch by ID"""
         id = self.request.query_params.get("id", "")
         return Launch.objects.get(id=id)
@@ -301,14 +301,14 @@ class LaunchInformationApiView(RetrieveAPIView):
 class LaunchInformation2ApiView(RetrieveAPIView):
     serializer_class = LaunchInformation2Serializer
 
-    def get_object(self):
+    def get_object(self) -> Launch:
         """Get launch by ID"""
         id = self.request.query_params.get("id", "")
         return Launch.objects.get(id=id)
 
 
 class LandingZoneInformationApiView(RetrieveAPIView):
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> Response:
         """Get stage by ID"""
         id = self.request.query_params.get("id", "")
         landing_zone = LandingZone.objects.get(id=id)
@@ -335,7 +335,7 @@ class LandingZoneInformationApiView(RetrieveAPIView):
 
 
 class StageInformationApiView(RetrieveAPIView):
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> Response:
         """Get stage by ID"""
         id = self.request.query_params.get("id", "")
         stage = Stage.objects.get(id=id)
@@ -360,7 +360,7 @@ class StageInformationApiView(RetrieveAPIView):
 
 
 class SpacecraftInformationApiView(RetrieveAPIView):
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> Response:
         """Get spacecraft by ID"""
         id = self.request.query_params.get("id", "")
         spacecraft = Spacecraft.objects.get(id=id)
@@ -387,7 +387,7 @@ class SpacecraftInformationApiView(RetrieveAPIView):
 
 
 class PadInformationApiView(RetrieveAPIView):
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> Response:
         """Get pad by ID"""
         id = self.request.query_params.get("id", "")
         pad = Pad.objects.get(id=id)
@@ -415,7 +415,7 @@ class PadInformationApiView(RetrieveAPIView):
 
 
 class HomeDataApiView(APIView):
-    def get(self, request):
+    def get(self, request) -> Response:
         self.now = datetime.now(pytz.utc)
         start_time = parse_start_time(self.request.query_params, self.now)
         function_type = self.request.query_params.get("functiontype", "")
@@ -444,6 +444,7 @@ class HomeDataApiView(APIView):
         )
         num_stage_reflights = self._calculate_num_stage_reflights()
 
+        # If no filtered launches exist, return data to avoid failures
         if not filtered_launches.exists():
             data = self._prepare_empty_response_data(
                 next_launch,
@@ -459,10 +460,8 @@ class HomeDataApiView(APIView):
             serializer = HomePageSerializer(data)
             return Response(serializer.data)
 
-        # Process turnaround data and best fit calculations
+        # Process turnaround data and best fit calculations; use this to predict future launches
         turnaround_data = self._process_turnaround_data(filtered_launches, function_type)
-
-        # Calculate future launch predictions
         launch_predictions = self._calculate_launch_predictions(
             filtered_launches, self.now, turnaround_data["best_fit_line"]
         )

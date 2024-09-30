@@ -1,5 +1,6 @@
-from django.db.models import Q, F, Func, FloatField, Case, When
-from django.db.models.functions import Substr, Length, Cast
+from django.db.models import Q, F, Func, FloatField, Case, When, Count
+from django.db.models.functions import Cast, ExtractMonth, ExtractDay
+from django.db.models.query import QuerySet
 from django.db import models
 from django.apps import apps
 from booster_tracker.models import (
@@ -23,7 +24,7 @@ from datetime import datetime
 from django.templatetags.static import static
 import pytz
 from enum import StrEnum
-from collections import defaultdict
+import calendar
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.integrate import quad
@@ -160,16 +161,22 @@ def get_model_objects_with_filter(model: models.Model, filter: dict, search_quer
     return filtered_objects
 
 
-def launches_per_day(launches: list[Launch]):
+def launches_per_day(launches: QuerySet) -> list[dict]:
     """Takes in a list of launches and gives the number of launches on each day (excluding year)"""
-    launches_per_day = defaultdict(int)
-    for launch in launches:
-        date = f"{launch.time.strftime('%B %d')}"
-        launches_per_day[date] += 1
+    launches_per_day = (
+        launches.annotate(month=ExtractMonth("time"), day=ExtractDay("time"))  # Extract month and day
+        .values("month", "day")  # Group by month and day
+        .annotate(count=Count("id"))  # Count the number of launches
+        .order_by("-count", "month", "day")  # Sort by the number of launches in descending order
+    )
 
-    launches_per_day = sorted(launches_per_day.items(), key=lambda x: x[1], reverse=True)
+    # Format the output like "Month Day"
+    formatted_launches_per_day = [
+        {"date": f"{calendar.month_name[launch['month']]} {launch['day']}", "count": launch["count"]}
+        for launch in launches_per_day
+    ]
 
-    return launches_per_day
+    return formatted_launches_per_day
 
 
 def launch_turnaround_times(filtered_launches: list[Launch]):

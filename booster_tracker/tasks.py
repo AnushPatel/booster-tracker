@@ -35,7 +35,7 @@ def update_cached_stageandrecovery_value_task(stage_id_list, zone_id_list):
     related_launch_instances = Launch.objects.filter(stageandrecovery__stage__id__in=stage_id_list)
     for launch in related_launch_instances:
         launch._from_task = True
-        launch.stages_string = launch.boosters
+        launch.stages_string = launch.stages
         launch.save(update_fields=["stages_string"])
         # Reset flag:
         launch._from_task = False
@@ -51,7 +51,7 @@ def update_cached_launch_value_task():
         launch.company_turnaround = launch.get_company_turnaround
         launch.pad_turnaround = launch.get_pad_turnaround
         launch.image = launch.get_image
-        launch.stages_string = launch.boosters
+        launch.stages_string = launch.stages
         launch.save(update_fields=["company_turnaround", "pad_turnaround", "image", "stages_string"])
         launch._from_task = False
 

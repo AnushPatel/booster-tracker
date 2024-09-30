@@ -10,7 +10,6 @@ from booster_tracker.utils import (
     MonotonicDirections,
     all_zeros,
     combine_dicts,
-    turnaround_time,
     parse_start_time,
 )
 
@@ -65,24 +64,6 @@ class TestCases(TestCase):
         self.assertEqual(concatenated_list(["Bob", "Doug"]), "Bob and Doug")
         self.assertEqual(concatenated_list(["Bob"]), "Bob")
         self.assertEqual(concatenated_list([]), "N/A")
-
-    def test_turnaround_time(self):
-        self.assertIsNone(turnaround_time([]))
-        self.assertEqual(turnaround_time(Launch.objects.all().order_by("time")), 2592000)
-
-        Launch.objects.create(
-            time=datetime(2024, 5, 2, 0, 0, tzinfo=pytz.utc),
-            pad=Pad.objects.get(name="Space Launch Complex 40"),
-            rocket=Rocket.objects.get(name="Falcon 9"),
-            name="Falcon 9 Temp Launch 2",
-            orbit=Orbit.objects.get(name="low-Earth Orbit"),
-            mass=1000,
-            customer="SpaceX",
-            launch_outcome="SUCCESS",
-        )
-
-        # Ensure function responds according to launch addition
-        self.assertEqual(turnaround_time(Launch.objects.all().order_by("time")), 86400)
 
     def test_all_values_true(self):
         test1 = {1: True, 2: {3: True, 4: {5: {6: True}, 7: True}}}

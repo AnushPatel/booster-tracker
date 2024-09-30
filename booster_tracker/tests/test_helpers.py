@@ -34,19 +34,15 @@ def initialize_test_data():
 
     # Create pads
     slc40 = Pad.objects.create(
-        name="Space Launch Complex 40",
-        nickname="SLC-40",
-        location="CCSFS",
-        status="ACTIVE",
+        name="Space Launch Complex 40", nickname="SLC-40", location="CCSFS", status="ACTIVE", time_zone="US/Eastern"
     )
     lc39a = Pad.objects.create(
-        name="Launch Complex 39A",
-        nickname="LC-39A",
-        location="KSC",
-        status="ACTIVE",
+        name="Launch Complex 39A", nickname="LC-39A", location="KSC", status="ACTIVE", time_zone="US/Eastern"
     )
 
-    slc4e = Pad.objects.create(name="Space Launch Complex 4 East", nickname="SLC-4E", location="Vandy", status="ACTIVE")
+    slc4e = Pad.objects.create(
+        name="Space Launch Complex 4 East", nickname="SLC-4E", location="Vandy", status="ACTIVE", time_zone="US/Pacific"
+    )
 
     # Create orbit
     low_earth_orbit = Orbit.objects.create(name="low-Earth Orbit")
@@ -267,7 +263,7 @@ def update_data():
         stage_and_recovery.save(update_fields=["stage_turnaround", "zone_turnaround", "num_flights", "num_recoveries"])
 
     for launch in Launch.objects.all():
-        launch.stages_string = launch.boosters
+        launch.stages_string = launch.stages
         launch.company_turnaround = launch.get_company_turnaround
         launch.pad_turnaround = launch.get_pad_turnaround
         launch.image = launch.get_image

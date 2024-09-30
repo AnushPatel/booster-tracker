@@ -69,7 +69,7 @@ class TestCases(TestCase):
             )
 
         for launch in Launch.objects.all():
-            launch.stages_string = launch.boosters
+            launch.stages_string = launch.stages
             launch.company_turnaround = launch.get_company_turnaround
             launch.pad_turnaround = launch.get_pad_turnaround
             launch.image = launch.get_image
@@ -221,7 +221,13 @@ class TestCases(TestCase):
     def test_launches_per_day(self):
         # Test get laucnhes with current list
         result = launches_per_day(Launch.objects.all())
-        expected = [("May 01", 1), ("April 01", 1), ("March 01", 1), ("February 01", 1), ("January 01", 1)]
+        expected = [
+            {"count": 1, "date": "January 1"},
+            {"count": 1, "date": "February 1"},
+            {"count": 1, "date": "March 1"},
+            {"count": 1, "date": "April 1"},
+            {"count": 1, "date": "May 1"},
+        ]
         self.assertEqual(result, expected)
 
         # Add a second launch on another day, make sure it updates accordingly:
@@ -236,7 +242,14 @@ class TestCases(TestCase):
             launch_outcome="FAILURE",
         )
         result = launches_per_day(Launch.objects.all())
-        expected = [("January 01", 2), ("May 01", 1), ("April 01", 1), ("March 01", 1), ("February 01", 1)]
+        expected = [
+            {"count": 2, "date": "January 1"},
+            {"count": 1, "date": "February 1"},
+            {"count": 1, "date": "March 1"},
+            {"count": 1, "date": "April 1"},
+            {"count": 1, "date": "May 1"},
+        ]
+
         self.assertEqual(result, expected)
 
     def test_launch_turnaround_times(self):

@@ -7,6 +7,7 @@ import tweepy
 from dotenv import load_dotenv
 import os
 import tweepy
+import random
 
 load_dotenv()
 # Read the API credentials from the environment variables
@@ -106,13 +107,6 @@ def success(value: str) -> str:
     if value == "PRECLUDED":
         return "was precluded from completing"
     return "failed to complete"
-
-
-def turnaround_time(launches: list) -> int:
-    """Returns turnaround between last two launches in list; in total seconds"""
-    if len(launches) > 1:
-        return (launches[len(launches) - 1].time - launches[len(launches) - 2].time).total_seconds()
-    return None
 
 
 def all_values_true(dictionary):
@@ -219,6 +213,23 @@ def build_table_html(data):
         table_html += "</td></tr>"
     table_html += "</table>"
     return table_html
+
+
+def first_lower(string: str) -> str:
+    """Converts the first character of the string to lowercase."""
+    if string:
+        return string[0].lower() + string[1:]
+    return string
+
+
+def get_random_stat(stat_list: list) -> str:
+    """Pops a random stat from the list if it's not empty."""
+    return stat_list.pop(random.randint(0, len(stat_list) - 1)) if stat_list else None
+
+
+def process_stat(stat: str, provider: str) -> str:
+    """Processes the stat by converting the first character to lowercase and removing the provider's name."""
+    return first_lower(stat).replace(f" {provider}", "")
 
 
 def make_x_post(post_string):

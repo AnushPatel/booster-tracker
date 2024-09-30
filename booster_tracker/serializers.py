@@ -14,6 +14,7 @@ from .models import (
     Boat,
     SpacecraftFamily,
 )
+from .utils import convert_seconds
 
 
 class OrbitSerializer(serializers.ModelSerializer):
@@ -106,6 +107,12 @@ class PadSerializer(serializers.ModelSerializer):
             "fastest_turnaround",
         ]
 
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["fastest_turnaround"] = convert_seconds(instance.fastest_turnaround)
+
+        return representation
+
 
 class PadInformationSerializer(serializers.Serializer):
     launches = serializers.ListField(child=LaunchOnlySerializer())
@@ -128,6 +135,12 @@ class LandingZoneSerializer(serializers.ModelSerializer):
             "num_landings",
             "fastest_turnaround",
         ]
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["fastest_turnaround"] = convert_seconds(instance.fastest_turnaround)
+
+        return representation
 
 
 class LandingZoneInformationSerializer(serializers.Serializer):
@@ -186,6 +199,13 @@ class StageAndRecoveryOnlySerializer(serializers.ModelSerializer):
     def get_landing_zone_stats(self, obj):
         return obj.get_landing_zone_stats()
 
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["stage_turnaround"] = convert_seconds(instance.stage_turnaround)
+        representation["zone_turnaround"] = convert_seconds(instance.zone_turnaround)
+
+        return representation
+
 
 class StageListSerializer(serializers.Serializer):
     start_filter = serializers.DictField(child=serializers.CharField(), required=True)
@@ -233,6 +253,12 @@ class SpacecraftOnLaunchOnlySerializer(serializers.ModelSerializer):
 
     def get_spacecraft_stats(self, obj: SpacecraftOnLaunch):
         return obj.get_spacecraft_stats()
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["spacecraft_turnaround"] = convert_seconds(instance.spacecraft_turnaround)
+
+        return representation
 
 
 class SpacecraftInformationSerializer(serializers.Serializer):
@@ -313,7 +339,26 @@ class LaunchInformation2Serializer(serializers.ModelSerializer):
 
     class Meta:
         model = Launch
-        fields = "__all__"
+        fields = [
+            "id",
+            "stage_and_recoveries",
+            "spacecraft_on_launch",
+            "rocket_stats",
+            "launch_provider_stats",
+            "launch_pad_stats",
+            "significant_stats",
+            "time",
+            "name",
+            "mass",
+            "customer",
+            "launch_outcome",
+            "pad_turnaround",
+            "company_turnaround",
+            "image",
+            "pad",
+            "rocket",
+            "orbit",
+        ]
 
     def get_rocket_stats(self, obj: Launch):
         return obj.get_rocket_stats()
@@ -326,3 +371,10 @@ class LaunchInformation2Serializer(serializers.ModelSerializer):
 
     def get_significant_stats(self, obj: Launch):
         return obj.make_stats()
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["pad_turnaround"] = convert_seconds(instance.pad_turnaround)
+        representation["company_turnaround"] = convert_seconds(instance.company_turnaround)
+
+        return representation

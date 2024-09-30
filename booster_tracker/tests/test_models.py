@@ -97,12 +97,12 @@ class TestStageModel(TestCase):
         self.assertEqual(self.test_data["b1085"].num_launches, 0)
 
     def test_fastest_turnaround(self):
-        self.assertEqual(self.test_data["b1062"].fastest_turnaround, "31 days")
-        self.assertEqual(self.test_data["b1080"].fastest_turnaround, "30 days")
+        self.assertEqual(self.test_data["b1062"].fastest_turnaround, 2678400)
+        self.assertEqual(self.test_data["b1080"].fastest_turnaround, 2592000)
         # test stage with only a single launch
-        self.assertEqual(self.test_data["b1084"].fastest_turnaround, "N/A")
+        self.assertIsNone(self.test_data["b1084"].fastest_turnaround)
         # test stage with zero launches
-        self.assertEqual(self.test_data["b1085"].fastest_turnaround, "N/A")
+        self.assertIsNone(self.test_data["b1085"].fastest_turnaround)
 
 
 class TestSpacecraftModel(TestCase):
@@ -114,8 +114,8 @@ class TestSpacecraftModel(TestCase):
         self.assertEqual(self.test_data["c207"].num_launches, 0)
 
     def test_fastest_turnaround(self):
-        self.assertEqual(self.test_data["c206"].fastest_turnaround, "17 days")
-        self.assertEqual(self.test_data["c207"].fastest_turnaround, "N/A")
+        self.assertEqual(self.test_data["c206"].fastest_turnaround, 1468800)
+        self.assertIsNone(self.test_data["c207"].fastest_turnaround)
 
 
 class TestPadModel(TestCase):
@@ -128,9 +128,9 @@ class TestPadModel(TestCase):
         self.assertEqual(self.test_data["slc4e"].num_launches, 0)
 
     def test_fastest_turnaround(self):
-        self.assertEqual(self.test_data["slc40"].fastest_turnaround, "29 days")
-        self.assertEqual(self.test_data["lc39a"].fastest_turnaround, "N/A")
-        self.assertEqual(self.test_data["slc4e"].fastest_turnaround, "N/A")
+        self.assertEqual(self.test_data["slc40"].fastest_turnaround, 2505600)
+        self.assertIsNone(self.test_data["lc39a"].fastest_turnaround)
+        self.assertIsNone(self.test_data["slc4e"].fastest_turnaround)
 
 
 class TestLaunchModel(TestCase):
@@ -146,10 +146,10 @@ class TestLaunchModel(TestCase):
 
     def test_flight_proven_booster(self):
         # Test perm stage and recoveries
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").flight_proven_booster, False)
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").flight_proven_booster, True)
-        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").flight_proven_booster, True)
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").flight_proven_booster, True)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").flight_proven_stage, False)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").flight_proven_stage, True)
+        self.assertEqual(Launch.objects.get(name="Falcon Heavy Launch 1").flight_proven_stage, True)
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").flight_proven_stage, True)
 
         Stage.objects.create(
             name="B1000",
@@ -216,7 +216,7 @@ class TestLaunchModel(TestCase):
 
         # Test Falcon Heavy with all new cores passes
         self.assertEqual(
-            Launch.objects.get(name="Falcon Heavy Temp Launch 1").flight_proven_booster,
+            Launch.objects.get(name="Falcon Heavy Temp Launch 1").flight_proven_stage,
             False,
         )
 
@@ -235,41 +235,35 @@ class TestLaunchModel(TestCase):
     def test_get_stage_flights_and_turnaround(self):
         # Test on perm StageAndRecovery objects
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Launch 1").get_stage_flights_and_turnaround(
+            Launch.objects.get(name="Falcon 9 Launch 1").get_stage_flights(
                 stage=Stage.objects.get(stageandrecovery__launch=Launch.objects.get(name="Falcon 9 Launch 1"))
             ),
-            (1, None),
+            1,
         )
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Launch 2").get_stage_flights_and_turnaround(
+            Launch.objects.get(name="Falcon 9 Launch 2").get_stage_flights(
                 stage=Stage.objects.get(stageandrecovery__launch=Launch.objects.get(name="Falcon 9 Launch 2"))
             ),
-            (2, 31.00),
+            2,
         )
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Launch 3").get_stage_flights_and_turnaround(
+            Launch.objects.get(name="Falcon 9 Launch 3").get_stage_flights(
                 stage=Stage.objects.get(stageandrecovery__launch=Launch.objects.get(name="Falcon 9 Launch 3"))
             ),
-            (1, None),
+            1,
         )
 
         self.assertEqual(
-            Launch.objects.get(name="Falcon Heavy Launch 1").get_stage_flights_and_turnaround(
-                stage=Stage.objects.get(name="B1062")
-            ),
-            (3, 60.00),
+            Launch.objects.get(name="Falcon Heavy Launch 1").get_stage_flights(stage=Stage.objects.get(name="B1062")),
+            3,
         )
         self.assertEqual(
-            Launch.objects.get(name="Falcon Heavy Launch 1").get_stage_flights_and_turnaround(
-                stage=Stage.objects.get(name="B1080")
-            ),
-            (2, 31.00),
+            Launch.objects.get(name="Falcon Heavy Launch 1").get_stage_flights(stage=Stage.objects.get(name="B1080")),
+            2,
         )
         self.assertEqual(
-            Launch.objects.get(name="Falcon Heavy Launch 1").get_stage_flights_and_turnaround(
-                stage=Stage.objects.get(name="B1084")
-            ),
-            (1, None),
+            Launch.objects.get(name="Falcon Heavy Launch 1").get_stage_flights(stage=Stage.objects.get(name="B1084")),
+            1,
         )
 
     def test_calculate_stage_and_recovery_turnaround_stats(self):
@@ -451,13 +445,13 @@ class TestLaunchModel(TestCase):
 
     def test_boosters(self):
         # Test for perm objects
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").boosters, "B1062-1")
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").boosters, "B1062-2")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 1").stages, "B1062-1")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 2").stages, "B1062-2")
         self.assertEqual(
-            Launch.objects.get(name="Falcon Heavy Launch 1").boosters,
+            Launch.objects.get(name="Falcon Heavy Launch 1").stages,
             "B1084-1, B1080-2, and B1062-3",
         )
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").boosters, "B1080-3")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Launch 4").stages, "B1080-3")
 
         Launch.objects.create(
             time=datetime(2024, 1, 1, 0, 0, tzinfo=pytz.utc),
@@ -471,20 +465,20 @@ class TestLaunchModel(TestCase):
         )
 
         # Ensure launch with no booster assigned gets unknown
-        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 1").boosters, "Unknown")
+        self.assertEqual(Launch.objects.get(name="Falcon 9 Temp Launch 1").stages, "Unknown")
 
     def test_make_booster_display(self):
         # Test for perm objects; space is intentional for formatting in table
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Launch 1").make_booster_display(),
+            Launch.objects.get(name="Falcon 9 Launch 1").make_stage_display(),
             " B1062-1; N/A-day turnaround",
         )
         self.assertEqual(
-            Launch.objects.get(name="Falcon 9 Launch 2").make_booster_display(),
+            Launch.objects.get(name="Falcon 9 Launch 2").make_stage_display(),
             " B1062-2; 31.00-day turnaround",
         )
         self.assertEqual(
-            Launch.objects.get(name="Falcon Heavy Launch 1").make_booster_display(),
+            Launch.objects.get(name="Falcon Heavy Launch 1").make_stage_display(),
             " B1084-1, B1080-2, B1062-3; N/A, 31.00, 60.00-day turnaround",
         )
 
@@ -501,7 +495,7 @@ class TestLaunchModel(TestCase):
 
         # Test for launch with unknown booster
         self.assertAlmostEqual(
-            Launch.objects.get(name="Falcon 9 Temp Launch 1").make_booster_display(),
+            Launch.objects.get(name="Falcon 9 Temp Launch 1").make_stage_display(),
             "; Unknown booster",
         )
 
@@ -625,7 +619,7 @@ class TestLaunchModel(TestCase):
                 (False, "1st SpaceX launch from SLC-40"),
                 (False, "1st Falcon booster landing success on a ground pad"),
                 (False, "1st landing attempt of a Falcon booster"),
-                (False, "1st successful landing of a Falcon booster"),
+                (False, "1st landing success of a Falcon booster"),
                 (False, "1st consecutive landing of a Falcon booster"),
                 (False, "1st landing success on Landing Zone 1"),
                 (False, "1st landing attempt on Landing Zone 1"),
@@ -642,7 +636,7 @@ class TestLaunchModel(TestCase):
                 (False, "2nd SpaceX launch from SLC-40"),
                 (False, "2nd Falcon booster landing success on a ground pad"),
                 (False, "2nd landing attempt of a Falcon booster"),
-                (False, "2nd successful landing of a Falcon booster"),
+                (False, "2nd landing success of a Falcon booster"),
                 (False, "2nd consecutive landing of a Falcon booster"),
                 (False, "1st reflight of a Falcon booster"),
             ],
@@ -656,7 +650,7 @@ class TestLaunchModel(TestCase):
                 (False, "3rd SpaceX launch from SLC-40"),
                 (False, "3rd Falcon booster landing success on a ground pad"),
                 (False, "3rd landing attempt of a Falcon booster"),
-                (False, "3rd successful landing of a Falcon booster"),
+                (False, "3rd landing success of a Falcon booster"),
                 (False, "3rd consecutive landing of a Falcon booster"),
                 (False, "3rd landing success on Landing Zone 1"),
                 (False, "3rd landing attempt on Landing Zone 1"),
@@ -672,7 +666,7 @@ class TestLaunchModel(TestCase):
                 (False, "4th SpaceX launch from SLC-40"),
                 (False, "4th Falcon booster landing success on a ground pad"),
                 (False, "4th landing attempt of a Falcon booster"),
-                (False, "4th successful landing of a Falcon booster"),
+                (False, "4th landing success of a Falcon booster"),
                 (False, "4th consecutive landing of a Falcon booster"),
                 (False, "2nd reflight of a Falcon booster"),
             ],
@@ -693,7 +687,7 @@ class TestLaunchModel(TestCase):
                 (False, "5th SpaceX launch from SLC-40"),
                 (False, "2nd Falcon booster landing success on a drone ship"),
                 (False, "7th landing attempt of a Falcon booster"),
-                (False, "7th successful landing of a Falcon booster"),
+                (False, "7th landing success of a Falcon booster"),
                 (False, "7th consecutive landing of a Falcon booster"),
                 (False, "4th reflight of a Falcon booster"),
             ],
@@ -751,7 +745,7 @@ class TestLaunchModel(TestCase):
                     "– 1st SpaceX launch from SLC-40",
                     "– 1st Falcon booster landing success on a ground pad",
                     "– 1st landing attempt of a Falcon booster",
-                    "– 1st successful landing of a Falcon booster",
+                    "– 1st landing success of a Falcon booster",
                     "– 1st consecutive landing of a Falcon booster",
                     "– 1st landing success on Landing Zone 1",
                     "– 1st landing attempt on Landing Zone 1",
@@ -779,7 +773,7 @@ class TestLaunchModel(TestCase):
                     "– 2nd SpaceX launch from SLC-40",
                     "– 2nd Falcon booster landing success on a ground pad",
                     "– 2nd landing attempt of a Falcon booster",
-                    "– 2nd successful landing of a Falcon booster",
+                    "– 2nd landing success of a Falcon booster",
                     "– 2nd consecutive landing of a Falcon booster",
                     "– 1st reflight of a Falcon booster",
                 ],
@@ -805,7 +799,7 @@ class TestLaunchModel(TestCase):
                     "– 3rd SpaceX launch from SLC-40",
                     "– 3rd Falcon booster landing success on a ground pad",
                     "– 3rd landing attempt of a Falcon booster",
-                    "– 3rd successful landing of a Falcon booster",
+                    "– 3rd landing success of a Falcon booster",
                     "– 3rd consecutive landing of a Falcon booster",
                     "– 3rd landing success on Landing Zone 1",
                     "– 3rd landing attempt on Landing Zone 1",
@@ -838,7 +832,7 @@ class TestLaunchModel(TestCase):
                     "– 4th SpaceX launch from SLC-40",
                     "– 4th Falcon booster landing success on a ground pad",
                     "– 4th landing attempt of a Falcon booster",
-                    "– 4th successful landing of a Falcon booster",
+                    "– 4th landing success of a Falcon booster",
                     "– 4th consecutive landing of a Falcon booster",
                     "– 2nd reflight of a Falcon booster",
                 ],
@@ -870,7 +864,7 @@ class TestLaunchModel(TestCase):
                     "– 5th SpaceX launch from SLC-40",
                     "– 2nd Falcon booster landing success on a drone ship",
                     "– 7th landing attempt of a Falcon booster",
-                    "– 7th successful landing of a Falcon booster",
+                    "– 7th landing success of a Falcon booster",
                     "– 7th consecutive landing of a Falcon booster",
                     "– 4th reflight of a Falcon booster",
                 ],
@@ -1015,9 +1009,9 @@ class TestLandingZoneModel(TestCase):
         self.assertEqual(self.test_data["jrti"].num_landings, 2)
 
     def test_fastest_turnaround(self):
-        self.assertEqual(self.test_data["lz1"].fastest_turnaround, "29 days")
-        self.assertEqual(self.test_data["lz2"].fastest_turnaround, "N/A")
-        self.assertEqual(self.test_data["jrti"].fastest_turnaround, "30 days")
+        self.assertEqual(self.test_data["lz1"].fastest_turnaround, 2505600)
+        self.assertIsNone(self.test_data["lz2"].fastest_turnaround)
+        self.assertEqual(self.test_data["jrti"].fastest_turnaround, 2592000)
 
 
 class TestStageAndRecoveryModel(TestCase):
@@ -1064,7 +1058,7 @@ class TestStageAndRecoveryModel(TestCase):
         expected = [
             (False, "1st Falcon booster landing success on a ground pad"),
             (False, "1st landing attempt of a Falcon booster"),
-            (False, "1st successful landing of a Falcon booster"),
+            (False, "1st landing success of a Falcon booster"),
             (False, "1st consecutive landing of a Falcon booster"),
         ]
         self.assertEqual(StageAndRecovery.objects.get(launch=self.test_data["launch1"]).get_stage_stats(), expected)
@@ -1072,7 +1066,7 @@ class TestStageAndRecoveryModel(TestCase):
         expected = [
             (False, "2nd Falcon booster landing success on a ground pad"),
             (False, "2nd landing attempt of a Falcon booster"),
-            (False, "2nd successful landing of a Falcon booster"),
+            (False, "2nd landing success of a Falcon booster"),
             (False, "2nd consecutive landing of a Falcon booster"),
             (False, "1st reflight of a Falcon booster"),
             (False, "1st reflight of a Falcon booster in 2024"),
@@ -1082,7 +1076,7 @@ class TestStageAndRecoveryModel(TestCase):
         expected = [
             (False, "3rd Falcon booster landing success on a ground pad"),
             (False, "3rd landing attempt of a Falcon booster"),
-            (False, "3rd successful landing of a Falcon booster"),
+            (False, "3rd landing success of a Falcon booster"),
             (False, "3rd consecutive landing of a Falcon booster"),
         ]
         self.assertEqual(StageAndRecovery.objects.get(launch=self.test_data["launch3"]).get_stage_stats(), expected)
@@ -1090,7 +1084,7 @@ class TestStageAndRecoveryModel(TestCase):
         expected = [
             (False, "4th Falcon booster landing success on a ground pad"),
             (False, "4th landing attempt of a Falcon booster"),
-            (False, "4th successful landing of a Falcon booster"),
+            (False, "4th landing success of a Falcon booster"),
             (False, "4th consecutive landing of a Falcon booster"),
             (False, "2nd reflight of a Falcon booster"),
             (False, "2nd reflight of a Falcon booster in 2024"),
@@ -1103,7 +1097,7 @@ class TestStageAndRecoveryModel(TestCase):
         expected = [
             (False, "5th Falcon booster landing success on a ground pad"),
             (False, "5th landing attempt of a Falcon booster"),
-            (False, "5th successful landing of a Falcon booster"),
+            (False, "5th landing success of a Falcon booster"),
             (False, "5th consecutive landing of a Falcon booster"),
             (False, "3rd reflight of a Falcon booster"),
             (False, "3rd reflight of a Falcon booster in 2024"),
@@ -1116,7 +1110,7 @@ class TestStageAndRecoveryModel(TestCase):
         expected = [
             (False, "1st Falcon booster landing success on a drone ship"),
             (False, "6th landing attempt of a Falcon booster"),
-            (False, "6th successful landing of a Falcon booster"),
+            (False, "6th landing success of a Falcon booster"),
             (False, "6th consecutive landing of a Falcon booster"),
         ]
         self.assertEqual(
@@ -1127,7 +1121,7 @@ class TestStageAndRecoveryModel(TestCase):
         expected = [
             (False, "2nd Falcon booster landing success on a drone ship"),
             (False, "7th landing attempt of a Falcon booster"),
-            (False, "7th successful landing of a Falcon booster"),
+            (False, "7th landing success of a Falcon booster"),
             (False, "7th consecutive landing of a Falcon booster"),
             (False, "4th reflight of a Falcon booster"),
             (False, "4th reflight of a Falcon booster in 2024"),

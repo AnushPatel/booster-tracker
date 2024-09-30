@@ -37,9 +37,7 @@ class FilteredLaunchDaysApiViewTest(APITestCase):
         self.assertEqual(response_data["num_days_with_launches"], 5)
         self.assertEqual(response_data["percentage_days_with_launches"], 1.37)
         self.assertEqual(response_data["most_launches"], 1)
-        self.assertEqual(
-            response_data["days_with_most_launches"], "May 01, April 01, March 01, February 01, and January 01"
-        )
+        self.assertEqual(response_data["days_with_most_launches"], "January 1, February 1, March 1, April 1, and May 1")
 
         Launch.objects.create(
             time=datetime(2022, 1, 1, 0, 0, tzinfo=pytz.utc),
@@ -62,7 +60,7 @@ class FilteredLaunchDaysApiViewTest(APITestCase):
         self.assertEqual(response_data["num_days_with_launches"], 5)
         self.assertEqual(response_data["percentage_days_with_launches"], 1.37)
         self.assertEqual(response_data["most_launches"], 2)
-        self.assertEqual(response_data["days_with_most_launches"], "January 01")
+        self.assertEqual(response_data["days_with_most_launches"], "January 1")
 
 
 class ListApiTestCases(APITestCase):
