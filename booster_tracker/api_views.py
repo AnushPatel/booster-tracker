@@ -430,15 +430,17 @@ class HomeDataApiView(APIView):
         # Fetch basic stats
         next_launch = Launch.objects.filter(time__gt=datetime.now(pytz.utc)).last()
         last_launch = Launch.objects.filter(time__lte=datetime.now(pytz.utc)).first()
-        num_missions = Launch.objects.filter(rocket__family__provider__name="SpaceX").count()
-        num_successes = Launch.objects.filter(rocket__family__provider__name="SpaceX", launch_outcome="SUCCESS").count()
+        num_missions = Launch.objects.filter(rocket__family__provider__name="SpaceX", time__lte=self.now).count()
+        num_successes = Launch.objects.filter(
+            rocket__family__provider__name="SpaceX", launch_outcome="SUCCESS", time__lte=self.now
+        ).count()
         num_landings = (
             StageAndRecovery.objects.filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD"))
-            .filter(method_success="SUCCESS")
+            .filter(method_success="SUCCESS", launch__time__lte=self.now)
             .count()
         )
         shortest_time_between_launches = convert_seconds(
-            Launch.objects.filter(rocket__family__provider__name="SpaceX")
+            Launch.objects.filter(rocket__family__provider__name="SpaceX", time__lte=self.now)
             .order_by("company_turnaround")
             .first()
             .company_turnaround
@@ -841,8 +843,8 @@ class FamilyInformationApiView(APIView):
                 stage__type=StageObjects.SECOND_STAGE,
                 launch__time__lte=self.now,
             ).count()
-            launches = Launch.objects.filter(rocket=rocket).count()
-            successes = Launch.objects.filter(rocket=rocket, launch_outcome="SUCCESS").count()
+            launches = Launch.objects.filter(rocket=rocket, time__lte=self.now).count()
+            successes = Launch.objects.filter(rocket=rocket, launch_outcome="SUCCESS", time__lte=self.now).count()
             flight_proven_launches = (
                 Launch.objects.filter(rocket=rocket, time__lte=self.now, stageandrecovery__num_flights__gt=1)
                 .distinct()
