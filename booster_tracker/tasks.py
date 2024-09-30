@@ -103,8 +103,14 @@ def update_launch_times():
 def post_on_x(launch_id):
     launch = Launch.objects.get(id=launch_id)
     nxsf_launch = next((item for item in fetch_nxsf_launches() if item.get("n") == launch.name), None)
+    time_delta_from_now = abs(launch.time - datetime.now())
 
-    if launch.x_post_sent or not nxsf_launch or launch.time != parser.parse(nxsf_launch["t"]).astimezone(pytz.utc):
+    if (
+        launch.x_post_sent
+        or not nxsf_launch
+        or launch.time != parser.parse(nxsf_launch["t"]).astimezone(pytz.utc)
+        or time_delta_from_now <= timedelta(minutes=20)
+    ):
         return
 
     post_string = launch.make_x_post()
