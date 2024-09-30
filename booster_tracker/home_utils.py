@@ -161,7 +161,7 @@ def get_model_objects_with_filter(model: models.Model, filter: dict, search_quer
     return filtered_objects
 
 
-def launches_per_day(launches: QuerySet) -> list[dict]:
+def launches_per_day(launches: QuerySet) -> dict:
     """Takes in a list of launches and gives the number of launches on each day (excluding year)"""
     launches_per_day = (
         launches.annotate(month=ExtractMonth("time"), day=ExtractDay("time"))  # Extract month and day

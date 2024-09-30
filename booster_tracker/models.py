@@ -997,9 +997,6 @@ class StageAndRecovery(models.Model):
             else:
                 consec_count = 0
 
-        # Determine the method outcome, assume future launches are successful
-        method_outcome = self.method_success or "SUCCESS"
-
         # Get the number of landings with the same method and outcome before the launch
         landing_outcome_and_method_before_launch = StageAndRecovery.objects.filter(
             stage__type=stage_type,
@@ -1072,7 +1069,7 @@ class StageAndRecovery(models.Model):
             stats.append(
                 (
                     is_significant(landing_outcome_on_launch),
-                    f"{make_ordinal(landing_outcome_on_launch)} landing {self.method_success.lower()} of a {rocket_family} {stage_type.lower().replace('_', '' '')}",
+                    f"{make_ordinal(landing_outcome_on_launch)} landing {method_outcome.lower()} of a {rocket_family} {stage_type.lower().replace('_', '' '')}",
                 )
             )
 
