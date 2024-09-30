@@ -430,9 +430,14 @@ class HomeDataApiView(APIView):
         # Fetch basic stats
         next_launch = Launch.objects.filter(time__gt=datetime.now(pytz.utc)).last()
         last_launch = Launch.objects.filter(time__lte=datetime.now(pytz.utc)).first()
-        num_missions = Launch.objects.filter(rocket__family__provider__name="SpaceX", time__lte=self.now).count()
+        num_missions = Launch.objects.filter(
+            rocket__family__provider__name="SpaceX", time__lte=self.now, exclude_from_missions=False
+        ).count()
         num_successes = Launch.objects.filter(
-            rocket__family__provider__name="SpaceX", launch_outcome="SUCCESS", time__lte=self.now
+            rocket__family__provider__name="SpaceX",
+            launch_outcome="SUCCESS",
+            time__lte=self.now,
+            exclude_from_missions=False,
         ).count()
         num_landings = (
             StageAndRecovery.objects.filter(Q(method="DRONE_SHIP") | Q(method="GROUND_PAD"))
@@ -810,7 +815,9 @@ class FamilyInformationApiView(APIView):
 
     def _get_family_stats(self, family) -> dict:
         """Returns the number of missions, landings, and reuses of the rocket family"""
-        num_missions = Launch.objects.filter(rocket__family__name=family, time__lte=self.now).count()
+        num_missions = Launch.objects.filter(
+            rocket__family__name=family, time__lte=self.now, exclude_from_missions=False
+        ).count()
         num_landings = StageAndRecovery.objects.filter(
             launch__rocket__family__name=family,
             method__in=["DRONE_SHIP", "GROUND_PAD", "CATCH"],
@@ -846,7 +853,7 @@ class FamilyInformationApiView(APIView):
                 stage__type=StageObjects.SECOND_STAGE,
                 launch__time__lte=self.now,
             ).count()
-            launches = Launch.objects.filter(rocket=rocket, time__lte=self.now).count()
+            launches = Launch.objects.filter(rocket=rocket, time__lte=self.now, launch_precluded=False).count()
             successes = Launch.objects.filter(rocket=rocket, launch_outcome="SUCCESS", time__lte=self.now).count()
             flight_proven_launches = (
                 Launch.objects.filter(rocket=rocket, time__lte=self.now, stageandrecovery__num_flights__gt=1)
