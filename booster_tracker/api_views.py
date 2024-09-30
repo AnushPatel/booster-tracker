@@ -810,18 +810,21 @@ class FamilyInformationApiView(APIView):
 
     def _get_family_stats(self, family) -> dict:
         """Returns the number of missions, landings, and reuses of the rocket family"""
-        num_missions = Launch.objects.filter(rocket__family__name=family).count()
+        num_missions = Launch.objects.filter(rocket__family__name=family, time__lte=self.now).count()
         num_landings = StageAndRecovery.objects.filter(
             launch__rocket__family__name=family,
             method__in=["DRONE_SHIP", "GROUND_PAD", "CATCH"],
             method_success="SUCCESS",
+            launch__time__lte=self.now,
         ).count()
 
         family_stats = {
             "Missions": str(num_missions),
             "Landings": str(num_landings),
             "Reuses": str(
-                StageAndRecovery.objects.filter(launch__rocket__family__name=family, num_flights__gt=1).count()
+                StageAndRecovery.objects.filter(
+                    launch__rocket__family__name=family, num_flights__gt=1, launch__time__lte=self.now
+                ).count()
             ),
         }
         return family_stats
