@@ -229,21 +229,9 @@ INTERNAL_IPS = [
 ]
 
 
-if DEBUG and not TESTING:
-    REDIS_URL = "redis://127.0.0.1:6379"
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": "redis://127.0.0.1:6379",
-            "LOCATION": REDIS_URL,
-        }
-    }
-
-
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_TASK_ALWAYS_EAGER = False
-CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Disable prefetching
-CELERY_TASK_ACKS_LATE = True
+CELERY_RESULT_EXTENDED = True
 
 
 AWS_REGION = "us-west-2"
@@ -256,7 +244,7 @@ port = os.getenv("CELERY_BROKER_PORT")
 if not DEBUG:
     CELERY_BROKER_URL = f"amqps://{user}:{password}@{host}:{port}/"
 else:
-    CELERY_BROKER_URL = "redis://127.0.0.1:6379"
+    CELERY_BROKER_URL = f"amqp://admin:{password}@localhost:5672/"
 
 CELERY_RESULT_BACKEND = "django-db"
 CELERY_CACHE_BACKEND = "django-cache"
