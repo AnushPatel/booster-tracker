@@ -502,6 +502,7 @@ class Launch(models.Model):
 
         stats += self.get_rocket_stats()
         stats += self.get_launch_pad_stats()
+        stats += self.get_launch_provider_stats()
 
         for stage_and_recovery in StageAndRecovery.objects.filter(launch=self).order_by("id"):
             stats += stage_and_recovery.get_stage_stats()
@@ -518,8 +519,6 @@ class Launch(models.Model):
 
         if return_significant_only:
             return [stat[1] for stat in stats if stat[0]]
-
-        stats += self.get_launch_provider_stats()
 
         return stats[:10]  # Only return first 10 elements for looks
 
@@ -754,24 +753,24 @@ class Launch(models.Model):
 
         # Add mission-related stats (if not excluded from missions)
         if not self.exclude_from_missions:
-            stats.append((is_significant(mission_num), f"{make_ordinal(mission_num)} mission"))
+            stats.append((is_significant(mission_num), f"{make_ordinal(mission_num)} {provider} mission"))
 
         # Add mission outcome stats
         if self.launch_outcome and not self.exclude_from_missions:
             stats.append(
                 (
                     is_significant(mission_outcome_num),
-                    f"{make_ordinal(mission_outcome_num)} mission {self.launch_outcome.lower().replace('_', ' ')}",
+                    f"{make_ordinal(mission_outcome_num)} {provider} mission {self.launch_outcome.lower().replace('_', ' ')}",
                 )
             )
 
         # Add launch-related stats (if not precluded)
         if not self.launch_precluded:
-            stats.append((is_significant(launch_num), f"{make_ordinal(launch_num)} launch"))
+            stats.append((is_significant(launch_num), f"{make_ordinal(launch_num)} {provider} launch"))
             stats.append(
                 (
                     is_significant(launch_num_year),
-                    f"{make_ordinal(launch_num_year)} launch of {self.time.year}",
+                    f"{make_ordinal(launch_num_year)} {provider} launch of {self.time.year}",
                 )
             )
 
