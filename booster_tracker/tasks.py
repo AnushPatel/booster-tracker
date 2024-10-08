@@ -109,7 +109,7 @@ def post_on_x(launch_id):
         launch.x_post_sent
         or not nxsf_launch
         or launch.time != parser.parse(nxsf_launch["t"]).astimezone(pytz.utc)
-        or time_delta_from_now <= timedelta(minutes=20)
+        or not time_delta_from_now <= timedelta(minutes=20)
     ):
         return
 
