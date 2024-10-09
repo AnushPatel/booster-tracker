@@ -7,13 +7,11 @@ from booster_tracker.utils import (
     convert_seconds,
     format_time,
     is_significant,
-    first_lower,
     get_random_stat,
     process_stat,
 )
 from datetime import datetime
 from django.db.models import Q
-from django.urls import reverse
 from colorfield.fields import ColorField
 import pytz
 from timezone_field import TimeZoneField
@@ -934,6 +932,7 @@ class StageAndRecovery(models.Model):
         stage_type = self.stage.type
         rocket_family = self.launch.rocket.family
         method_outcome = self.method_success or "SUCCESS"
+        now = datetime.now(pytz.utc)
 
         # Filter for relevant stage and recovery events before this launch
         relevant_stage_and_recoveries = StageAndRecovery.objects.filter(
@@ -958,9 +957,9 @@ class StageAndRecovery(models.Model):
 
         landing_outcome_on_launch = (
             landing_outcome_before_launch
-            + StageAndRecovery.objects.filter(
-                launch=self.launch, id__lte=self.id, method_success=method_outcome
-            ).count()
+            + StageAndRecovery.objects.filter(launch=self.launch, id__lte=self.id)
+            .filter(Q(method_success=method_outcome) | Q(launch__time__gte=now))
+            .count()
         )
 
         # Calculate consecutive successful landings
@@ -1011,9 +1010,10 @@ class StageAndRecovery(models.Model):
                 launch=self.launch,
                 id__lte=self.id,
                 method=self.method,
-                method_success=method_outcome,
                 stage__type=stage_type,
-            ).count()
+            )
+            .filter(Q(method_success=method_outcome) | Q(launch__time__gte=now))
+            .count()
         )
 
         # Total stage reflights in family
@@ -1050,12 +1050,15 @@ class StageAndRecovery(models.Model):
             )
 
         # Generate stats list
-        stats = [
-            (
-                is_significant(landing_outcome_and_method_count),
-                f"{make_ordinal(landing_outcome_and_method_count)} {landing_string}",
-            )
-        ]
+        stats = []
+        if self.launch.time > now or self.method_success:
+            if not (self.method == "EXPENDED" and self.launch.launch_outcome == "FAILURE"):
+                stats.append(
+                    (
+                        is_significant(landing_outcome_and_method_count),
+                        f"{make_ordinal(landing_outcome_and_method_count)} {landing_string}",
+                    )
+                )
 
         if self.method in ["CATCH", "GROUND_PAD", "DRONE_SHIP"]:
             stats.append(
@@ -1077,12 +1080,13 @@ class StageAndRecovery(models.Model):
             "CATCH",
             "DRONE_SHIP",
         ]:
-            stats.append(
-                (
-                    is_significant(consec_count),
-                    f"{make_ordinal(consec_count)} consecutive landing of a {rocket_family} {stage_type.lower().replace('_', '' '')}",
+            if self.method_success or self.launch.time > now:
+                stats.append(
+                    (
+                        is_significant(consec_count),
+                        f"{make_ordinal(consec_count)} consecutive landing of a {rocket_family} {stage_type.lower().replace('_', '' '')}",
+                    )
                 )
-            )
 
         if self.num_flights and self.num_flights > 1:
             stats.append(
