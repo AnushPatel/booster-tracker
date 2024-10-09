@@ -1068,12 +1068,13 @@ class StageAndRecovery(models.Model):
                 )
             )
 
-            stats.append(
-                (
-                    is_significant(landing_outcome_on_launch),
-                    f"{make_ordinal(landing_outcome_on_launch)} landing {method_outcome.lower()} of a {rocket_family} {stage_type.lower().replace('_', '' '')}",
+            if self.method_success or self.launch.time > now:
+                stats.append(
+                    (
+                        is_significant(landing_outcome_on_launch),
+                        f"{make_ordinal(landing_outcome_on_launch)} landing {method_outcome.lower()} of a {rocket_family} {stage_type.lower().replace('_', '' '')}",
+                    )
                 )
-            )
 
         if method_outcome == "SUCCESS" and self.method in [
             "GROUND_PAD",
