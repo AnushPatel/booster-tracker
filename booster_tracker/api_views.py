@@ -850,7 +850,7 @@ class FamilyInformationApiView(APIView):
         ).count()
 
         family_stats = {
-            "Missions": str(num_launches),
+            "Launches": str(num_launches),
             "Landings": str(num_landings),
             "Reuses": str(
                 StageAndRecovery.objects.filter(

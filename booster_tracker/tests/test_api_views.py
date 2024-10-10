@@ -289,7 +289,7 @@ class FamilyInformationApiViewTests(APITestCase):
 
         # Example assertion: Check stats
         expected_stats = {
-            "Missions": "5",
+            "Launches": "5",
             "Landings": "7",
             "Reuses": "4",
         }
