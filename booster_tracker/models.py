@@ -929,10 +929,15 @@ class StageAndRecovery(models.Model):
             - A boolean indicating if the stat is significant.
             - A string description of the stat.
         """
-        stage_type = self.stage.type
+        stage_type = self.stage.type if self.stage else "BOOSTER"
         rocket_family = self.launch.rocket.family
         method_outcome = self.method_success or "SUCCESS"
         now = datetime.now(pytz.utc)
+
+        related_methods = [self.method]
+
+        if self.method == "EXPENDED":
+            related_methods.append("OCEAN_SURFACE")
 
         # Filter for relevant stage and recovery events before this launch
         relevant_stage_and_recoveries = StageAndRecovery.objects.filter(
@@ -959,6 +964,17 @@ class StageAndRecovery(models.Model):
             landing_outcome_before_launch
             + StageAndRecovery.objects.filter(launch=self.launch, id__lte=self.id)
             .filter(Q(method_success=method_outcome) | Q(launch__time__gte=now))
+            .count()
+        )
+
+        num_expended_launches = (
+            StageAndRecovery.objects.filter(
+                stage__type=stage_type,
+                launch__rocket__family=rocket_family,
+                launch__time__lt=self.launch.time,
+                method__in=["OCEAN_SURFACE", "EXPENDED"],
+            )
+            .exclude(method_success="PRECLUDED")
             .count()
         )
 
@@ -1000,7 +1016,7 @@ class StageAndRecovery(models.Model):
             stage__type=stage_type,
             launch__rocket__family=rocket_family,
             launch__time__lt=self.launch.time,
-            method=self.method,
+            method__in=related_methods,
             method_success=method_outcome,
         ).count()
 
@@ -1009,7 +1025,7 @@ class StageAndRecovery(models.Model):
             + StageAndRecovery.objects.filter(
                 launch=self.launch,
                 id__lte=self.id,
-                method=self.method,
+                method__in=related_methods,
                 stage__type=stage_type,
             )
             .filter(Q(method_success=method_outcome) | Q(launch__time__gte=now))
@@ -1057,6 +1073,14 @@ class StageAndRecovery(models.Model):
                     (
                         is_significant(landing_outcome_and_method_count),
                         f"{make_ordinal(landing_outcome_and_method_count)} {landing_string}",
+                    )
+                )
+
+            if self.method == "OCEAN_SURFACE":
+                stats.append(
+                    (
+                        is_significant(num_expended_launches),
+                        f"{make_ordinal(num_expended_launches)} expended {rocket_family} {stage_type.lower().replace('_', ' ')}",
                     )
                 )
 
