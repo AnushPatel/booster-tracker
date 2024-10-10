@@ -29,12 +29,9 @@ LAUNCH_OUTCOMES = [
     ("SUCCESS", "success"),
     ("FAILURE", "failure"),
     ("PARTIAL FAILURE", "partial failure"),
+    ("TBD", "TBD"),
 ]
-LANDING_METHOD_OUTCOMES = [
-    ("SUCCESS", "success"),
-    ("FAILURE", "failure"),
-    ("PRECLUDED", "precluded"),
-]
+LANDING_METHOD_OUTCOMES = [("SUCCESS", "success"), ("FAILURE", "failure"), ("PRECLUDED", "precluded"), ("TBD", "TBD")]
 BOAT_TYPES = [
     ("TUG", "tug"),
     ("FAIRING_RECOVERY", "fairing recovery"),
@@ -238,7 +235,7 @@ class Launch(models.Model):
     orbit = models.ForeignKey(Orbit, on_delete=models.CASCADE, null=True, blank=True)
     mass = models.IntegerField(blank=True, null=True, verbose_name="Mass (kg)")
     customer = models.CharField(max_length=200)
-    launch_outcome = models.CharField(max_length=200, choices=LAUNCH_OUTCOMES, blank=True, null=True)
+    launch_outcome = models.CharField(max_length=200, choices=LAUNCH_OUTCOMES, default="TBD")
     exclude_from_missions = models.BooleanField(
         default=False, help_text="Exclude from mission number (Ex: Starship test missions)"
     )
@@ -853,7 +850,7 @@ class StageAndRecovery(models.Model):
     )
     landing_zone = models.ForeignKey(LandingZone, on_delete=models.CASCADE, null=True, blank=True)
     method = models.CharField(max_length=200, choices=RECOVERY_METHODS)
-    method_success = models.CharField(max_length=200, choices=LANDING_METHOD_OUTCOMES, null=True, blank=True)
+    method_success = models.CharField(max_length=200, choices=LANDING_METHOD_OUTCOMES, default="TBD")
     recovery_success = models.BooleanField()
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
@@ -931,7 +928,7 @@ class StageAndRecovery(models.Model):
         """
         stage_type = self.stage.type if self.stage else "BOOSTER"
         rocket_family = self.launch.rocket.family
-        method_outcome = self.method_success or "SUCCESS"
+        method_outcome = self.method_success if not self.method_success == "TBD" else "SUCCESS"
         now = datetime.now(pytz.utc)
 
         related_methods = [self.method]
@@ -991,7 +988,7 @@ class StageAndRecovery(models.Model):
             .filter(Q(method__in=["DRONE_SHIP", "GROUND_PAD", "CATCH"]))
             .order_by("-launch__time", "-id")
         ):
-            if landing.method_success == "SUCCESS" or landing.method_success is None:
+            if landing.method_success in ["SUCCESS", "TBD"]:
                 consec_count += 1
             else:
                 break
@@ -1006,7 +1003,7 @@ class StageAndRecovery(models.Model):
             .filter(Q(method__in=["DRONE_SHIP", "GROUND_PAD", "CATCH"]))
             .order_by("-id")
         ):
-            if landing.method_success == "SUCCESS" or landing.method_success is None:
+            if landing.method_success in ["SUCCESS", "TBD"]:
                 consec_count += 1
             else:
                 consec_count = 0
@@ -1092,7 +1089,7 @@ class StageAndRecovery(models.Model):
                 )
             )
 
-            if self.method_success or self.launch.time > now:
+            if self.method_success != "TBD" or self.launch.time > now:
                 stats.append(
                     (
                         is_significant(landing_outcome_on_launch),
@@ -1105,7 +1102,7 @@ class StageAndRecovery(models.Model):
             "CATCH",
             "DRONE_SHIP",
         ]:
-            if self.method_success or self.launch.time > now:
+            if self.method_success != "TBD" or self.launch.time > now:
                 stats.append(
                     (
                         is_significant(consec_count),
@@ -1141,7 +1138,7 @@ class StageAndRecovery(models.Model):
             return []
 
         # Determine the method outcome; default to "SUCCESS" if method outcome is not provided
-        method_outcome = self.method_success or "SUCCESS"
+        method_outcome = self.method_success if self.method_success != "TBD" else "SUCCESS"
         now = datetime.now(pytz.utc)
 
         # Get the number of landing attempts and successes on the landing zone
