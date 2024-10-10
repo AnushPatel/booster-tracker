@@ -839,8 +839,8 @@ class FamilyInformationApiView(APIView):
 
     def _get_family_stats(self, family) -> dict:
         """Returns the number of missions, landings, and reuses of the rocket family"""
-        num_missions = Launch.objects.filter(
-            rocket__family__name=family, time__lte=self.now, exclude_from_missions=False
+        num_launches = Launch.objects.filter(
+            rocket__family__name=family, time__lte=self.now, launch_precluded=False
         ).count()
         num_landings = StageAndRecovery.objects.filter(
             launch__rocket__family__name=family,
@@ -850,7 +850,7 @@ class FamilyInformationApiView(APIView):
         ).count()
 
         family_stats = {
-            "Missions": str(num_missions),
+            "Missions": str(num_launches),
             "Landings": str(num_landings),
             "Reuses": str(
                 StageAndRecovery.objects.filter(
