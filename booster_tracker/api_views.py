@@ -1,4 +1,5 @@
-from django.db.models import Q, Count, Max, Avg, Sum, Value
+from django.db.models import Q, Count, Max, Avg, Sum, Value, FloatField, Case, When, Count, F
+from django.db.models.functions import Cast
 from django.db.models.functions import ExtractYear, Coalesce
 from django.db.models.query import QuerySet
 from booster_tracker.home_utils import (
@@ -10,6 +11,7 @@ from booster_tracker.home_utils import (
     get_most_flown_stages,
     StageObjects,
     build_filter,
+    RegexpReplace,
 )
 from booster_tracker.utils import (
     concatenated_list,
@@ -253,7 +255,19 @@ class StageApiView(APIView):
         filtered_stages = (
             get_model_objects_with_filter(Stage, filter, query)
             .filter(type=type, rocket__family=family)
-            .order_by("-version", "-name")
+            .annotate(
+                extracted_value=RegexpReplace(F("name")),
+                # Cast only valid floats, otherwise return NULL
+                stage_number=Cast(
+                    Case(
+                        When(extracted_value__regex=r"^[0-9]+(\.[0-9]+)?$", then=F("extracted_value")),
+                        default=None,
+                        output_field=FloatField(),
+                    ),
+                    FloatField(),
+                ),
+            )
+            .order_by(F("stage_number").desc(nulls_last=True))
         )
 
         data = {"start_filter": start_filter, "stages": filtered_stages}
@@ -274,11 +288,21 @@ class SpacecraftApiView(ListAPIView):
         # Prepare information
         start_filter = build_filter(model=Spacecraft, family=family, type=None)
         if family_str:
-            filtered_spacecraft = (
-                get_model_objects_with_filter(Spacecraft, filter, query).filter(family=family).order_by("-name")
-            )
+            filtered_spacecraft = get_model_objects_with_filter(Spacecraft, filter, query).filter(family=family)
         else:
-            filtered_spacecraft = get_model_objects_with_filter(Spacecraft, filter, query).order_by("-name")
+            filtered_spacecraft = get_model_objects_with_filter(Spacecraft, filter, query)
+        filtered_spacecraft = filtered_spacecraft.annotate(
+            extracted_value=RegexpReplace(F("name")),
+            # Cast only valid floats, otherwise return NULL
+            spacecraft_number=Cast(
+                Case(
+                    When(extracted_value__regex=r"^[0-9]+(\.[0-9]+)?$", then=F("extracted_value")),
+                    default=None,
+                    output_field=FloatField(),
+                ),
+                FloatField(),
+            ),
+        ).order_by(F("spacecraft_number").desc(nulls_last=True), F("name").asc())
 
         data = {"start_filter": start_filter, "spacecraft": filtered_spacecraft}
         serializer = SpacecraftListSerializer(data)
