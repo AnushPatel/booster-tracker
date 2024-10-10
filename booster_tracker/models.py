@@ -1142,6 +1142,7 @@ class StageAndRecovery(models.Model):
 
         # Determine the method outcome; default to "SUCCESS" if method outcome is not provided
         method_outcome = self.method_success or "SUCCESS"
+        now = datetime.now(pytz.utc)
 
         # Get the number of landing attempts and successes on the landing zone
         attempts_on_zone = (
@@ -1150,9 +1151,11 @@ class StageAndRecovery(models.Model):
             .count()
         )
 
-        landings_on_zone = StageAndRecovery.objects.filter(
-            launch__time__lte=self.launch.time, landing_zone=self.landing_zone, method_success=method_outcome
-        ).count()
+        landings_on_zone = (
+            StageAndRecovery.objects.filter(launch__time__lte=self.launch.time, landing_zone=self.landing_zone)
+            .filter(Q(method_success=method_outcome) | Q(launch__time__gt=now))
+            .count()
+        )
 
         # Generate the stats list
         stats = [
