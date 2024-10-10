@@ -392,7 +392,7 @@ class PadInformationApiView(RetrieveAPIView):
         id = self.request.query_params.get("id", "")
         pad = Pad.objects.get(id=id)
         filtered_launches = Launch.objects.filter(pad=pad).order_by("time")
-        display_launches = filtered_launches.filter(time__lte=datetime.now(pytz.utc)).reverse()[:25]
+        display_launches = filtered_launches.filter(time__lte=datetime.now(pytz.utc)).order_by("-time")[:25]
 
         start_date = get_start_date(filtered_launches.first())
         start_time = parse_start_time(self.request.query_params, start_date)
