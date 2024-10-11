@@ -908,7 +908,7 @@ class StageAndRecovery(models.Model):
     @property
     def get_zone_turnaround(self) -> int:
         """Returns int representing number of seconds between landing and last landing on zone"""
-        if (
+        if self.landing_zone and (
             last_launch := StageAndRecovery.objects.filter(
                 landing_zone=self.landing_zone, launch__time__lt=self.launch.time
             )

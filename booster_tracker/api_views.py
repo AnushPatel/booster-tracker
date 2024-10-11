@@ -203,8 +203,38 @@ class LaunchApiView(ListAPIView):
         filter_param = self.request.query_params.get("filter", "{}")
         filter = json.loads(filter_param)
         query = self.request.query_params.get("query", "")
+        order_by = self.request.query_params.get("order_by", "-time")
 
-        return get_model_objects_with_filter(Launch, filter, query)
+        launch_objects = get_model_objects_with_filter(Launch, filter, query)
+
+        if "stageandrecovery" in order_by:
+            # Clean up order_by string
+            field_name = order_by.replace("stageandrecovery__", "").replace("-", "")
+            direction = "desc" if "-" in order_by else "asc"
+
+            # Query StageAndRecovery related launches
+            launch_objects = (
+                StageAndRecovery.objects.filter(launch__in=launch_objects)
+                .select_related("launch")
+                .order_by(
+                    getattr(F(field_name), direction)(nulls_last=True),
+                    F("launch__time").desc(),
+                )
+            )
+            # Extract launches from StageAndRecovery objects
+            launch_objects = [stage_and_recovery.launch for stage_and_recovery in launch_objects]
+        else:
+            # Clean up order_by string
+            field_name = order_by.replace("-", "")
+            direction = "desc" if "-" in order_by else "asc"
+
+            # Query Launch objects
+            launch_objects = launch_objects.order_by(
+                getattr(F(field_name), direction)(nulls_last=True),
+                F("time").desc(),
+            )
+
+        return launch_objects
 
     def get(self, request, *args, **kwargs) -> Response:
         """List all the Launch items for given requested user"""
