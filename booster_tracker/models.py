@@ -1066,7 +1066,7 @@ class StageAndRecovery(models.Model):
 
         # Generate stats list
         stats = []
-        if self.launch.time > now or self.method_success:
+        if self.launch.time > now or self.method_success != "TBD":
             if not (self.method == "EXPENDED" and self.launch.launch_outcome == "FAILURE"):
                 stats.append(
                     (
