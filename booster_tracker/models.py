@@ -342,7 +342,7 @@ class Launch(models.Model):
 
                 stats.append(
                     (
-                        turnaround_object == "landing zone",
+                        True,
                         f"Fastest turnaround of {related_instance.name} to date at {convert_seconds(turnaround)}. Previous record: {convert_seconds(old_turnaround)}",
                     )
                 )
@@ -506,6 +506,7 @@ class Launch(models.Model):
         # Adding turnaround stats
         stats += self.calculate_stage_and_recovery_turnaround_stats(turnaround_object="booster")
         stats += self.calculate_stage_and_recovery_turnaround_stats(turnaround_object="second stage")
+        stats += self.calculate_stage_and_recovery_turnaround_stats(turnaround_object="landing_zone")
         stats += self.calculate_pad_turnaround_stats()
         stats += self.calculate_company_turnaround_stats()
 
@@ -530,6 +531,7 @@ class Launch(models.Model):
         # Adding turnaround stats
         stats += self.calculate_stage_and_recovery_turnaround_stats(turnaround_object="booster")
         stats += self.calculate_stage_and_recovery_turnaround_stats(turnaround_object="second stage")
+        stats += self.calculate_stage_and_recovery_turnaround_stats(turnaround_object="landing_zone")
         stats += self.calculate_pad_turnaround_stats()
         stats += self.calculate_company_turnaround_stats()
 
