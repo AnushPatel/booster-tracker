@@ -1075,13 +1075,13 @@ class StageAndRecovery(models.Model):
                     )
                 )
 
-            if self.method == "OCEAN_SURFACE":
-                stats.append(
-                    (
-                        is_significant(num_expended_launches),
-                        f"{make_ordinal(num_expended_launches)} expended {rocket_family} {stage_type.lower().replace('_', ' ')}",
-                    )
+        if self.method == "OCEAN_SURFACE":
+            stats.append(
+                (
+                    is_significant(num_expended_launches),
+                    f"{make_ordinal(num_expended_launches)} expended {rocket_family} {stage_type.lower().replace('_', ' ')}",
                 )
+            )
 
         if self.method in ["CATCH", "GROUND_PAD", "DRONE_SHIP"]:
             stats.append(
