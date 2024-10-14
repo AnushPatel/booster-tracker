@@ -11,6 +11,22 @@ from booster_tracker.tasks import (
     update_cached_spacecraftonlaunch_value_task,
     post_on_x,
 )
+import logging
+
+# Configure logging
+logger = logging.getLogger("Task Logger")
+logger.setLevel(logging.INFO)  # Set the log level
+
+# Create a console handler (optional, but good for immediate feedback)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+
+# Create a formatter and set it for the console handler
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+console_handler.setFormatter(formatter)
+
+# Add the console handler to the logger
+logger.addHandler(console_handler)
 
 
 @receiver(pre_save, sender=StageAndRecovery)
@@ -111,6 +127,7 @@ def handle_launch_signals(sender, instance, **kwargs):
             # Cancel the existing scheduled task, if any
             if instance.celery_task_id:
                 current_app.control.revoke(instance.celery_task_id, terminate=True)
+                logger.info(f"Revoked {instance.celery_task_id}")
 
             # Schedule a new task 15 minutes before launch time
             post_time = instance.time - timedelta(minutes=15)
@@ -127,6 +144,7 @@ def handle_launch_signals(sender, instance, **kwargs):
         # Handle task revocation for deletions
         if instance.celery_task_id:
             current_app.control.revoke(instance.celery_task_id, terminate=True)
+            logger.info(f"Revoked {instance.celery_task_id}")
 
 
 """ @receiver(post_save, sender=Launch)
