@@ -523,6 +523,7 @@ class Launch(models.Model):
 
         stats += self.get_rocket_stats()
         stats += self.get_launch_pad_stats()
+        stats += self.get_launch_provider_stats()
 
         for stage_and_recovery in StageAndRecovery.objects.filter(launch=self):
             stats += stage_and_recovery.get_stage_stats()
