@@ -1001,8 +1001,12 @@ class EDAApiView(APIView):
     def get(self, request, *args, **kwargs) -> Response:
         """Creates EDA table for launch"""
         name = self.request.query_params.get("name", "")
-        launch = Launch.objects.get(name__contains=name)
-        launch_table = build_table_html(launch.create_launch_table())
+        launch_table = None
+        try:
+            launch = Launch.objects.get(name__contains=name)
+            launch_table = build_table_html(launch.create_launch_table())
+        except Launch.DoesNotExist:
+            pass
 
         # Compile all collected data into a single dictionary
         data = {
