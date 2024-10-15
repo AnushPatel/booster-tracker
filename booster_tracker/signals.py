@@ -111,6 +111,8 @@ def handle_launch_signals(sender, instance: Launch, **kwargs):
         return
     update_cached_launch_value_task.delay()
 
+    logger.info("this ran")
+
     if kwargs.get("signal") == post_save:
         # Check if the time field has changed
         if hasattr(instance, "_original_time") and instance._original_time == instance.time:
