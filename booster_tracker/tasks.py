@@ -96,7 +96,7 @@ def update_launch_times():
                 if nxsf_launch_time > launch.time + timedelta(hours=20):
                     launch.x_post_sent = False
                 launch.time = nxsf_launch_time
-                launch.save(update_fields=["time", "x_post_sent"])
+                launch.save()
 
 
 @shared_task()

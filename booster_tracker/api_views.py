@@ -1003,7 +1003,7 @@ class EDAApiView(APIView):
         name = self.request.query_params.get("name", "")
         launch_table = None
         try:
-            launch = Launch.objects.get(name__contains=name)
+            launch = Launch.objects.get(name=name)
             launch_table = build_table_html(launch.create_launch_table())
         except Launch.DoesNotExist:
             pass
