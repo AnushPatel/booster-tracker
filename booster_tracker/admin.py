@@ -345,6 +345,7 @@ class LaunchAdmin(admin.ModelAdmin):
         LaunchStatInLine,
         DragonInLine,
     ]
+    readonly_fields = ("celery_task_id",)  # Make the field read-only in the edit form
 
     def custom_time_display(self, obj):
         return obj.time.strftime("%B %d, %Y %H:%M")
