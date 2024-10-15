@@ -105,13 +105,11 @@ def store_original_time(sender, instance, **kwargs):
 
 
 @receiver([post_save, post_delete], sender=Launch)
-def handle_launch_signals(sender, instance, **kwargs):
+def handle_launch_signals(sender, instance: Launch, **kwargs):
     # Avoid infinite loop by skipping if already processing from a task
-    if not instance._from_task:
-        update_cached_launch_value_task.delay()
-
-    if instance._is_updating_scheduled_post:
+    if instance._from_task or instance._is_updating_scheduled_post:
         return
+    update_cached_launch_value_task.delay()
 
     if kwargs.get("signal") == post_save:
         # Check if the time field has changed
@@ -125,6 +123,7 @@ def handle_launch_signals(sender, instance, **kwargs):
             instance._is_updating_scheduled_post = True
 
             # Cancel the existing scheduled task, if any
+            logger.info(f"Old Task id: {instance.celery_task_id}")
             if instance.celery_task_id:
                 current_app.control.revoke(instance.celery_task_id, terminate=True)
                 logger.info(f"Revoked {instance.celery_task_id}")
@@ -136,6 +135,7 @@ def handle_launch_signals(sender, instance, **kwargs):
             # Store the task ID for future reference
             instance.celery_task_id = task.id
             instance.save(update_fields=["celery_task_id"])
+            logger.info(f"New Task id: {instance.celery_task_id}")
             instance._from_task = False
             instance._is_updating_scheduled_post = False
             pre_save.connect(store_original_time, sender=Launch)

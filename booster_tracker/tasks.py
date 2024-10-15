@@ -99,7 +99,7 @@ def update_launch_times():
                 launch.save()
 
 
-@shared_task()
+@shared_task
 def post_on_x(launch_id):
     launch = Launch.objects.get(id=launch_id)
     nxsf_launch = next((item for item in fetch_nxsf_launches() if item.get("n") == launch.name), None)
