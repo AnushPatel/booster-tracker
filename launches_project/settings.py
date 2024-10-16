@@ -233,6 +233,7 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_RESULT_EXTENDED = True
 CELERY_TRACK_STARTED = False
+CELERY_HIJACK_ROOT_LOGGER = False
 
 
 AWS_REGION = "us-west-2"
