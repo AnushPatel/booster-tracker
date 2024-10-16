@@ -233,7 +233,6 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_RESULT_EXTENDED = True
 CELERY_TRACK_STARTED = False
-CELERY_HIJACK_ROOT_LOGGER = False
 
 
 AWS_REGION = "us-west-2"
@@ -284,3 +283,36 @@ else:
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Set up celery logging:
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,  # Log to stdout
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+        },
+        "celery": {
+            "handlers": ["console"],
+            "level": "INFO",
+        },
+    },
+}
