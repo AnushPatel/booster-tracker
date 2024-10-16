@@ -1,6 +1,7 @@
 import os
 from django.conf import settings
 from celery import Celery
+import logging
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "launches_project.settings")
@@ -15,6 +16,13 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 
 # Load task modules from all registered Django apps.
 app.autodiscover_tasks()
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,  # You can adjust this to DEBUG, WARNING, etc.
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],  # Stream to console or add file handler as needed
+)
 
 # this TASK_QUEUE_NAME will contain name of SQS queue and we'll define it later in settings.py
 if not settings.DEBUG:

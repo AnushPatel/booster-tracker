@@ -113,6 +113,7 @@ def handle_launch_signals(sender, instance: Launch, **kwargs):
     update_cached_launch_value_task.delay()
 
     if kwargs.get("signal") == post_save:
+        logger.info("signal detected to be post")
         # Check if the time field has changed
         if hasattr(instance, "_original_time") and instance._original_time == instance.time:
             return  # Time has not changed, so skip scheduling logic
