@@ -71,6 +71,24 @@ def update_cached_spacecraftonlaunch_value_task(spacecraft_id_list):
         spacecraft_on_launch._from_task = False
 
 
+import logging
+
+# Configure logging
+logger = logging.getLogger("Task Logger")
+logger.setLevel(logging.INFO)  # Set the log level
+
+# Create a console handler (optional, but good for immediate feedback)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+
+# Create a formatter and set it for the console handler
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+console_handler.setFormatter(formatter)
+
+# Add the console handler to the logger
+logger.addHandler(console_handler)
+
+
 @shared_task
 def update_launch_times():
     nxsf_data = fetch_nxsf_launches()
@@ -96,6 +114,7 @@ def update_launch_times():
                 if nxsf_launch_time > launch.time + timedelta(hours=20):
                     launch.x_post_sent = False
                 launch.time = nxsf_launch_time
+                logger.info(f"saving launch {launch.name}")
                 launch.save()
 
 

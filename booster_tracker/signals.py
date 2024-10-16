@@ -1,5 +1,6 @@
 # signals.py
-from django.db.models.signals import post_save, post_delete, pre_save, pre_delete
+from django.db.models.signals import post_save, post_delete, pre_save
+from django.db import transaction
 from django.dispatch import receiver
 from datetime import timedelta, datetime
 import pytz
@@ -110,8 +111,6 @@ def handle_launch_signals(sender, instance: Launch, **kwargs):
     if instance._from_task or instance._is_updating_scheduled_post:
         return
     update_cached_launch_value_task.delay()
-
-    logger.info("this ran")
 
     if kwargs.get("signal") == post_save:
         # Check if the time field has changed
