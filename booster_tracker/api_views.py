@@ -1037,6 +1037,7 @@ class AdditionalGraphsApiView(APIView):
             Launch.objects.filter(
                 rocket__family__provider=provider, time__lte=self.now, launch_outcome__in=["SUCCESS", "PARTIAL_FAILURE"]
             )
+            .exclude(ordit__name="Sub-orbital")
             .annotate(year=ExtractYear("time"))
             .values("year")
             .annotate(sum=Coalesce(Sum("mass") / 1000, Value(0)))

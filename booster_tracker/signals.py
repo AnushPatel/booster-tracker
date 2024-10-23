@@ -111,9 +111,19 @@ def handle_launch_signals(sender, instance: Launch, **kwargs):
     if instance._from_task or instance._is_updating_scheduled_post:
         return
     update_cached_launch_value_task.delay()
+    if hasattr(instance, "_original_time") and instance._original_time != instance.time:
+        stage_ids = list(StageAndRecovery.objects.filter(launch=instance).values_list("stage_id", flat=True))
+        zone_ids = list(StageAndRecovery.objects.filter(launch=instance).values_list("landing_zone_id", flat=True))
+        spacecraft_ids = list(
+            SpacecraftOnLaunch.objects.filter(launch=instance).values_list("spacecraft_id", flat=True)
+        )
+
+        if stage_ids or zone_ids:
+            update_cached_stageandrecovery_value_task.delay(stage_ids, zone_ids)
+        if spacecraft_ids:
+            update_cached_spacecraftonlaunch_value_task.delay(spacecraft_ids)
 
     if kwargs.get("signal") == post_save:
-        logger.info("signal detected to be post")
         # Check if the time field has changed
         if hasattr(instance, "_original_time") and instance._original_time == instance.time:
             return  # Time has not changed, so skip scheduling logic
