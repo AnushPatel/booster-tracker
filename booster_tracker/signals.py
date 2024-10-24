@@ -67,7 +67,7 @@ def updated_cached_stageandrecovery_values(sender, instance, **kwargs):
         landing_zone_ids.append(instance._old_landing_zone_id)
 
     # Pass the lists to the task, using empty lists if no IDs exist
-    update_cached_stageandrecovery_value_task.delay(stage_ids, landing_zone_ids)
+    transaction.on_commit(lambda: update_cached_stageandrecovery_value_task.delay(stage_ids, landing_zone_ids))
 
 
 @receiver(pre_save, sender=SpacecraftOnLaunch)
@@ -87,9 +87,13 @@ def updated_cached_spacecraftonlaunch_values(sender, instance, **kwargs):
         return
 
     if hasattr(instance, "_old_spacecraft_id"):
-        update_cached_spacecraftonlaunch_value_task.delay([instance._old_spacecraft_id, instance.spacecraft.id])
+        transaction.on_commit(
+            lambda: update_cached_spacecraftonlaunch_value_task.delay(
+                [instance._old_spacecraft_id, instance.spacecraft.id]
+            )
+        )
     else:
-        update_cached_spacecraftonlaunch_value_task.delay([instance.spacecraft.id])
+        transaction.on_commit(lambda: update_cached_spacecraftonlaunch_value_task.delay([instance.spacecraft.id]))
 
 
 @receiver(pre_save, sender=Launch)
@@ -110,18 +114,19 @@ def handle_launch_signals(sender, instance: Launch, **kwargs):
     # Avoid infinite loop by skipping if already processing from a task
     if instance._from_task or instance._is_updating_scheduled_post:
         return
-    update_cached_launch_value_task.delay()
+
+    transaction.on_commit(lambda: update_cached_launch_value_task.delay())
+
     if hasattr(instance, "_original_time") and instance._original_time != instance.time:
         stage_ids = list(StageAndRecovery.objects.filter(launch=instance).values_list("stage_id", flat=True))
         zone_ids = list(StageAndRecovery.objects.filter(launch=instance).values_list("landing_zone_id", flat=True))
         spacecraft_ids = list(
             SpacecraftOnLaunch.objects.filter(launch=instance).values_list("spacecraft_id", flat=True)
         )
-
         if stage_ids or zone_ids:
-            update_cached_stageandrecovery_value_task.delay(stage_ids, zone_ids)
+            transaction.on_commit(lambda: update_cached_stageandrecovery_value_task.delay(stage_ids, zone_ids))
         if spacecraft_ids:
-            update_cached_spacecraftonlaunch_value_task.delay(spacecraft_ids)
+            transaction.on_commit(lambda: update_cached_spacecraftonlaunch_value_task.delay(spacecraft_ids))
 
     if kwargs.get("signal") == post_save:
         # Check if the time field has changed

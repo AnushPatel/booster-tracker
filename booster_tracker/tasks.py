@@ -9,7 +9,7 @@ from booster_tracker.fetch_data import fetch_nxsf_launches
 from datetime import datetime, timedelta
 from dateutil import parser
 import pytz
-import tweepy
+from django.db import transaction
 
 
 logger = logging.getLogger(__name__)
@@ -43,9 +43,8 @@ def update_cached_stageandrecovery_value_task(stage_id_list, zone_id_list):
 
 @shared_task
 def update_cached_launch_value_task():
-
     # Update all related launch instances
-    related_launches = Launch.objects.all()
+    related_launches = Launch.objects.all().order_by("time")
     for launch in related_launches:
         launch._from_task = True
         launch.company_turnaround = launch.get_company_turnaround

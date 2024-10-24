@@ -1,19 +1,14 @@
 from datetime import datetime, timedelta
 from unittest import mock
 import pytz
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.utils.timezone import now
 from booster_tracker.models import StageAndRecovery, SpacecraftOnLaunch, Launch, Stage, Spacecraft
 from .test_helpers import initialize_test_data
 from celery import current_app
-from booster_tracker.tasks import (
-    update_cached_stageandrecovery_value_task,
-    update_cached_spacecraftonlaunch_value_task,
-    post_on_x,
-)
 
 
-class SignalTests(TestCase):
+class SignalTests(TransactionTestCase):
     def setUp(self):
         self.test_data = initialize_test_data()
 
