@@ -1,7 +1,23 @@
-from django.db.models import Q, Count, Max, Avg, Sum, Value, FloatField, Case, When, Count, F
+from django.db.models import (
+    Q,
+    Count,
+    Max,
+    Avg,
+    Sum,
+    Value,
+    FloatField,
+    Case,
+    When,
+    Count,
+    F,
+    ExpressionWrapper,
+    DurationField,
+)
 from django.db.models.functions import Cast
 from django.db.models.functions import ExtractYear, Coalesce
 from django.db.models.query import QuerySet
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import HttpResponseNotFound
 from booster_tracker.home_utils import (
     get_model_objects_with_filter,
     launches_per_day,
@@ -9,6 +25,7 @@ from booster_tracker.home_utils import (
     line_of_best_fit,
     launches_in_time_interval,
     get_most_flown_stages,
+    get_most_flown_spacecraft,
     StageObjects,
     build_filter,
     RegexpReplace,
@@ -45,6 +62,7 @@ from booster_tracker.models import (
     LandingZone,
     Boat,
     FairingRecovery,
+    SPACECRAFT_TYPES,
 )
 
 from rest_framework.views import APIView
@@ -70,7 +88,8 @@ from booster_tracker.serializers import (
     BoatSerializer,
     SpacecraftFamilySerializer,
     HomePageSerializer,
-    FamilyInformationSerializer,
+    RocketFamilyInformationSerializer,
+    SpacecraftFamilyInformationSerializer,
     CalendarStatsSerializer,
     StageListSerializer,
     EDATableSerializer,
@@ -735,11 +754,11 @@ class HomeDataApiView(APIView):
         }
 
 
-class FamilyInformationApiView(APIView):
+class RocketFamilyInformationApiView(APIView):
     def get(self, request) -> Response:
         """Generates response for family information"""
         self.now = datetime.now(pytz.utc)
-        family = RocketFamily.objects.get(name__icontains=request.query_params.get("family", ""))
+        family = RocketFamily.objects.get(name__icontains=request.query_params.get("family", "None"))
         first_launch_time = Launch.objects.filter(rocket__family=family).order_by("time").first().time
         start_year, current_year = self._get_launch_years(family)
         (
@@ -780,7 +799,7 @@ class FamilyInformationApiView(APIView):
         }
 
         # Serialize the data
-        serializer = FamilyInformationSerializer(data)
+        serializer = RocketFamilyInformationSerializer(data)
 
         # Return the serialized data as a response
         return Response(serializer.data)
@@ -966,8 +985,8 @@ class FamilyInformationApiView(APIView):
             stage_two_turnaround_time = None
 
         return (
-            booster_most_flight_stats["stages"],
-            stage_two_most_flight_stats["stages"],
+            booster_most_flight_stats["stages"] or [],
+            stage_two_most_flight_stats["stages"] or [],
             booster_with_quickest_turnaround,
             booster_turnaround_time,
             stage_two_with_quickest_turnaround,
@@ -997,16 +1016,202 @@ class FamilyInformationApiView(APIView):
         return filtered_series_data
 
 
+class SpacecraftFamilyInformationApiView(APIView):
+    def get(self, request) -> Response:
+        """Generates response for family information"""
+        self.now = datetime.now(pytz.utc)
+        try:
+            family = SpacecraftFamily.objects.get(name__icontains=request.query_params.get("family", ""))
+        except ObjectDoesNotExist:
+            return HttpResponseNotFound(content="Spacecraft family not found")
+
+        if launch := Launch.objects.filter(spacecraftonlaunch__spacecraft__family=family).order_by("time").first():
+            first_launch_time = launch.time
+            current_year = self.now.year
+            start_year = parse_start_time(self.request.query_params, first_launch_time).year
+        else:
+            first_launch_time = None
+            current_year = None
+            start_year = None
+
+        (
+            max_spacecraft_flights,
+            avg_spacecraft_flights,
+            x_axis,
+        ) = self._get_flight_data(family, start_year, current_year)
+        family_stats = self._get_family_stats(family)
+        family_children_stats = self._get_family_children_stats(family)
+        (
+            spacecraft_with_most_flights,
+            spacecraft_with_quickest_turnaround,
+            spacecraft_turnaround_time,
+        ) = self._get_spacecraft_stats(family)
+        series_data = self._get_series_data(max_spacecraft_flights, avg_spacecraft_flights)
+
+        # Compile all collected data into a single dictionary
+        data = {
+            "launch_years": x_axis,
+            "series_data": series_data,
+            "stats": family_stats,
+            "children_stats": family_children_stats,
+            "spacecraft_with_most_flights": spacecraft_with_most_flights or [],
+            "spacecraft_with_quickest_turnaround": spacecraft_with_quickest_turnaround,
+            "spacecraft_turnaround_time": spacecraft_turnaround_time,
+            "start_date": first_launch_time,
+        }
+
+        # Serialize the data
+        serializer = SpacecraftFamilyInformationSerializer(data)
+
+        # Return the serialized data as a response
+        return Response(serializer.data)
+
+    def _get_flight_data(self, family, start_year, current_year) -> tuple:
+        """Get the max and avg num of spacecraft flights"""
+        # Create a list of years in the range
+        if not start_year:
+            return [], [], []
+        x_axis = list(range(start_year, current_year + 1))
+
+        # Create a single queryset for all necessary data, grouped by year
+        flight_data = (
+            SpacecraftOnLaunch.objects.filter(
+                spacecraft__family=family,
+                launch__time__year__gte=start_year,
+                launch__time__lte=self.now,
+            )
+            .annotate(year=ExtractYear("launch__time"))
+            .values("year")
+            .annotate(
+                max_flights=Max("num_flights"),
+                avg_flights=Avg("num_flights"),
+            )
+            .order_by("year")
+        )
+
+        # Initialize dictionaries to hold the max and avg flights for each stage type by year
+        max_spacecraft_flights = {year: 0 for year in x_axis}
+        avg_spacecraft_flights = {year: 0 for year in x_axis}
+
+        # Populate spacecraft data from query set
+        for data in flight_data:
+            year = data["year"]
+            max_spacecraft_flights[year] = data["max_flights"]
+            avg_spacecraft_flights[year] = round(data["avg_flights"], 2)
+
+        # Convert dictionaries to lists for return
+        max_spacecraft_flights = make_monotonic(list(max_spacecraft_flights.values()), MonotonicDirections.INCREASING)
+        avg_spacecraft_flights = avg_spacecraft_flights.values()
+
+        return (
+            max_spacecraft_flights,
+            avg_spacecraft_flights,
+            x_axis,
+        )
+
+    def _get_family_stats(self, family) -> dict:
+        """Returns time on orbit, number of launches, and number of reuses"""
+        num_launches = Launch.objects.filter(
+            spacecraftonlaunch__spacecraft__family=family, time__lte=self.now, launch_precluded=False
+        ).count()
+        num_reuses = SpacecraftOnLaunch.objects.filter(
+            spacecraft__family=family, num_flights__gt=1, launch__time__lte=self.now
+        ).count()
+
+        time_on_orbit = (
+            SpacecraftOnLaunch.objects.filter(spacecraft__family=family)
+            .annotate(
+                orbit_duration=Case(
+                    When(splashdown_time__isnull=False, then=F("splashdown_time") - F("launch__time")),
+                    When(
+                        splashdown_time__isnull=True,
+                        then=ExpressionWrapper(self.now - F("launch__time"), output_field=DurationField()),
+                    ),
+                )
+            )
+            .aggregate(total_time_on_orbit=Sum("orbit_duration"))["total_time_on_orbit"]
+            .total_seconds()
+        )
+
+        family_stats = {
+            "Launches": str(num_launches),
+            "Reuses": str(num_reuses),
+            "Time On Orbit:": f"{time_on_orbit / 86400 :,.2f} days",
+        }
+        return family_stats
+
+    def _get_family_children_stats(self, family) -> dict:
+        """Returns dict with stats for each rocket in the rocket family"""
+        family_children_stats = {}
+
+        for spacecraft_type in SPACECRAFT_TYPES:
+            spacecraft_reflights = SpacecraftOnLaunch.objects.filter(
+                spacecraft__family=family,
+                spacecraft__type=spacecraft_type[0],
+                num_flights__gt=1,
+                launch__time__lte=self.now,
+            ).count()
+
+            launches = Launch.objects.filter(
+                spacecraftonlaunch__spacecraft__family=family,
+                spacecraftonlaunch__spacecraft__type=spacecraft_type[0],
+                time__lte=self.now,
+                launch_precluded=False,
+            ).count()
+
+            family_children_stats[spacecraft_type[1].title()] = {
+                "Launches": str(launches),
+                "Reuses": str(spacecraft_reflights),
+            }
+
+        return family_children_stats
+
+    def _get_spacecraft_stats(self, family) -> tuple:
+        """Returns tuple with stage with fastest turnaround and most launches"""
+        spacecraft_with_most_launches = get_most_flown_spacecraft(family=family, before_date=self.now)
+
+        quickest_spacecraft_on_launch = (
+            SpacecraftOnLaunch.objects.filter(spacecraft__family=family, launch__time__lte=self.now)
+            .exclude(spacecraft_turnaround__isnull=True)
+            .order_by("spacecraft_turnaround")
+            .first()
+        )
+
+        if quickest_spacecraft_on_launch:
+            spacecraft_with_quickest_turnaround = quickest_spacecraft_on_launch.spacecraft
+            spacecraft_turnaround_time = convert_seconds(quickest_spacecraft_on_launch.spacecraft_turnaround)
+        else:
+            spacecraft_with_quickest_turnaround = None
+            spacecraft_turnaround_time = None
+
+        return (
+            spacecraft_with_most_launches["spacecraft"],
+            spacecraft_with_quickest_turnaround,
+            spacecraft_turnaround_time,
+        )
+
+    def _get_series_data(self, max_spacecraft_flights, avg_spacecraft_flights) -> dict:
+        """Removes any trivial stats from rocket family stats"""
+        series_data = {
+            "Max Spacecraft": max_spacecraft_flights,
+            "Avg Spacecraft": avg_spacecraft_flights,
+        }
+
+        # Filter out entries where all values are zero
+        filtered_series_data = {k: v for k, v in series_data.items() if not all_zeros(v)}
+
+        return filtered_series_data
+
+
 class EDAApiView(APIView):
     def get(self, request, *args, **kwargs) -> Response:
         """Creates EDA table for launch"""
         name = self.request.query_params.get("name", "")
-        launch_table = None
         try:
             launch = Launch.objects.get(name=name)
             launch_table = build_table_html(launch.create_launch_table())
-        except Launch.DoesNotExist:
-            pass
+        except launch.DoesNotExist:
+            return HttpResponseNotFound("Launch not found")
 
         # Compile all collected data into a single dictionary
         data = {

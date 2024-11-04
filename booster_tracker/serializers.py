@@ -292,7 +292,7 @@ class HomePageSerializer(serializers.Serializer):
     launches_per_rocket_per_year = serializers.DictField(child=serializers.CharField())
 
 
-class FamilyInformationSerializer(serializers.Serializer):
+class RocketFamilyInformationSerializer(serializers.Serializer):
     launch_years = serializers.ListField(child=serializers.IntegerField())
     series_data = serializers.DictField(child=serializers.ListField(child=serializers.FloatField()), required=False)
     stats = serializers.DictField(child=serializers.CharField(), required=True)
@@ -309,6 +309,21 @@ class FamilyInformationSerializer(serializers.Serializer):
     avg_booster_flights = serializers.ListField(child=serializers.FloatField(), required=False)
     avg_stage_two_flights = serializers.ListField(child=serializers.FloatField(), required=False)
     max_fairing_flights = serializers.ListField(child=serializers.FloatField(), required=False)
+
+    start_date = serializers.DateTimeField()
+
+
+class SpacecraftFamilyInformationSerializer(serializers.Serializer):
+    launch_years = serializers.ListField(child=serializers.IntegerField())
+    series_data = serializers.DictField(child=serializers.ListField(child=serializers.FloatField()), required=False)
+    stats = serializers.DictField(child=serializers.CharField(), required=True)
+    children_stats = serializers.DictField(child=serializers.CharField(), required=True)
+    spacecraft_with_most_flights = serializers.ListField(child=SpacecraftSerializer(), required=True)
+    spacecraft_with_quickest_turnaround = SpacecraftSerializer(required=False, allow_null=True)
+    spacecraft_turnaround_time = serializers.CharField(required=False, allow_null=True)
+
+    max_spacecraft_flights = serializers.ListField(child=serializers.IntegerField(), required=False)
+    avg_spacecraft_flights = serializers.ListField(child=serializers.FloatField(), required=False)
 
     start_date = serializers.DateTimeField()
 

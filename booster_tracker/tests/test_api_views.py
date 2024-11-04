@@ -273,10 +273,10 @@ class FamilyInformationApiViewTests(APITestCase):
     def setUp(self):
         # Create test data
         self.test_data = initialize_test_data()
-        self.url = reverse("booster_tracker:family_information")
+        self.url = reverse("booster_tracker:rocket_family_information")
 
     def test_get_family_information(self):
-        response = self.client.get(self.url, {"family_name": "Falcon"})
+        response = self.client.get(self.url, {"family": "Falcon"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
 

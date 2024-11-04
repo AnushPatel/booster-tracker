@@ -6,14 +6,11 @@ from django.apps import apps
 from booster_tracker.models import (
     Stage,
     StageAndRecovery,
-    Pad,
-    PadUsed,
-    Boat,
-    Rocket,
-    LandingZone,
     Launch,
     RocketFamily,
     Spacecraft,
+    SpacecraftFamily,
+    SpacecraftOnLaunch,
 )
 from booster_tracker.utils import (
     all_values_true,
@@ -73,6 +70,43 @@ def get_most_flown_stages(family: RocketFamily, stage_type: StageObjects, before
 
     return {
         "stages": most_flown_stages,
+        "num_launches": max_launch_count if max_launch_count else 0,
+    }
+
+
+def get_most_flown_spacecraft(family: SpacecraftFamily, before_date: datetime):
+    """Returns the spacercaft with the highest number of flights, and how many flights that is"""
+    # Fetch the records and annotate the numeric part of the stage name
+    spacecraft_and_launch_count = (
+        SpacecraftOnLaunch.objects.filter(launch__time__lte=before_date, spacecraft__family=family)
+        .annotate(
+            extracted_value=RegexpReplace(F("spacecraft__name")),
+            # Cast only valid floats, otherwise return NULL
+            spacecraft_number=Cast(
+                Case(
+                    When(extracted_value__regex=r"^[0-9]+(\.[0-9]+)?$", then=F("extracted_value")),
+                    default=None,
+                    output_field=FloatField(),
+                ),
+                FloatField(),
+            ),
+        )
+        .order_by("-num_flights", "spacecraft_number")
+    )
+
+    if not spacecraft_and_launch_count:
+        return {
+            "spacecraft": None,
+            "num_launches": 0,
+        }
+    max_launch_count = spacecraft_and_launch_count[0].num_flights
+
+    most_flown_spacecraft = list(
+        item.spacecraft for item in spacecraft_and_launch_count.filter(num_flights=max_launch_count)
+    )
+
+    return {
+        "spacecraft": most_flown_spacecraft,
         "num_launches": max_launch_count if max_launch_count else 0,
     }
 
