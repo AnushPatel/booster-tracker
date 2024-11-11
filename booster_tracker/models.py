@@ -929,6 +929,8 @@ class StageAndRecovery(models.Model):
             - A boolean indicating if the stat is significant.
             - A string description of the stat.
         """
+        if not self.stage:
+            return []
         stage_type = self.stage.type if self.stage else "BOOSTER"
         rocket_family = self.launch.rocket.family
         method_outcome = self.method_success if not self.method_success == "TBD" else "SUCCESS"
