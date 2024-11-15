@@ -424,7 +424,9 @@ class Launch(models.Model):
     def stages(self) -> str:
         """Returns concatenated string of stages on launch; these are ordered by position (so center, MY, PY) for three core launches"""
         stages = []
-        for stage in Stage.objects.filter(stageandrecovery__launch=self).order_by("stageandrecovery__stage_position"):
+        for stage in Stage.objects.filter(stageandrecovery__launch=self).order_by(
+            "type", "stageandrecovery__stage_position"
+        ):
             stages.append(f"{stage}-{self.get_stage_flights(stage=stage)}")
         return concatenated_list(stages).replace("N/A", "Unknown")
 
@@ -570,11 +572,11 @@ class Launch(models.Model):
         # Formulate the final post string
         if additional_stat:
             new_stat_string = f"{additional_stat} and {stat}"
-            new_post_string = f"{self.name} will mark {provider_name}'s {new_stat_string}.\n\nLearn more: https://boostertracker.com/launch/{self.id}"
+            new_post_string = f"{self.name} will mark {provider_name}'s {new_stat_string}.\n\nLearn more: https://boostertracker.com/launch/{self.id}/"
             if len(new_post_string) <= 280:
                 return new_post_string
 
-        return f"{self.name} will mark {provider_name}'s {stat}.\n\nLearn more: https://boostertracker.com/launch/{self.id}"
+        return f"{self.name} will mark {provider_name}'s {stat}.\n\nLearn more: https://boostertracker.com/launch/{self.id}/"
 
     def update_data_with_launch_info(self, data, liftoff_time_local):
         launch_location = f"{self.pad.name} ({self.pad.nickname}), {self.pad.location}"

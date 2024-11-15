@@ -699,7 +699,7 @@ class TestLaunchModel(TestCase):
         launch = Launch.objects.get(name="Falcon 9 Launch 1")
         result = launch.make_x_post()
 
-        expected = f"{launch.name} will mark SpaceX's 1st Falcon 9 launch success and 1st Falcon 9 launch.\n\nLearn more: https://boostertracker.com/launch/{launch.id}"
+        expected = f"{launch.name} will mark SpaceX's 1st Falcon 9 launch success and 1st Falcon 9 launch.\n\nLearn more: https://boostertracker.com/launch/{launch.id}/"
 
         self.assertEqual(result, expected)
         self.assertTrue(len(result) <= 280)
@@ -709,7 +709,7 @@ class TestLaunchModel(TestCase):
         launch = Launch.objects.get(name="Falcon 9 Launch 3")
         result = launch.make_x_post()
 
-        expected = f"{launch.name} will mark SpaceX's fastest turnaround of a pad to date at 29 days and shortest time between two launches to date at 29 days.\n\nLearn more: https://boostertracker.com/launch/{launch.id}"
+        expected = f"{launch.name} will mark SpaceX's fastest turnaround of a pad to date at 29 days and shortest time between two launches to date at 29 days.\n\nLearn more: https://boostertracker.com/launch/{launch.id}/"
 
         self.assertEqual(result, expected)
         self.assertTrue(len(result) <= 280)
@@ -718,7 +718,7 @@ class TestLaunchModel(TestCase):
         mock_randint.side_effect = [0, 0]
         result = launch.make_x_post()
 
-        expected = f"{launch.name} will mark SpaceX's 4th Falcon 9 launch and fastest turnaround of a Falcon booster to date at 30 days.\n\nLearn more: https://boostertracker.com/launch/{launch.id}"
+        expected = f"{launch.name} will mark SpaceX's 4th Falcon 9 launch and fastest turnaround of a Falcon booster to date at 30 days.\n\nLearn more: https://boostertracker.com/launch/{launch.id}/"
 
         self.assertEqual(result, expected)
         self.assertTrue(len(result) <= 280)
