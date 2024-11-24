@@ -179,8 +179,8 @@ class TestCases(TestCase):
 
     def test_parse_start_time(self):
         default_start_date = datetime(2024, 1, 1, tzinfo=pytz.utc)
-        query_params = {"startdate": '"2024-08-11T12:34:56.789Z"'}
-        expected_date = datetime(2024, 8, 11, 12, 34, 56, 789000, tzinfo=pytz.utc)
+        query_params = {"startdate": '"2024-08-11T12:34:56Z"'}
+        expected_date = datetime(2024, 8, 11, 12, 34, 56, tzinfo=pytz.utc)
 
         result = parse_start_time(query_params, default_start_date)
         self.assertEqual(result, expected_date)

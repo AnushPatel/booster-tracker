@@ -142,7 +142,7 @@ def get_true_filter_values(filter, filter_item):
 
 
 def get_model_objects_with_filter(model: models.Model, filter: dict, search_query: str = ""):
-    """Takes in a filter and returns all launch objects that obey one of those filters"""
+    """Takes in a filter and returns all objects that obey one of those filters"""
 
     if (not filter and not search_query) or (all_values_true(filter) and not search_query):
         return model.objects.all()

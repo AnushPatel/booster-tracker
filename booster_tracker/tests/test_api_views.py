@@ -238,7 +238,7 @@ class ListApiTestCases(APITestCase):
 class HomeDataApiViewTests(APITestCase):
     def setUp(self):
         self.test_data = initialize_test_data()
-        self.start_date = "2026-01-01T07:00:00.000Z"
+        self.start_date = "2026-01-01T07:00:00Z"
         self.url = reverse("booster_tracker:home")  # Adjust the URL name accordingly
 
     def test_no_launches(self):
@@ -253,7 +253,7 @@ class HomeDataApiViewTests(APITestCase):
         self.assertEqual(data["total_launches_next_year"], 0)
 
     def test_with_launches(self):
-        self.start_date = "2018-01-01T07:00:00.000Z"
+        self.start_date = "2018-01-01T07:00:00Z"
 
         response = self.client.get(self.url, {"startdate": self.start_date, "functiontype": "exponential"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)

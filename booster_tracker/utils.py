@@ -179,7 +179,7 @@ def parse_start_time(query_params, default_start_date: datetime) -> datetime:
     """Checks to see if query specifies start date; else returns default_start_date"""
     date_str: str = query_params.get("startdate", "")
     if date_str:
-        return datetime.strptime(date_str.strip('"').replace("Z", ""), "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=pytz.utc)
+        return datetime.strptime(date_str.strip('"'), "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.utc)
     return default_start_date
 
 
