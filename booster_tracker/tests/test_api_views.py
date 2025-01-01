@@ -1,7 +1,7 @@
 from booster_tracker.models import Rocket, Pad, Orbit, Launch, Stage, RocketFamily, StageAndRecovery, LandingZone
 
 from .test_helpers import initialize_test_data
-from django.test import TestCase
+from unittest.mock import patch
 from datetime import datetime
 import pytz
 import numpy as np
@@ -275,7 +275,11 @@ class FamilyInformationApiViewTests(APITestCase):
         self.test_data = initialize_test_data()
         self.url = reverse("booster_tracker:rocket_family_information")
 
-    def test_get_family_information(self):
+    @patch("booster_tracker.api_views.datetime")
+    def test_get_family_information(self, mock_datetime):
+        # Mock current time
+        mock_datetime.now.return_value = datetime(2024, 11, 10)
+
         response = self.client.get(self.url, {"family": "Falcon"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()

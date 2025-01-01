@@ -871,9 +871,9 @@ class RocketFamilyInformationApiView(APIView):
             max_fairing_flights[year] = data["max_flights"]
 
         # Convert dictionaries to lists for return
-        max_booster_flights = max_booster_flights.values()
+        max_booster_flights = make_monotonic(list(max_booster_flights.values()), MonotonicDirections.INCREASING)
         avg_booster_flights = avg_booster_flights.values()
-        max_stage_two_flights = max_stage_two_flights.values()
+        max_stage_two_flights = make_monotonic(list(max_stage_two_flights.values()), MonotonicDirections.INCREASING)
         avg_stage_two_flights = avg_stage_two_flights.values()
         max_fairing_flights = make_monotonic(list(max_fairing_flights.values()), MonotonicDirections.INCREASING)
 

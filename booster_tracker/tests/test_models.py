@@ -523,7 +523,7 @@ class TestLaunchModel(TestCase):
         )
 
         Launch.objects.create(
-            time=datetime(datetime.now(pytz.utc).year, 5, 1, 0, 0, tzinfo=pytz.utc),
+            time=datetime(2024, 5, 1, 0, 0, tzinfo=pytz.utc),
             pad=Pad.objects.get(name="Space Launch Complex 40"),
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 1",
@@ -592,7 +592,7 @@ class TestLaunchModel(TestCase):
         )
 
         Launch.objects.create(
-            time=datetime(datetime.now(pytz.utc).year, 5, 1, 0, 0, tzinfo=pytz.utc),
+            time=datetime(2024, 5, 1, 0, 0, tzinfo=pytz.utc),
             pad=Pad.objects.get(name="Space Launch Complex 40"),
             rocket=Rocket.objects.get(name="Falcon 9"),
             name="Falcon 9 Temp Launch 4",
