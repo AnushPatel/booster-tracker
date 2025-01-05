@@ -136,21 +136,23 @@ def get_averages(values: list, chunk_size: int, round_to_place: int) -> list:
     return averages
 
 
-def make_monotonic(list: list, order: MonotonicDirections) -> list:
+def make_monotonic(lst: list, order: MonotonicDirections) -> list:
     """Takes in a list and makes it monotonic"""
-    for index, value in enumerate(list):
+    if not lst or len(lst) < 2:
+        return lst
+    for index, value in enumerate(lst):
         if order == MonotonicDirections.INCREASING:
             if index == 0:
                 continue
-            if value < list[index - 1]:
-                list[index] = list[index - 1]
+            if value < lst[index - 1]:
+                lst[index] = lst[index - 1]
         if order == MonotonicDirections.DECREASING:
-            if index == len(list) - 1:
+            if index == len(lst) - 1:
                 continue
-            if value < list[index + 1]:
-                list[index] = list[index + 1]
+            if value < lst[index + 1]:
+                lst[index] = lst[index + 1]
 
-    return list
+    return lst
 
 
 def all_zeros(list: list) -> bool:
