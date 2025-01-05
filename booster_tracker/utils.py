@@ -144,12 +144,12 @@ def make_monotonic(lst: list, order: MonotonicDirections) -> list:
         if order == MonotonicDirections.INCREASING:
             if index == 0:
                 continue
-            if value < lst[index - 1]:
+            if value is None or value < lst[index - 1]:
                 lst[index] = lst[index - 1]
         if order == MonotonicDirections.DECREASING:
             if index == len(lst) - 1:
                 continue
-            if value < lst[index + 1]:
+            if value is None or value < lst[index + 1]:
                 lst[index] = lst[index + 1]
 
     return lst
