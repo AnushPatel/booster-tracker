@@ -1210,7 +1210,7 @@ class EDAApiView(APIView):
         try:
             launch = Launch.objects.get(name=name)
             launch_table = build_table_html(launch.create_launch_table())
-        except launch.DoesNotExist:
+        except Launch.DoesNotExist:
             return HttpResponseNotFound("Launch not found")
 
         # Compile all collected data into a single dictionary

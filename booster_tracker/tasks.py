@@ -70,8 +70,6 @@ def update_cached_spacecraftonlaunch_value_task(spacecraft_id_list):
         spacecraft_on_launch._from_task = False
 
 
-import logging
-
 # Configure logging
 logger = logging.getLogger("Task Logger")
 logger.setLevel(logging.INFO)  # Set the log level
