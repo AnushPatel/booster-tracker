@@ -11,7 +11,7 @@ from booster_tracker.utils import (
     process_stat,
 )
 from datetime import datetime
-from django.db.models import Q
+from django.db.models import Q, Max
 from colorfield.fields import ColorField
 import pytz
 from timezone_field import TimeZoneField
@@ -365,6 +365,28 @@ class Launch(models.Model):
 
         return stats
 
+    def calculate_spacecraft_on_launch_turnaround_stats(self) -> list[tuple]:
+        """Returns stats for fastest spacecraft turnaround; list contains tuples of following format: (bool, str); bool is if the stat is significant, str the stat"""
+
+        stats = []
+
+        for spacecraft_on_launch in SpacecraftOnLaunch.objects.filter(launch=self):
+            relevant_turnarounds = SpacecraftOnLaunch.objects.filter(
+                launch__time__lte=self.time, spacecraft__family=spacecraft_on_launch.spacecraft.family
+            ).order_by("spacecraft_turnaround")
+            if relevant_turnarounds.count() < 3:
+                return []
+
+            if relevant_turnarounds.first().launch == self:
+                stats.append(
+                    (
+                        True,
+                        f"Fastest turnaround of {spacecraft_on_launch.spacecraft.family} to date at {convert_seconds(relevant_turnarounds[0].spacecraft_turnaround)}. Previous record: {convert_seconds(relevant_turnarounds[1].spacecraft_turnaround)}",
+                    )
+                )
+
+        return stats
+
     def calculate_company_turnaround_stats(self) -> list[tuple]:
         """Returns stats for fastest company turnaround; list contains tuples of following format: (bool, str); bool is if the stat is significant, str the stat"""
         launches = Launch.objects.filter(
@@ -505,6 +527,11 @@ class Launch(models.Model):
             stats += stage_and_recovery.get_stage_stats()
             stats += stage_and_recovery.get_landing_zone_stats()
 
+        for spacecraft_on_launch in SpacecraftOnLaunch.objects.filter(launch=self):
+            stats += spacecraft_on_launch.get_spacecraft_stats()
+
+        stats += self.calculate_spacecraft_on_launch_turnaround_stats()
+
         # Adding turnaround stats
         stats += self.calculate_stage_and_recovery_turnaround_stats(turnaround_object="booster")
         stats += self.calculate_stage_and_recovery_turnaround_stats(turnaround_object="second stage")
@@ -530,6 +557,11 @@ class Launch(models.Model):
         for stage_and_recovery in StageAndRecovery.objects.filter(launch=self):
             stats += stage_and_recovery.get_stage_stats()
             stats += stage_and_recovery.get_landing_zone_stats()
+
+        for spacecraft_on_launch in SpacecraftOnLaunch.objects.filter(launch=self):
+            stats += spacecraft_on_launch.get_spacecraft_stats()
+
+        stats += self.calculate_spacecraft_on_launch_turnaround_stats()
 
         # Adding turnaround stats
         stats += self.calculate_stage_and_recovery_turnaround_stats(turnaround_object="booster")
@@ -1069,8 +1101,27 @@ class StageAndRecovery(models.Model):
                 f"{rocket_family} {stage_type.lower().replace('_', ' ')} soft ocean splashdown {method_outcome.lower()}"
             )
 
+        # Gets most number of times a stage in the same family of the same type had flown ahead of launch
+        aggregate_max = (
+            StageAndRecovery.objects.filter(
+                launch__time__lt=self.launch.time,
+                id__lte=self.id,
+                launch__rocket__family=rocket_family,
+                stage__type=stage_type,
+            ).aggregate(Max("num_flights"))["num_flights__max"]
+            or 1
+        )
         # Generate stats list
         stats = []
+
+        if self.num_flights and self.num_flights > aggregate_max:
+            stats.append(
+                (
+                    True,
+                    f"1st {rocket_family} {stage_type.lower().replace('_', ' ')} to fly for a {make_ordinal(self.num_flights)} time",
+                )
+            )
+
         if self.launch.time > now or self.method_success != "TBD":
             if not (self.method == "EXPENDED" and self.launch.launch_outcome == "FAILURE"):
                 stats.append(
@@ -1307,20 +1358,43 @@ class SpacecraftOnLaunch(models.Model):
             recovery_boat=self.recovery_boat,
         ).count()
 
-        stats = [
+        # Gets most number of times a spacecraft in the same family had flown ahead of launch
+        aggregate_max = (
+            SpacecraftOnLaunch.objects.filter(
+                launch__time__lt=self.launch.time,
+                id__lte=self.id,
+                spacecraft__family=self.spacecraft.family,
+            ).aggregate(Max("num_flights"))["num_flights__max"]
+            or 1
+        )
+        # Generate stats list
+        stats = []
+
+        if self.num_flights and self.num_flights > aggregate_max:
+            stats.append(
+                (True, f"1st {self.spacecraft.family} spacecraft to fly for a {make_ordinal(self.num_flights)} time")
+            )
+
+        stats.append(
             (
                 is_significant(family_launch_num),
                 f"{make_ordinal(family_launch_num)} launch of {self.spacecraft.family}",
-            ),
+            )
+        )
+
+        stats.append(
             (
                 is_significant(family_version_launch_num),
                 f"{make_ordinal(family_version_launch_num)} launch of {self.spacecraft.family} {self.spacecraft.version}",
-            ),
+            )
+        )
+
+        stats.append(
             (
                 is_significant(family_type_launch_num),
                 f"{make_ordinal(family_type_launch_num)} launch of {self.spacecraft.type.title()} {self.spacecraft.family}",
-            ),
-        ]
+            )
+        )
 
         if self.num_flights and self.num_flights > 1:
             stats.append(
