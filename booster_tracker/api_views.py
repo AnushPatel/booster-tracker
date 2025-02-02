@@ -728,7 +728,7 @@ class HomeDataApiView(APIView):
             rocket__family__provider__name="SpaceX",
         ).count()
 
-        # Calculate the remaining launches for the current year
+        # Calculate the remaining launches for the current year.
         remaining_launches_current_year = (
             launches_in_time_interval(
                 line_of_best_fit=best_fit_line,
