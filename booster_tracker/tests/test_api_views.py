@@ -12,7 +12,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient, APITestCase
 from rest_framework import status
 from booster_tracker.models import Launch, Spacecraft, SpacecraftFamily, FairingRecovery
-from booster_tracker.api_views_dev import StandardPagination
+from booster_tracker.api_views import StandardPagination
 from booster_tracker.serializers import CalendarStatsSerializer
 import json
 
