@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.db.models import Q
+from django.templatetags.static import static
 from datetime import datetime
 import pytz
 from booster_tracker.models import (
@@ -22,6 +23,8 @@ from booster_tracker.models import (
     RocketFamily,
     LaunchStat,
 )
+
+## test
 
 # Register your models here.
 # pylint: disable=consider-using-set-comprehension
@@ -346,6 +349,9 @@ class LaunchAdmin(admin.ModelAdmin):
         DragonInLine,
     ]
     readonly_fields = ("celery_task_id",)  # Make the field read-only in the edit form
+
+    class Media:
+        js = ("js/landing-zone.js",)
 
     def custom_time_display(self, obj):
         return obj.time.strftime("%B %d, %Y %H:%M")
