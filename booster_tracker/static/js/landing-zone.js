@@ -9,13 +9,18 @@ document.addEventListener("change", function (event) {
     if (landingMethodSelect) {
       const selectedLandingZone = event.target.options[event.target.selectedIndex].text.trim().toLowerCase();
       const droneships = ["just read the instructions (2)", "a shortfall of gravitas", "of course i still love you"];
+      const landingpad = ["landing zone 1", "landing zone 2", "landing zone 4"];
+      const starship = ["olp-a catch tower"];
 
       if (droneships.some((name) => selectedLandingZone.includes(name))) {
         landingMethodSelect.value = "DRONE_SHIP";
+      } else if (starship.some((name) => selectedLandingZone.includes(name))) {
+        landingMethodSelect.value = "CATCH";
+      } else if (landingpad.some((name) => selectedLandingZone.includes(name))) {
+        landingMethodSelect.value = "GROUND_PAD";
       } else {
         landingMethodSelect.value = "";
       }
-
       // Ensure the UI updates
       landingMethodSelect.dispatchEvent(new Event("change"));
       console.log("Method updated to:", landingMethodSelect.value);

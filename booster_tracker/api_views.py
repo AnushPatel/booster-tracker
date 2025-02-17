@@ -13,6 +13,9 @@ from django.db.models import (
     ExpressionWrapper,
     DurationField,
 )
+
+from django.http import JsonResponse
+from .models import LandingZone
 from django.db.models.functions import Cast
 from django.db.models.functions import ExtractYear, Coalesce
 from django.db.models.query import QuerySet
