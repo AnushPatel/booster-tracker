@@ -351,7 +351,7 @@ class LaunchAdmin(admin.ModelAdmin):
     readonly_fields = ("celery_task_id",)  # Make the field read-only in the edit form
 
     class Media:
-        js = ("js/landing-zone.js",)
+        js = ("js/landingzone.js",)
 
     def custom_time_display(self, obj):
         return obj.time.strftime("%B %d, %Y %H:%M")
