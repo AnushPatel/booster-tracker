@@ -22,7 +22,7 @@ document.addEventListener("change", function (event) {
         landingMethodSelect.value = "";
       }
       // Ensure the UI updates
-      landingMethodSelect.dispatchEvent(new Event("change")); // Forces UI to update to new value
+      landingMethodSelect.dispatchEvent(new Event("change")); // Forces UI to update to new value, since it's not a user-initiated event
       console.log("Method updated to:", landingMethodSelect.value);
     }
   }
