@@ -474,6 +474,9 @@ class BoatAdmin(admin.ModelAdmin):
     search_fields = ["name"]
 
 
+admin.site.site_header = "Booster Tracker"
+admin.site.site_title = "Booster Tracker Admin"
+admin.site.index_title = "Welcome to the Booster Tracker Admin Panel!"
 admin.site.register(Launch, LaunchAdmin)
 admin.site.register(Rocket, RocketAdmin)
 admin.site.register(Stage, StageAdmin)
