@@ -124,6 +124,7 @@ def post_on_x(launch_id):
     if (
         launch.x_post_sent
         or not nxsf_launch
+        or nxsf_launch.get("s") == 4
         or launch.time != parser.parse(nxsf_launch["t"]).astimezone(pytz.utc)
         or not time_delta_from_now <= timedelta(minutes=20)
     ):

@@ -15,6 +15,7 @@ from .models import (
     SpacecraftFamily,
 )
 from .utils import convert_seconds
+from datetime import datetime
 
 
 class OrbitSerializer(serializers.ModelSerializer):
@@ -351,6 +352,16 @@ class LaunchInformation2Serializer(serializers.ModelSerializer):
     launch_provider_stats = serializers.SerializerMethodField()
     launch_pad_stats = serializers.SerializerMethodField()
     significant_stats = serializers.SerializerMethodField()
+
+
+class LaunchProgressSerializer(serializers.Serializer):  # Serialzier for Launch Progress chart, do not commit to prod.
+    years = serializers.ListField(child=serializers.IntegerField())
+    actual_launches = serializers.ListField(child=serializers.IntegerField())
+    target_launches = serializers.ListField(child=serializers.IntegerField())
+    start_date = serializers.DateTimeField()
+    end_date = serializers.DateTimeField()
+    target_goal = serializers.IntegerField()
+    current_progress = serializers.IntegerField()
 
     class Meta:
         model = Launch
