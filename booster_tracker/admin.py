@@ -350,7 +350,7 @@ class LaunchAdmin(admin.ModelAdmin):
     ]
     readonly_fields = ("celery_task_id",)  # Make the field read-only in the edit form
 
-    class Media:
+    class Media:  # landing-zones.js is a custom JavaScript file that will be loaded on the admin page
         js = ("js/landing-zones.js",)
 
     def custom_time_display(self, obj):
