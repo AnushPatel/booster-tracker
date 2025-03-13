@@ -28,7 +28,6 @@ from booster_tracker.api_views import (
     FilteredLaunchDaysApiView,
     EDAApiView,
     AdditionalGraphsApiView,
-    LaunchProgressGraphApiView,  # Ensure this is imported
 )
 
 app_name = "booster_tracker"
@@ -63,7 +62,6 @@ urlpatterns = [
     path("calendarstats/", FilteredLaunchDaysApiView.as_view(), name="filter_calendar_stats"),
     path("edatable/", EDAApiView.as_view(), name="EDA table"),
     path("additional-graph-info/", AdditionalGraphsApiView.as_view(), name="additional graphs"),
-    path("launch-progress/", LaunchProgressGraphApiView.as_view(), name="launch_progress"),  # Ensure this is here
 ]
 
 # Optional: Add admin URLs if needed (though typically in root urls.py)

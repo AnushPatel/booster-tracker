@@ -95,7 +95,6 @@ from booster_tracker.serializers import (
     EDATableSerializer,
     AdditionalGraphSerializer,
     LaunchInformation2Serializer,
-    LaunchProgressSerializer,
 )
 import json
 
@@ -1224,76 +1223,6 @@ class EDAApiView(APIView):
 
         # Return the serialized data as a response
         return Response(serializer.data)
-
-
-# Launch Progress chart API fetching,
-
-
-class LaunchProgressGraphApiView(APIView):
-    def get(self, request, *args, **kwargs) -> Response:
-        self.now = datetime.now(pytz.utc)
-
-        start_date_str = request.query_params.get("start_date", "")
-        target_launches = int(request.query_params.get("target_launches", 0))
-        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").replace(tzinfo=pytz.utc)
-
-        progress_data = self._get_launch_progress_data(start_date, target_launches)
-
-        data = {
-            "years": progress_data["years"],
-            "actual_launches": progress_data["actual_launches"],
-            "target_launches": progress_data["target_launches"],
-            "start_date": start_date.isoformat(),
-            "end_date": self.now.isoformat(),
-            "target_goal": target_launches,
-            "current_progress": progress_data["current_total"],
-        }
-
-        return Response(data)  # Return the dictionary directly, no serializer needed for now
-
-    def _get_launch_progress_data(self, start_date, target_launches) -> dict:
-        current_year = self.now.year
-        start_year = start_date.year
-
-        launches_per_year = (
-            Launch.objects.filter(
-                time__gte=start_date,
-                time__lte=self.now,
-                rocket__family__provider__name="SpaceX",
-                launch_precluded=False,
-            )
-            .annotate(year=ExtractYear("time"))
-            .values("year")
-            .annotate(count=Count("id"))
-            .order_by("year")
-        )
-
-        years = list(range(start_year, current_year + 1))
-        actual_launches_dict = {year: 0 for year in years}
-        target_launches_dict = {year: 0 for year in years}
-
-        for entry in launches_per_year:
-            actual_launches_dict[entry["year"]] = entry["count"]
-
-        current_total = sum(actual_launches_dict.values())
-
-        years_span = len(years)
-        if years_span > 0:
-            base_launches_per_year = target_launches // years_span
-            extra_launches = target_launches % years_span
-
-            for i, year in enumerate(years):
-                target_launches_dict[year] = base_launches_per_year + (1 if i < extra_launches else 0)
-
-        return {
-            "years": years,
-            "actual_launches": list(actual_launches_dict.values()),
-            "target_launches": list(target_launches_dict.values()),
-            "current_total": current_total,
-        }
-
-
-## DO NOT COMMIT TO PROD ##
 
 
 class AdditionalGraphsApiView(APIView):
