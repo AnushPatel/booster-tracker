@@ -107,10 +107,18 @@ def update_launch_times():
         )
         if nxsf_launch:
             nxsf_launch_time = parser.parse(nxsf_launch["t"]).astimezone(pytz.utc)
-            if nxsf_launch_time != launch.time:
+            if nxsf_launch.get("s") == 4:
+                current_day = now.date()
+                next_day = current_day + timedelta(days=1)
+                same_time = launch.time.time()
+                updated_time = datetime.combine(next_day, same_time, tzinfo=pytz.utc)
+            else:
+                updated_time = nxsf_launch_time
+
+            if updated_time != launch.time:
                 if nxsf_launch_time > launch.time + timedelta(hours=20):
                     launch.x_post_sent = False
-                launch.time = nxsf_launch_time
+                launch.time = updated_time
                 logger.info(f"saving launch {launch.name}")
                 launch.save()
 

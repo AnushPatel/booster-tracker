@@ -1,5 +1,5 @@
 from booster_tracker.tasks import update_cached_stageandrecovery_value_task
-
+from booster_tracker.tasks import update_cached_stageandrecovery_value_task, update_launch_times
 from booster_tracker.models import (
     StageAndRecovery,
     Launch,
@@ -112,3 +112,66 @@ class TestCases(TestCase):
 
         post_string = "This is a test X post."
         mock_make_x_post.side_effect = post_string
+
+    @mock.patch("booster_tracker.tasks.fetch_nxsf_launches")
+    def test_updated_launch_times_task(self, mock_fetch_nxsf_launches):
+        tomorrow = datetime.now(pytz.utc) + timedelta(days=1)
+        test_launch = Launch.objects.create(
+            time=tomorrow,
+            pad=self.test_data["slc40"],
+            rocket=self.test_data["falcon_9"],
+            name="Falcon 9 Test Launch",
+            orbit=self.test_data["low_earth_orbit"],
+            mass=1000,
+            customer="SpaceX",
+            launch_outcome="SUCCESS",
+        )
+
+        mock_fetch_nxsf_launches.return_value = [
+            {
+                "n": test_launch.name,
+                "t": (test_launch.time - timedelta(minutes=10)).isoformat(),
+                "l": 1,  # Checks for SpaceX
+                "s": 4,  # Checks for Scubs
+            }
+        ]
+        update_launch_times()
+        test_launch.refresh_from_db()
+        expected_date = datetime.now(pytz.utc).date() + timedelta(days=1)
+        self.assertEqual(test_launch.time.date(), expected_date)
+
+        current_time = test_launch.time
+        new_time = tomorrow + timedelta(hours=2)
+
+        mock_fetch_nxsf_launches.return_value = [
+            {
+                "n": test_launch.name,
+                "t": new_time.isoformat(),
+                "l": 1,
+                "s": 1,
+            }
+        ]
+        update_launch_times()
+        test_launch.refresh_from_db()
+        self.assertEqual(test_launch.time, new_time)
+        self.assertNotEqual(test_launch.time, current_time)
+
+        test_launch.x_post_sent = True
+        test_launch.save()
+
+        new_time = test_launch.time + timedelta(hours=21)
+
+        mock_fetch_nxsf_launches.return_value = [
+            {
+                "n": test_launch.name,
+                "t": new_time.isoformat(),
+                "l": 1,
+                "s": 1,
+            }
+        ]
+
+        update_launch_times()
+        test_launch.refresh_from_db()
+
+        self.assertEqual(test_launch.time, new_time)
+        self.assertFalse(test_launch.x_post_sent)
