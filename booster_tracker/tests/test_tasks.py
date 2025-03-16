@@ -1,5 +1,5 @@
 from booster_tracker.tasks import update_cached_stageandrecovery_value_task
-from booster_tracker.tasks import update_cached_stageandrecovery_value_task, update_launch_times
+from booster_tracker.tasks import update_cached_stageandrecovery_value_task, update_launch_times, update_launch_outcome
 from booster_tracker.models import (
     StageAndRecovery,
     Launch,
@@ -175,3 +175,81 @@ class TestCases(TestCase):
 
         self.assertEqual(test_launch.time, new_time)
         self.assertFalse(test_launch.x_post_sent)
+
+    @mock.patch("booster_tracker.tasks.fetch_nxsf_launches")
+    def test_update_launch_outcome_success(self, mock_fetch_nxsf_launches):
+        test_launch = Launch.objects.create(
+            time=datetime.now(pytz.utc) - timedelta(hours=1),
+            pad=self.test_data["slc40"],
+            rocket=self.test_data["falcon_9"],
+            name="Falcon 9 Test Launch",
+            orbit=self.test_data["low_earth_orbit"],
+            mass=1000,
+            customer="SpaceX",
+            launch_outcome="SUCCESS",
+        )
+
+        nxsf_data = [
+            {
+                "n": test_launch.name,
+                "t": test_launch.time.isoformat(),
+                "l": 1,
+                "s": 6,
+            }
+        ]
+        mock_fetch_nxsf_launches.return_value = nxsf_data
+        update_launch_outcome()
+        test_launch.refresh_from_db()
+        self.assertEqual(test_launch.launch_outcome, "SUCCESS")
+
+    @mock.patch("booster_tracker.tasks.fetch_nxsf_launches")
+    def test_update_launch_outcome_partial_failure(self, mock_fetch_nxsf_launches):
+        test_launch = Launch.objects.create(
+            time=datetime.now(pytz.utc) - timedelta(hours=1),
+            pad=self.test_data["slc40"],
+            rocket=self.test_data["falcon_9"],
+            name="Falcon 9 Test Launch",
+            orbit=self.test_data["low_earth_orbit"],
+            mass=1000,
+            customer="SpaceX",
+            launch_outcome="SUCCESS",
+        )
+
+        nxsf_data = [
+            {
+                "n": test_launch.name,
+                "t": test_launch.time.isoformat(),
+                "l": 1,
+                "s": 7,
+            }
+        ]
+        mock_fetch_nxsf_launches.return_value = nxsf_data
+        update_launch_outcome()
+        test_launch.refresh_from_db()
+        self.assertEqual(test_launch.launch_outcome, "PARTIAL FAILURE")
+
+    @mock.patch("booster_tracker.tasks.fetch_nxsf_launches")
+    def test_update_launch_outcome_failure(self, mock_fetch_nxsf_launches):
+        test_launch = Launch.objects.create(
+            time=datetime.now(pytz.utc) - timedelta(hours=1),
+            pad=self.test_data["slc40"],
+            rocket=self.test_data["falcon_9"],
+            name="Falcon 9 Test Launch",
+            orbit=self.test_data["low_earth_orbit"],
+            mass=1000,
+            customer="SpaceX",
+            launch_outcome="SUCCESS",
+        )
+
+        nxsf_data = [
+            {
+                "n": test_launch.name,
+                "t": test_launch.time.isoformat(),
+                "l": 1,
+                "s": 8,
+            }
+        ]
+        mock_fetch_nxsf_launches.return_value = nxsf_data
+        update_launch_outcome()
+        test_launch.refresh_from_db()
+        self.assertEqual(test_launch.launch_outcome, "FAILURE")

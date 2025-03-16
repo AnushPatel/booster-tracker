@@ -123,6 +123,41 @@ def update_launch_times():
                 launch.save()
 
 
+def update_launch_outcome():
+    nxsf_api_data = fetch_nxsf_launches()
+
+    outcome_dict = {6: "SUCCESS", 7: "PARTIAL FAILURE", 8: "FAILURE"}
+
+    filtered_launches = []
+    for launch in nxsf_api_data:
+        if launch.get("l") == 1 and launch.get("s") in outcome_dict:
+            launch_time = parser.parse(launch["t"]).astimezone(pytz.utc)
+            if launch_time >= datetime.now(pytz.utc) - timedelta(hours=24):
+                filtered_launches.append(launch)
+
+    for nxsf_launch in filtered_launches:
+        try:
+            launch_name = nxsf_launch.get("n")
+            status = nxsf_launch.get("s")
+            outcome = outcome_dict.get(status)
+
+            launch = Launch.objects.filter(
+                name=launch_name, time__gte=datetime.now(pytz.utc) - timedelta(hours=24)
+            ).first()
+
+            if not launch:
+                continue
+
+            if launch.launch_outcome != outcome:
+                launch._from_task = True
+                launch.launch_outcome = outcome
+                launch.save(update_fields=["launch_outcome"])
+                launch._from_task = False
+
+        except Exception as e:
+            logger.error(f"Error updating launch outcome for {launch_name}: {e}")
+
+
 @shared_task
 def post_on_x(launch_id):
     launch = Launch.objects.get(id=launch_id)
