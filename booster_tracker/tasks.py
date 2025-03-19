@@ -123,6 +123,7 @@ def update_launch_times():
                 launch.save()
 
 
+@shared_task
 def update_launch_outcome():
     nxsf_api_data = fetch_nxsf_launches()
 
