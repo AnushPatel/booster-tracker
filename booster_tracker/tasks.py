@@ -5,7 +5,7 @@ from booster_tracker.models import StageAndRecovery, Launch, Stage, SpacecraftOn
 from booster_tracker.utils import make_x_post
 from django.db.models import Q
 import logging
-from booster_tracker.fetch_data import fetch_nxsf_launches
+from booster_tracker.fetch_data import fetch_nxsf_boosters, fetch_nxsf_launches, fetch_nxsf_recovery
 from datetime import datetime, timedelta
 from dateutil import parser
 import pytz
@@ -87,6 +87,28 @@ logger.addHandler(console_handler)
 
 
 @shared_task
+def get_nxsf_id(launch_id):
+    try:
+        launch_object = Launch.objects.get(id=launch_id)
+
+        if launch_object.nxsf_id:
+            return
+        nxsf_data = fetch_nxsf_launches()
+
+        for api_launch in nxsf_data:
+            if api_launch.get("l") == 1 and api_launch.get("n") == launch_object.name:
+                launch_object._from_task = True
+                launch_object.nxsf_id = api_launch.get("i")
+                launch_object.save(update_fields=["nxsf_id"])
+                launch_object._from_task = False
+                return
+    except Launch.DoesNotExist:
+        logger.error(f"Launch with ID {launch_id} does not exist.")
+    except Exception as e:
+        logger.error(f"Error fetching NXSF ID for launch {launch_id}: {e}")
+
+
+@shared_task
 def update_launch_times():
     nxsf_data = fetch_nxsf_launches()
     now = datetime.now(pytz.utc)
@@ -121,6 +143,28 @@ def update_launch_times():
                 launch.time = updated_time
                 logger.info(f"saving launch {launch.name}")
                 launch.save()
+
+
+@shared_task
+def update_recovery_status():
+    recovery_data = fetch_nxsf_recovery()
+    recovery_dict = {"Success": "SUCCESS", "Upcoming": "TBD", "Failure": "FAILURE"}
+
+    for launch in Launch.objects.all():
+        for recovery in recovery_data:
+            if recovery.get("launch") == launch.nxsf_id:
+                recovery_status = recovery.get("status")
+
+                updated_status = recovery_dict[recovery_status]
+                stage_recoveries = StageAndRecovery.objects.filter(launch=launch)
+
+                for stage_recovery in stage_recoveries:
+                    if stage_recovery.method_success != updated_status:
+                        stage_recovery._from_task = True
+                        stage_recovery.method_success = updated_status
+                        stage_recovery.save(update_fields=["method_success"])
+                        stage_recovery._from_task = False
+                break
 
 
 @shared_task
@@ -187,3 +231,63 @@ def post_on_x(launch_id):
     launch.save(update_fields=["x_post_sent"])
     launch._from_task = False
     launch._is_updating_scheduled_post = False
+
+
+@shared_task
+def update_stage():
+    recovery_data = fetch_nxsf_recovery()
+    booster_data = fetch_nxsf_boosters()
+
+    recent_launches = Launch.objects.filter(nxsf_id__isnull=False).order_by("-time")[:10]
+    for launch in recent_launches:
+        for recovery in recovery_data:
+            if recovery.get("launch") == launch.nxsf_id:
+                vehicle_id = recovery.get("vehicle")
+                if not vehicle_id:
+                    break
+
+                booster_name = None
+                for booster in booster_data:
+                    if booster.get("id") == vehicle_id:
+                        booster_name = booster.get("name")
+                        break
+
+                if not booster_name:
+                    break
+
+                for stage_recovery in StageAndRecovery.objects.filter(launch=launch):
+                    if stage_recovery.stage and stage_recovery.stage.name == booster_name:
+                        continue
+
+                    rocket_id = None
+                    if stage_recovery.stage and stage_recovery.stage.rocket_id:
+                        rocket_id = stage_recovery.stage.rocket_id
+                    elif launch.rocket_id:
+                        rocket_id = launch.rocket_id
+                    else:
+                        continue
+
+                    correct_stage = Stage.objects.filter(name=booster_name, rocket_id=rocket_id).first()
+
+                    if not correct_stage:
+                        continue
+
+                    if (
+                        StageAndRecovery.objects.filter(launch_id=launch.id, stage_id=correct_stage.id)
+                        .exclude(id=stage_recovery.id)
+                        .exists()
+                    ):
+                        continue
+                    try:
+                        stage_recovery.stage_id = correct_stage.id
+                        stage_recovery.save()
+
+                        # Manually trigger the update tasks that would normally be called by signals
+                        stage_ids = [correct_stage.id]
+                        update_cached_stageandrecovery_value_task.delay(stage_ids, [])
+                        update_cached_launch_value_task.delay()
+                    except Exception as e:
+                        logger.error(f"Error updating stage recovery for launch {launch.id}: {e}")
+                        continue
+
+                break

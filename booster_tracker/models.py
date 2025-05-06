@@ -246,6 +246,7 @@ class Launch(models.Model):
     stages_string = models.CharField(max_length=500, blank=True, null=True, editable=False)
     celery_task_id = models.CharField(max_length=255, null=True, blank=True, editable=False)
     x_post_sent = models.BooleanField(default=False, editable=False)
+    nxsf_id = models.IntegerField(blank=True, null=True)  # NxSF Launch ID
 
     class Meta:
         verbose_name_plural = "Launches"
@@ -515,8 +516,17 @@ class Launch(models.Model):
 
         return launch_landings
 
-    def make_stats(self, return_significant_only: bool = True) -> list:
-        """Returns a list of stats for the mission; trivial stats not returned"""
+    def make_stats(self, return_significant_only: bool = True, for_post: bool = False) -> list:
+        """
+        Returns a list of stats for the mission
+
+        Args:
+            return_significant_only: If True, only return significant stats
+            for_post: If True, splits each stat at the first period and includes significance flag
+
+        Returns:
+            List of stats, either as strings or (significant, string) tuples depending on parameters
+        """
         stats: list[tuple] = []
 
         stats += self.get_rocket_stats()
@@ -542,45 +552,20 @@ class Launch(models.Model):
         for stat in LaunchStat.objects.filter(launch=self):
             stats.append((stat.significant, f"{stat.string}"))
 
+        # Process stats based on parameters
+        if for_post:
+            # Split each stat's string at the first period and keep only the part before it
+            stats = [(stat[0], stat[1].split(".")[0]) for stat in stats]
+            return stats
+
         if return_significant_only:
             return [stat[1] for stat in stats if stat[0]]
 
         return stats[:10]  # Only return first 10 elements for looks
 
-    def make_stats_for_post(self):
-        stats: list[tuple] = []
-
-        stats += self.get_rocket_stats()
-        stats += self.get_launch_pad_stats()
-        stats += self.get_launch_provider_stats()
-
-        for stage_and_recovery in StageAndRecovery.objects.filter(launch=self):
-            stats += stage_and_recovery.get_stage_stats()
-            stats += stage_and_recovery.get_landing_zone_stats()
-
-        for spacecraft_on_launch in SpacecraftOnLaunch.objects.filter(launch=self):
-            stats += spacecraft_on_launch.get_spacecraft_stats()
-
-        stats += self.calculate_spacecraft_on_launch_turnaround_stats()
-
-        # Adding turnaround stats
-        stats += self.calculate_stage_and_recovery_turnaround_stats(turnaround_object="booster")
-        stats += self.calculate_stage_and_recovery_turnaround_stats(turnaround_object="second stage")
-        stats += self.calculate_stage_and_recovery_turnaround_stats(turnaround_object="landing_zone")
-        stats += self.calculate_pad_turnaround_stats()
-        stats += self.calculate_company_turnaround_stats()
-
-        for stat in LaunchStat.objects.filter(launch=self):
-            stats.append((stat.significant, f"{stat.string}"))
-
-        # Split each stat's string at the first period and keep only the part before it
-        stats = [(stat[0], stat[1].split(".")[0]) for stat in stats]
-
-        return stats
-
     def make_x_post(self) -> str:
         """Generates a post about the launch (str), including significant and other stats."""
-        stats = self.make_stats_for_post()
+        stats = self.make_stats(return_significant_only=False, for_post=True)
         significant_stats = []
         other_stats = []
 
@@ -609,95 +594,6 @@ class Launch(models.Model):
                 return new_post_string
 
         return f"{self.name} will mark {provider_name}'s {stat}.\n\nLearn more: https://boostertracker.com/launch/{self.id}/"
-
-    def update_data_with_launch_info(self, data, liftoff_time_local):
-        launch_location = f"{self.pad.name} ({self.pad.nickname}), {self.pad.location}"
-        boosters_display = self.make_stage_display()
-        launch_landings = self.make_landing_string()
-
-        data["Liftoff Time"] = [
-            f"{format_time(self.time)}",
-            f"{format_time(liftoff_time_local)}",
-        ]
-        data["Mission Name"] = [self.name]
-        data["Customer <br /> (Who's paying for this?)"] = [self.customer]
-        data["Rocket"] = [f"{self.rocket}{boosters_display}"]
-        data["Launch Location"] = [launch_location]
-        if self.mass:
-            data["Payload mass"] = [f"{self.mass:,} kg ({int(round(self.mass * 2.2, -2)):,} lb)"]
-        else:
-            data["Payload mass"] = ["Unknown"]
-        data["Where are the satellites going?"] = [self.orbit.name] if self.orbit else ["Unknown"]
-        data["Where will the first stage land?"] = [launch_landings]
-
-        if self.droneship_needed:
-            data["Where will the first stage land?"].append("")
-            data["Where will the first stage land?"].append(
-                f"Tug: {concatenated_list(list(set(Boat.objects.filter(tugonlaunch__launch=self).values_list('name', flat=True))))}; Support: {concatenated_list(list(set(Boat.objects.filter(supportonlaunch__launch=self).values_list('name', flat=True))))}"
-            )
-
-    def update_data_with_fairing_recovery(self, data):
-        if FairingRecovery.objects.filter(launch=self).exists():
-            if self.time > datetime.now(pytz.utc):
-                data["Will they be attempting to recover the fairings?"].append(
-                    f"The fairing halves will be recovered from the water by {concatenated_list(list(set(Boat.objects.filter(fairingrecovery__launch=self).values_list('name', flat=True))))}"
-                )
-            else:
-                data["Will they be attempting to recover the fairings?"].append(
-                    f"The fairing halves were recovered by {concatenated_list(list(set(Boat.objects.filter(fairingrecovery__launch=self).values_list('name', flat=True))))}"
-                )
-        else:
-            data["Will they be attempting to recover the fairings?"].append("There are no fairings on this flight")
-
-    def update_data_with_stats(self, data):
-        # Have the significant stats appear first
-        stats = sorted(self.make_stats(return_significant_only=False), key=lambda x: x[0], reverse=True)
-        stats_only = [f"– {stat[1]}" for stat in stats]
-        data["This will be the"] = stats_only
-
-    def create_launch_table(self) -> str:
-        """Returns an EDA-style launch table for the launch"""
-        # Data contains table titles
-        data = {
-            "Liftoff Time": [],
-            "Mission Name": [],
-            "Launch Provider <br /> (What rocket company is launching it?)": ["SpaceX"],
-            "Customer <br /> (Who's paying for this?)": [],
-            "Rocket": [],
-            "Launch Location": [],
-            "Payload mass": [],
-            "Where are the satellites going?": [],
-            "Where will the first stage land?": [],
-            "Will they be attempting to recover the fairings?": [],
-            "This will be the": [],
-        }
-
-        time_zone = self.pad.time_zone
-        liftoff_time_local = self.time.astimezone(time_zone)
-        self.update_data_with_launch_info(data, liftoff_time_local)
-        self.update_data_with_fairing_recovery(data)
-        self.update_data_with_stats(data)
-
-        # Change title of headings if launch is in the past
-        if self.time < datetime.now(pytz.utc):
-            post_launch_data = [
-                "Liftoff Time",
-                "Mission Name",
-                "Launch Provider <br /> (What rocket company launched it?)",
-                "Customer <br /> (Who paid for this?)",
-                "Rocket",
-                "Launch Location",
-                "Payload mass",
-                "Where did the satellites go?",
-                "Where did the first stage land?",
-                "Did they attempt to recover the fairings?",
-                "This was the",
-            ]
-            ordered_data = {new_key: data.get(old_key, None) for old_key, new_key in zip(data.keys(), post_launch_data)}
-            data = ordered_data
-
-        # print(self.build_table_html(data))
-        return data
 
     def get_rocket_stats(self) -> list[tuple]:
         """

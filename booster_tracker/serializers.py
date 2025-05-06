@@ -151,14 +151,9 @@ class LandingZoneInformationSerializer(serializers.Serializer):
 
 
 class LaunchInformationSerializer(serializers.ModelSerializer):
-    create_launch_table = serializers.SerializerMethodField()
-
     class Meta:
         model = Launch
-        fields = ["name", "rocket", "image", "create_launch_table"]
-
-    def get_create_launch_table(self, obj):
-        return obj.create_launch_table()
+        fields = ["name", "rocket", "image"]
 
 
 class StageSerializer(serializers.ModelSerializer):
@@ -334,10 +329,6 @@ class CalendarStatsSerializer(serializers.Serializer):
     most_launches = serializers.IntegerField()
     days_with_most_launches = serializers.CharField()
     launches = serializers.ListField(child=LaunchOnlySerializer())
-
-
-class EDATableSerializer(serializers.Serializer):
-    launch_table = serializers.CharField()
 
 
 class AdditionalGraphSerializer(serializers.Serializer):

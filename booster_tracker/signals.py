@@ -7,6 +7,7 @@ import pytz
 from celery import current_app
 from booster_tracker.models import Stage, StageAndRecovery, Pad, Boat, Rocket, LandingZone, Launch, SpacecraftOnLaunch
 from booster_tracker.tasks import (
+    get_nxsf_id,
     update_cached_stageandrecovery_value_task,
     update_cached_launch_value_task,
     update_cached_spacecraftonlaunch_value_task,
@@ -162,6 +163,17 @@ def handle_launch_signals(sender, instance: Launch, **kwargs):
         if instance.celery_task_id:
             current_app.control.revoke(instance.celery_task_id, terminate=True)
             logger.info(f"Revoked {instance.celery_task_id}")
+
+
+@receiver(post_save, sender=Launch)
+def trigger_nxsf_id_update(sender, instance, created, **kwargs):
+    # Avoid infinite loop by checking if this is from a task
+    if getattr(instance, "_from_task", False) or getattr(instance, "_is_updating_scheduled_post", False):
+        return
+    # Schedule the task to run after transaction commit
+    transaction.on_commit(lambda: get_nxsf_id.delay(instance.id))
+    logger.info(f"Scheduled NXSF ID update after {'creation' if created else 'update'} of Launch {instance.name}")
+    logger.info(f"Launch {instance.name} NXSF ID: {instance.nxsf_id}")
 
 
 """ @receiver(post_save, sender=Launch)

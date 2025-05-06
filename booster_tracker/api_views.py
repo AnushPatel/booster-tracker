@@ -92,7 +92,6 @@ from booster_tracker.serializers import (
     SpacecraftFamilyInformationSerializer,
     CalendarStatsSerializer,
     StageListSerializer,
-    EDATableSerializer,
     AdditionalGraphSerializer,
     LaunchInformation2Serializer,
 )
