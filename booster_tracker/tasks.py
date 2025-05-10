@@ -150,7 +150,9 @@ def update_recovery_status():
     recovery_data = fetch_nxsf_recovery()
     recovery_dict = {"Success": "SUCCESS", "Upcoming": "TBD", "Failure": "FAILURE"}
 
-    for launch in Launch.objects.all():
+    recent_launches = Launch.objects.filter(nxsf_id__isnull=False).order_by("-time")[:10]
+
+    for launch in recent_launches:
         for recovery in recovery_data:
             if recovery.get("launch") == launch.nxsf_id:
                 recovery_status = recovery.get("status")
