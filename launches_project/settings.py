@@ -45,6 +45,7 @@ else:
         "api.boostertracker.com",
         "boostertracker.eba-afvxhcfx.us-west-2.elasticbeanstalk.com",
         "52.33.84.150",
+        "35.155.10.22",
     ]
 
     # Add the local hostname to ALLOWED_HOSTS
