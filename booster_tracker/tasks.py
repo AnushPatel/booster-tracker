@@ -301,30 +301,41 @@ def add_launches():
     now = datetime.now(pytz.utc)
     next_week = now + timedelta(days=7)
 
-    pad_dict = {1: "Launch Complex 39A", 2: "Space Launch Complex 40", 3: "Space Launch Complex 4 East"}
-
-    default_rocket = Rocket.objects.filter(name="Falcon 9").first()
-    if not default_rocket:
-        return
+    pad_dict = {
+        1: "Launch Complex 39A",
+        2: "Space Launch Complex 40",
+        3: "Space Launch Complex 4 East",
+        195: "Orbital Launch Pad A",
+    }
     for launch in nxsf_data:
         if launch.get("l") != 1:
             continue
+
         launch_time = parser.parse(launch["t"]).astimezone(pytz.utc)
         if not (now <= launch_time <= next_week):
             continue
         if Launch.objects.filter(nxsf_id=launch.get("i")).exists():
             continue
+
         pad_name = pad_dict.get(launch.get("p"))
         if not pad_name:
             continue
         pad = Pad.objects.filter(name=pad_name).first()
         if not pad:
             continue
+
+        if pad_name == "Orbital Launch Pad A":
+            rocket = Rocket.objects.filter(name="Starship").first()
+        else:
+            rocket = Rocket.objects.filter(name="Falcon 9").first()
+        if not rocket:
+            continue
+
         try:
             new_launch = Launch.objects.create(
                 name=launch.get("n"),
                 time=launch_time,
-                rocket=default_rocket,
+                rocket=rocket,
                 pad=pad,
                 nxsf_id=launch.get("i"),
                 customer="SpaceX",
