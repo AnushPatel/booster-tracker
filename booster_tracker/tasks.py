@@ -1,11 +1,11 @@
 # tasks.py
 from celery import shared_task
 from django.conf import settings
-from booster_tracker.models import StageAndRecovery, Launch, Stage, SpacecraftOnLaunch
+from booster_tracker.models import Rocket, StageAndRecovery, Launch, Stage, SpacecraftOnLaunch, Pad
 from booster_tracker.utils import make_x_post
 from django.db.models import Q
 import logging
-from booster_tracker.fetch_data import fetch_nxsf_boosters, fetch_nxsf_launches, fetch_nxsf_recovery
+from booster_tracker.fetch_data import fetch_nxsf_boosters, fetch_nxsf_launches, fetch_nxsf_pads, fetch_nxsf_recovery
 from datetime import datetime, timedelta
 from dateutil import parser
 import pytz
@@ -293,3 +293,53 @@ def update_stage():
                         continue
 
                 break
+
+
+@shared_task
+def add_launches():
+    nxsf_data = fetch_nxsf_launches()
+    now = datetime.now(pytz.utc)
+    next_week = now + timedelta(days=7)
+
+    pad_dict = {1: "Launch Complex 39A", 2: "Space Launch Complex 40", 3: "Space Launch Complex 4 East"}
+
+    default_rocket = Rocket.objects.filter(name="Falcon 9").first()
+    if not default_rocket:
+        return
+    for launch in nxsf_data:
+        if launch.get("l") != 1:
+            continue
+        launch_time = parser.parse(launch["t"]).astimezone(pytz.utc)
+        if not (now <= launch_time <= next_week):
+            continue
+        if Launch.objects.filter(nxsf_id=launch.get("i")).exists():
+            continue
+        pad_name = pad_dict.get(launch.get("p"))
+        if not pad_name:
+            continue
+        pad = Pad.objects.filter(name=pad_name).first()
+        if not pad:
+            continue
+        try:
+            new_launch = Launch.objects.create(
+                name=launch.get("n"),
+                time=launch_time,
+                rocket=default_rocket,
+                pad=pad,
+                nxsf_id=launch.get("i"),
+                customer="SpaceX",
+                launch_outcome="TBD",
+            )
+
+            StageAndRecovery.objects.create(
+                launch=new_launch,
+                method="TBD",
+                method_success="TBD",
+                recovery_success=False,
+            )
+        except:
+            continue
+
+    update_stage.delay()
+    update_cached_launch_value_task.delay()
+    update_cached_stageandrecovery_value_task.delay([], [])
