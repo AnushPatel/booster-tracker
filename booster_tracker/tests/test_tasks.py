@@ -2,6 +2,7 @@ from booster_tracker.tasks import update_cached_stageandrecovery_value_task
 from booster_tracker.tasks import update_cached_stageandrecovery_value_task, update_launch_times, update_launch_outcome
 from booster_tracker.models import (
     Pad,
+    Rocket,
     StageAndRecovery,
     Launch,
 )
@@ -278,3 +279,21 @@ def test_adding_launches(self, mock_fetch_nxsf_launches):
 
     launch = Launch.objects.get(name="Falcon 9 Test Launch")
     self.assertEqual(launch.nxsf_id, 69)
+
+
+@mock.patch("booster_tracker.tasks.fetch_nxsf_launches")
+def test_add_starship_launch(self, mock_fetch_nxsf_launches):
+    olp_a = Pad.objects.get_or_create(name="Orbital Launch Pad A")[0]
+
+    tomorrow = datetime.now(pytz.utc) + timedelta(days=1)
+    mock_fetch_nxsf_launches.return_value = [
+        {"n": "Starship Test Launch", "t": tomorrow.isoformat(), "l": 1, "p": 195, "i": 6969}
+    ]
+
+    from booster_tracker.tasks import add_launches
+
+    add_launches()
+
+    launch = Launch.objects.get(name="Starship Test Launch")
+    self.assertEqual(launch.nxsf_id, 6969)
+    self.assertEqual(launch.pad.name, "Orbital Launch Pad A")
