@@ -1,7 +1,15 @@
 # tasks.py
 from celery import shared_task
 from django.conf import settings
-from booster_tracker.models import Rocket, StageAndRecovery, Launch, Stage, SpacecraftOnLaunch, Pad
+from booster_tracker.models import (
+    LandingZone,
+    Rocket,
+    StageAndRecovery,
+    Launch,
+    Stage,
+    SpacecraftOnLaunch,
+    Pad,
+)
 from booster_tracker.utils import make_x_post
 from django.db.models import Q
 import logging
@@ -296,6 +304,61 @@ def update_stage():
 
 
 @shared_task
+def update_landing_zone():
+    recovery_data = fetch_nxsf_recovery()
+    location_lz_dict = {
+        1: "Just Read the Instructions (2)",
+        6: "Of Course I Still Love You",
+        22: "A Shortfall of Gravitas",
+        4: "Landing Zone 1",
+        7: "Landing Zone 2",
+        17: "Landing Zone 4",
+    }
+    landing_method_dict = {
+        1: "DRONE_SHIP",
+        6: "DRONE_SHIP",
+        22: "DRONE_SHIP",
+        4: "GROUND_PAD",
+        7: "GROUND_PAD",
+        17: "GROUND_PAD",
+    }
+
+    recent_launches = Launch.objects.filter(nxsf_id__isnull=False).order_by("-time")[:10]
+    for launch in recent_launches:
+        for recovery in recovery_data:
+            if recovery.get("launch") == launch.nxsf_id:
+                location_id = recovery.get("location")
+                if not location_id:
+                    continue
+
+                zone = location_lz_dict.get(location_id)
+                if not zone:
+                    continue
+
+                method = landing_method_dict.get(location_id)
+                if not method:
+                    continue
+
+                landing_zone = LandingZone.objects.filter(name=zone).first()
+                if not landing_zone:
+                    continue
+
+                stage_recoveries = StageAndRecovery.objects.filter(launch=launch)
+                for stage_recovery in stage_recoveries:
+                    if stage_recovery.landing_zone != landing_zone or stage_recovery.method != method:
+                        try:
+                            stage_recovery._from_task = True
+                            stage_recovery.landing_zone = landing_zone
+                            stage_recovery.method = method
+                            stage_recovery.save()
+                            stage_recovery._from_task = False
+
+                        except Exception as e:
+                            logger.error(f"Error updating landing zone for launch {launch.id}: {e}")
+                break
+
+
+@shared_task
 def add_launches():
     nxsf_data = fetch_nxsf_launches()
     now = datetime.now(pytz.utc)
@@ -352,5 +415,6 @@ def add_launches():
             continue
 
     update_stage.delay()
+    update_landing_zone.delay()
     update_cached_launch_value_task.delay()
     update_cached_stageandrecovery_value_task.delay([], [])
